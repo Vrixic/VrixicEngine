@@ -234,7 +234,7 @@ void VulkanDevice::CreateDevice(VulkanSurface* surface)
 }
 
 /* For Destorying vulkan */
-void VulkanDevice::WaitUntilIdle()
+void VulkanDevice::WaitUntilIdle() const
 {
 	vkDeviceWaitIdle(LogicalDeviceHandle);
 }

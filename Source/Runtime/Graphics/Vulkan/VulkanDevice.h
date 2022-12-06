@@ -79,7 +79,7 @@ public:
 	/**
 	* Waits until the device is idle... not executing any commands..
 	*/
-	void WaitUntilIdle();
+	void WaitUntilIdle() const;
 
 public:
 	/* Returns the logical device */

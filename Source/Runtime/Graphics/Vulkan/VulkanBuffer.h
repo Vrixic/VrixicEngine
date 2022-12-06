@@ -3,10 +3,15 @@
 
 /* ------------------------------------------------------------------------------- */
 /**
-* @TODO: Need to create a way to manager buffer and device memory without any memory leaks, maybe VulkanMemoryAllocator????....
+* @TODO: Need to create a way to manage buffer and device memory without any memory leaks, maybe VulkanMemoryAllocator????....
 *			A way to handle device memory without any leaks
 *			What if we allocate a bunch of memory on the GPU heap and just share that memory???....
 *			Create abstractions to implement that functionality^
+*			What if we have memory heaps for different memory types... since they would be operated upon differently...
+* 
+* @TODO: Create a way to create VulkanBuffers without memory leaks
+* @TODO: Establish a way for VulkanDeviceMemory to communiate with Vulkan Buffers 
+* @TODO: Create ways to create different types of buffers easily: Storage, Uniform, Staging, etc...
 */
 /* ------------------------------------------------------------------------------- */
 
@@ -16,16 +21,28 @@
 class VulkanDeviceMemory
 {
 private:
+	friend class VulkanDeviceMemoryAllocater;
+
 	const VulkanDevice* Device;
 	VkDeviceMemory MemoryHandle;
 	VkDeviceSize Size;
 
+	/* Used to check what memory type this device memory was made from */
+	uint32 MemoryTypeIndex;
+
 	void* MappedDataPtr;
 
 	VulkanDeviceMemory(const VulkanDevice* inDevice)
-		: Device(inDevice), MemoryHandle(VK_NULL_HANDLE), Size(0), MappedDataPtr(nullptr) { }
+		: Device(inDevice), MemoryHandle(VK_NULL_HANDLE), Size(0), MappedDataPtr(nullptr), MemoryTypeIndex(0) { }
 
-	~VulkanDeviceMemory();
+	~VulkanDeviceMemory()
+	{
+		Device->WaitUntilIdle();
+		vkFreeMemory(*Device->GetDeviceHandle(), MemoryHandle, nullptr);
+	}
+
+	VulkanDeviceMemory(const VulkanDeviceMemory& other) = delete;
+	VulkanDeviceMemory operator=(const VulkanDeviceMemory& other) = delete;
 
 public:
 	/**
@@ -121,14 +138,18 @@ public:
 class VulkanBuffer
 {
 private:
-	VulkanDevice* Device;
+	const VulkanDevice* Device;
 	VkBuffer BufferHandle;
 
-
-
 public:
-	VulkanBuffer(VulkanDevice* inDevice);
-	~VulkanBuffer();
+	VulkanBuffer(const VulkanDevice* inDevice)
+		: Device(inDevice), BufferHandle(VK_NULL_HANDLE) { }
+
+	~VulkanBuffer()
+	{
+		Device->WaitUntilIdle();
+		vkDestroyBuffer(*Device->GetDeviceHandle(), BufferHandle, nullptr);
+	}
 
 	VulkanBuffer(const VulkanBuffer& other) = delete;
 	VulkanBuffer operator=(const VulkanBuffer& other) = delete;
@@ -191,4 +212,86 @@ public:
 	{
 		return &BufferHandle;
 	}
+};
+
+/**
+* An allocater specifically for allocating vulkan device memory, all allocations for vulkan device should happen through this class
+*	Keeps device memory leaks from happening
+*/
+class VulkanDeviceMemoryAllocater
+{
+private:
+	VulkanDevice* Device;
+
+	std::vector<VulkanDeviceMemory*> MemoryAllocations;
+
+public:
+	VulkanDeviceMemoryAllocater(VulkanDevice* inDevice)
+		: Device(inDevice) { }
+
+	~VulkanDeviceMemoryAllocater()
+	{
+		Device->WaitUntilIdle();
+		for (uint32 i = 0; i < MemoryAllocations.size(); ++i)
+		{
+			if (MemoryAllocations[i] != nullptr)
+			{
+				delete MemoryAllocations[i];
+			}
+		}
+	}
+
+	VulkanDeviceMemoryAllocater(const VulkanDeviceMemoryAllocater& other) = delete;
+	VulkanDeviceMemoryAllocater operator=(const VulkanDeviceMemoryAllocater& other) = delete;
+
+public:
+	/**
+	* Allocated memory on the GPU/VulkanDevice
+	* 
+	* @Param inAllocationSize - Size of the memory to be allocated
+	* @Param inMemoryTypeIndex - The memory type to be used, its index 
+	* 
+	* @Return uint32 - The ID of the Device Memory
+	*/
+	uint32 AllocateMemory(VkDeviceSize inAllocationSize, uint32 inMemoryTypeIndex)
+	{
+		VkMemoryAllocateInfo MemoryAllocateInfo = VulkanUtils::Initializers::MemoryAllocateInfo();
+		MemoryAllocateInfo.allocationSize = inAllocationSize;
+		MemoryAllocateInfo.memoryTypeIndex = inMemoryTypeIndex;
+
+		VkDeviceMemory MemoryHandle = VK_NULL_HANDLE;
+		VK_CHECK_RESULT(vkAllocateMemory(*Device->GetDeviceHandle(), &MemoryAllocateInfo, nullptr, &MemoryHandle));
+
+		VulkanDeviceMemory* DeviceMemory = new VulkanDeviceMemory(Device);
+		DeviceMemory->MemoryHandle = MemoryHandle;
+		DeviceMemory->Size = inAllocationSize;
+		DeviceMemory->MemoryTypeIndex = inMemoryTypeIndex;
+
+		MemoryAllocations.push_back(DeviceMemory);
+
+		return MemoryAllocations.size() - 1;
+	}
+
+	/**
+	* Frees device memory by ID
+	*
+	* @Param inId - The ID of the Device Memory to be Freed
+	*/
+	void FreeMemory(uint32 inId)
+	{
+		delete MemoryAllocations[inId];
+		MemoryAllocations[inId] = nullptr;
+	}
+
+public:
+	/**
+	* Gets the Device Memory by ID
+	* 
+	* @Param inId - the id of the device memory 
+	*/
+	inline const VulkanDeviceMemory* GetDeviceMemory(uint32 inId) const
+	{
+		return MemoryAllocations[inId];
+	}
+
 };
