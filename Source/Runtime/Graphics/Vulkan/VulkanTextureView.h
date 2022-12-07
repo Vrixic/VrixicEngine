@@ -16,9 +16,9 @@ private:
 
 public:
 	/**
-	* @Param inImageCreateInfo - Image creation info
+	* @param inImageCreateInfo - Image creation info
 	* 
-	* @Note: Creates, Allocates, and Binds Image Memory 
+	* @remarks Creates, Allocates, and Binds Image Memory 
 	*/
 	VulkanTextureView(VulkanDevice* inDevice, VkImageCreateInfo& inImageCreateInfo);
 
@@ -31,8 +31,8 @@ public:
 	/**
 	* Creates the image view for image that was created on construct
 	* 
-	* @Param inViewType - The image view type
-	* @Param inFormat - The image view format
+	* @param inViewType - The image view type
+	* @param inFormat - The image view format
 	*/
 	void CreateImageView(VkImageViewType inViewType, VkFormat& inFormat, uint32 inBaseMiplevel, uint32 inLevelCount, uint32 inBaseArrayLayer,
 		uint32 inLayerCount, VkImageAspectFlags& inAspectFlags);

@@ -13,7 +13,7 @@ private:
 
 public:
 	/**
-	* @Param inRenderPass - render pass associated with this frame buffer
+	* @param inRenderPass - render pass associated with this frame buffer
 	*/
 	VulkanFrameBuffer(VulkanDevice* inDevice, VulkanRenderPass* inRenderPass);
 	~VulkanFrameBuffer();
@@ -24,9 +24,9 @@ public:
 	/**
 	* Allocates the Frame Buffer
 	* 
-	* @Param inNumAttachments - Attachments count
-	* @Param inAttachments - all attachments for the frame buffer
-	* @Param inExtent - extent of the frame buffer
+	* @param inNumAttachments - Attachments count
+	* @param inAttachments - all attachments for the frame buffer
+	* @param inExtent - extent of the frame buffer
 	*/
 	void AllocateBuffer(uint32 inNumAttachments, const VkImageView* inAttachments, const VkExtent2D* inExtent);
 

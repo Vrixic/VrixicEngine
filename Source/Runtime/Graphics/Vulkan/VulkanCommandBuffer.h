@@ -24,10 +24,10 @@ private:
 
 public:
 	/**
-	* @Param inCommandPool - The command pool used to create this command buffer
-	* @Param inImageIndex - The image index this command buffer will write to/ use
+	* @param inCommandPool - The command pool used to create this command buffer
+	* @param inImageIndex - The image index this command buffer will write to/ use
 	* 
-	* @Note: Create a wait fence on creation for this command buffer
+	* @remarks Create a wait fence on creation for this command buffer
 	*/
 	VulkanCommandBuffer(VulkanDevice* inDevice, VulkanCommandPool* inCommandPool, uint32 inImageIndex);
 
@@ -147,16 +147,16 @@ public:
 	/**
 	* Creates a command buffer using this pool
 	* 
-	* @Param inImageIndex - the image index this command buffer will write to/ use
+	* @param inImageIndex - the image index this command buffer will write to/ use
 	* 
-	* @Returns: the command buffer created
+	* @returns the command buffer created
 	*/
 	VulkanCommandBuffer* CreateCommandBuffer(uint32 inImageIndex);
 
 	/**
 	* Creates a command pool
 	* 
-	* @Param inQueueFamilyIndex - an index into the queue family used to create the command pool
+	* @param inQueueFamilyIndex - an index into the queue family used to create the command pool
 	*/
 	void CreateCommandPool(uint32 inQueueFamilyIndex);
 

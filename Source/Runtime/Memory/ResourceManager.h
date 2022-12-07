@@ -19,18 +19,18 @@ public:
 	/**
 	* Creates a shader resource 
 	* 
-	* @Param inFilePath - file path to the shader location
+	* @param inFilePath - file path to the shader location
 	* 
-	* @Return uint32 - the key to where the shader handle is located
+	* @return uint32 - the key to where the shader handle is located
 	*/
 	uint32 CreateShaderResource(const VString& inFilePath);
 
 	/**
 	* Gets the shader module
 	* 
-	* @Param inShaderKey - the key to a shader handle
+	* @param inShaderKey - the key to a shader handle
 	* 
-	* @Return void* - the shader module
+	* @return void* - the shader module
 	*/
 	const void* GetShaderModule(uint32 inShaderKey) const;
 

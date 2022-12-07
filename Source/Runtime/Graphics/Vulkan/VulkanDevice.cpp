@@ -239,6 +239,35 @@ void VulkanDevice::WaitUntilIdle() const
 	vkDeviceWaitIdle(LogicalDeviceHandle);
 }
 
+uint32_t VulkanDevice::GetMemoryTypeIndex(uint32_t inTypeBits, VkMemoryPropertyFlags inProperties, VkBool32* outMemTypeFound) const
+{
+	for (uint32_t i = 0; i < PhysicalDeviceMemProperties.memoryTypeCount; i++)
+	{
+		if ((inTypeBits & 1) == 1)
+		{
+			if ((PhysicalDeviceMemProperties.memoryTypes[i].propertyFlags & inProperties) == inProperties)
+			{
+				if (outMemTypeFound)
+				{
+					*outMemTypeFound = true;
+				}
+				return i;
+			}
+		}
+		inTypeBits >>= 1;
+	}
+
+	if (outMemTypeFound)
+	{
+		*outMemTypeFound = false;
+		return 0;
+	}
+	else
+	{
+		throw std::runtime_error("Could not find a matching memory type");
+	}
+}
+
 /* ------------------------------------------------------------------------------- */
 /* -----------------------             Queue             ------------------------- */
 /* ------------------------------------------------------------------------------- */

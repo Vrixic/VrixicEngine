@@ -36,9 +36,9 @@ protected:
 
 public:
 	/**
-	* @Param inNumColorAttachments - Number of color attachments for this render layout
-	* @Param inRenderArea - RenderArea of this render layout
-	* @Param inExtent2D (Optional) - The extent of this render layout
+	* @param inNumColorAttachments - Number of color attachments for this render layout
+	* @param inRenderArea - RenderArea of this render layout
+	* @param inExtent2D (Optional) - The extent of this render layout
 	*/
 	VulkanRenderLayout(VulkanDevice* inDevice, uint32 inNumColorAttachments, VkRect2D& inRenderArea, VkExtent2D* inExtent2D = nullptr);
 	~VulkanRenderLayout();

@@ -17,7 +17,7 @@ protected:
 
 public:
 	/**
-	* @Param inShaderStageBits - The type of shader ex. Vertex, Fragment, etc...
+	* @param inShaderStageBits - The type of shader ex. Vertex, Fragment, etc...
 	*/
 	VulkanShader(VulkanDevice* inDevice, VkShaderStageFlagBits inShaderStageBits);
 
@@ -61,7 +61,7 @@ private:
 
 public:
 	/**
-	* @Param inResourceManagerHandle - The resource manager that will be in use by this factory to create shader modules/handles
+	* @param inResourceManagerHandle - The resource manager that will be in use by this factory to create shader modules/handles
 	*/
 	VulkanShaderFactory(ResourceManager* inResourceManagerHandle);
 	virtual ~VulkanShaderFactory();
@@ -71,9 +71,9 @@ public:
 
 public:
 	/**
-	* @Param inShaderPath - the path to where the shader is located 
+	* @param inShaderPath - the path to where the shader is located 
 	* 
-	* @Return VulkanVertexShader* - handle to the vertex shader created
+	* @return VulkanVertexShader* - handle to the vertex shader created
 	*/
 	VulkanVertexShader* CreateVertexShader(VulkanDevice* inDevice, const char* inShaderPath);
 };

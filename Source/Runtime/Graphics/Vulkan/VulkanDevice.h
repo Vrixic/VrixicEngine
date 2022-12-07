@@ -55,12 +55,12 @@ private:
 
 public:
 	/**
-	* @Param inGPU - The GPU to be used for device creation
-	* @Param inEnabledFeatures - The features that will be enabled if available on the GPU
-	* @Param inDeviceExtensionCount - count of device extentions
-	* @Param inDeviceExtensions - the extensions to be enabled on this device if the device supports them
+	* @param inGPU - The GPU to be used for device creation
+	* @param inEnabledFeatures - The features that will be enabled if available on the GPU
+	* @param inDeviceExtensionCount - count of device extentions
+	* @param inDeviceExtensions - the extensions to be enabled on this device if the device supports them
 	* 
-	* @Note: Does all the setup for Device creation
+	* @remarks Does all the setup for Device creation
 	*/
 	VulkanDevice(VkPhysicalDevice& inGPU, VkPhysicalDeviceFeatures& inEnabledFeatures, uint32 inDeviceExtensionCount, const char** inDeviceExtensions);
 
@@ -72,7 +72,7 @@ public:
 	/**
 	* Creates the logical device
 	* 
-	* @Param inSurface - The surface to be used for creating the device 
+	* @param inSurface - The surface to be used for creating the device 
 	*/
 	void CreateDevice(VulkanSurface* inSurface);
 
@@ -132,6 +132,19 @@ public:
 	{
 		return &QueueFamilyProperties;
 	}
+
+	/**
+	* Get the index of a memory type that has all the requested property bits set
+	*
+	* @param typeBits Bit mask with bits set for each memory type supported by the resource to request for (from VkMemoryRequirements)
+	* @param properties Bit mask of properties for the memory type to request
+	* @param (Optional) memTypeFound Pointer to a bool that is set to true if a matching memory type has been found
+	*
+	* @return Index of the requested memory type
+	*
+	* @throw Throws an exception if memTypeFound is null and no memory type could be found that supports the requested properties
+	*/
+	uint32_t GetMemoryTypeIndex(uint32_t inTypeBits, VkMemoryPropertyFlags inProperties, VkBool32* outMemTypeFound) const;
 };
 
 class VulkanQueue
@@ -149,10 +162,10 @@ private:
 
 public:
 	/**
-	* @Param inQueueFamilyIndex - The queue family index this queue belongs to
-	* @Param inQueueIndex - The queue index this queue represents 
+	* @param inQueueFamilyIndex - The queue family index this queue belongs to
+	* @param inQueueIndex - The queue index this queue represents 
 	* 
-	* @Note: Sets up queue submission
+	* @remarks Sets up queue submission
 	*/
 	VulkanQueue(VulkanDevice* inDevice, uint32 inQueueFamilyIndex, uint32 inQueueIndex);
 
@@ -212,11 +225,11 @@ public:
 
 public:
 	/**
-	* @Param inInstance - The vulkan instance this surfance will use
-	* @Param inWindowInstance - the window instance this surface will use
-	* @Param inWindow - this window this surface will use
+	* @param inInstance - The vulkan instance this surfance will use
+	* @param inWindowInstance - the window instance this surface will use
+	* @param inWindow - this window this surface will use
 	* 
-	* @Note: Creates the Surface 
+	* @remarks Creates the Surface 
 	*/
 	VulkanSurface(VulkanDevice* inDevice, VkInstance* inInstance, HINSTANCE* inWindowInstance, HWND* inWindow);
 
@@ -278,11 +291,11 @@ public:
 
 public:
 	/**
-	* @Param inSurface - the surface that will be used to create the swapchain
-	* @Param inRequestImageWidth - the requested image width of the swapchain images
-	* @Param inRequestImageHeight - the requested image height of the swapchain images
+	* @param inSurface - the surface that will be used to create the swapchain
+	* @param inRequestImageWidth - the requested image width of the swapchain images
+	* @param inRequestImageHeight - the requested image height of the swapchain images
 	* 
-	* @Note: Creates the SpawnChain, also depending on the device capabilities the 'requestImageWidth' and 'requestImageHeight' not be approved 
+	* @remarks Creates the SpawnChain, also depending on the device capabilities the 'requestImageWidth' and 'requestImageHeight' not be approved 
 	*/
 	VulkanSwapChain(VulkanDevice* inDevice, VulkanSurface* inSurface, uint32 inRequestImageWidth, uint32 inRequestImageHeight);
 
@@ -298,7 +311,7 @@ public:
 	* @param presentCompleteSemaphore (Optional) Semaphore that is signaled when the image is ready for use
 	* @param imageIndex Pointer to the image index that will be increased if the next image could be acquired
 	*
-	* @note The function will always wait until the next image has been acquired by setting timeout to UINT64_MAX
+	* @remarks The function will always wait until the next image has been acquired by setting timeout to UINT64_MAX
 	*
 	* @return VkResult of the image acquisition
 	*/
@@ -319,11 +332,11 @@ public:
 	/**
 	* If swapchain gets old, recreate a new on
 	* 
-	* @Param inVSync - enable or disable vsync
-	* @Param outImageWidth - requested image width, but if swapchain disapproves it, the new image width will be stored instead
-	* @Param outImageHeight - requested image height, but if swapchain disapproves it, the new image height will be stored instead
+	* @param inVSync - enable or disable vsync
+	* @param outImageWidth - requested image width, but if swapchain disapproves it, the new image width will be stored instead
+	* @param outImageHeight - requested image height, but if swapchain disapproves it, the new image height will be stored instead
 	* 
-	* @Note: Current swapchain will be used to recreate new one 
+	* @remarks Current swapchain will be used to recreate new one 
 	*/
 	void Recreate(bool inVSync, uint32* outImageWidth, uint32* outImageHeight);
 
@@ -332,12 +345,12 @@ private:
 	/**
 	* Creates a new swapchain
 	*
-	* @Param inVSync - enable or disable vsync
-	* @Param outImageWidth - requested image width, but if swapchain disapproves it, the new image width will be stored instead
-	* @Param outImageHeight - requested image height, but if swapchain disapproves it, the new image height will be stored instead
-	* @Param inOldSwapChain - old swapchain that was in use.. 
+	* @param inVSync - enable or disable vsync
+	* @param outImageWidth - requested image width, but if swapchain disapproves it, the new image width will be stored instead
+	* @param outImageHeight - requested image height, but if swapchain disapproves it, the new image height will be stored instead
+	* @param inOldSwapChain - old swapchain that was in use.. 
 	* 
-	* @Note: if 'inOldSwapChain' is not VK_NULL_HANDLE, then that swapchain will be used to recreate the new one being created 
+	* @remarks if 'inOldSwapChain' is not VK_NULL_HANDLE, then that swapchain will be used to recreate the new one being created 
 	*/
 	void Create(bool inVSync, uint32* outImageWidth, uint32* outImageHeight, VkSwapchainKHR inOldSwapChain);
 

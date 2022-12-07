@@ -8,7 +8,7 @@ VulkanTextureView::VulkanTextureView(VulkanDevice* device, VkImageCreateInfo& im
 	VkMemoryRequirements MemoryRequirements{};
 	vkGetImageMemoryRequirements(*device->GetDeviceHandle(), ImageHandle, &MemoryRequirements);
 
-	uint32 MemoryTypeIndex = VulkanUtils::Helpers::GetMemoryType(device->GetPhysicalDeviceMemoryProperties(), MemoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, nullptr);
+	uint32 MemoryTypeIndex = device->GetMemoryTypeIndex(MemoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, nullptr);
 	VkMemoryAllocateInfo MemoryAlloc = VulkanUtils::Initializers::MemoryAllocateInfo();
 	MemoryAlloc.allocationSize = MemoryRequirements.size;
 	MemoryAlloc.memoryTypeIndex = MemoryTypeIndex;

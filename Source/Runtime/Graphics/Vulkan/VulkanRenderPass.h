@@ -20,9 +20,9 @@ public:
 		VkClearValue* clearValues);*/
 	
 	/**
-	* @Param inRenderLayout - the render layout used to create the render pass 
+	* @param inRenderLayout - the render layout used to create the render pass 
 	* 
-	* @Note: Creates the RenderPass
+	* @remarks Creates the RenderPass
 	*/
 	VulkanRenderPass(VulkanDevice* inDevice, VulkanRenderLayout& inRenderLayout);
 

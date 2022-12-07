@@ -27,6 +27,7 @@ typedef signed long			int64;
 #pragma once
 
 #define _DEBUG !NDEBUG
+#define _EDITOR !NDEBUG
 
 /* Assertion */
 #if _DEBUG

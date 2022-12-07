@@ -28,9 +28,9 @@ public:
 	/**
 	* Creates a descriptor set layout
 	*
-	* @Param: layout bindings that will be used for layout creation
+	* @param layout bindings that will be used for layout creation
 	*
-	* @Return: the id to where the layout is located
+	* @return the id to where the layout is located
 	*/
 	uint32 CreateDescriptorSetLayout(VulkanUtils::Descriptions::DescriptorSetLayoutBinding& inLayoutBinding)
 	{
@@ -56,9 +56,9 @@ public:
 	/**
 	* Returns a handle to a descriptor set layout
 	*
-	* @Param: the id to which the layout is located
+	* @param the id to which the layout is located
 	*
-	* @Return: a descriptor set layout at the 'inLayoutId' specified
+	* @return a descriptor set layout at the 'inLayoutId' specified
 	*/
 	const VkDescriptorSetLayout* GetLayoutHandle(uint32 inLayoutId) const
 	{
@@ -89,11 +89,11 @@ public:
 	/**
 	* Uses this pool to allocate a descriptor set
 	*
-	* @Param 1: count of descriptor sets to create
-	* @Param 2: descriptor set to be filled
-	* @Param 3: the layout id used to create the decriptor set
+	* @param 1: count of descriptor sets to create
+	* @param 2: descriptor set to be filled
+	* @param 3: the layout id used to create the decriptor set
 	*
-	* @Return: if allocated of set(s) was successfull
+	* @return if allocated of set(s) was successfull
 	*/
 	bool AllocateDescriptorSets(uint32 inDescriptorSetCount, VkDescriptorSet* outDescriptorSet, uint32 inLayoutId) const
 	{

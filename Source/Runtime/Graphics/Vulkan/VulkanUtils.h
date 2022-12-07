@@ -141,7 +141,6 @@ namespace VulkanUtils
 			VkBufferUsageFlags BufferUsageFlags;
 			VkMemoryPropertyFlags MemoryPropertyFlags;
 			VkDeviceSize DeviceSize;
-			void* Data;
 		};
 	}
 
@@ -235,46 +234,6 @@ namespace VulkanUtils
 		inline bool ExtensionSupported(std::string inExtension, std::vector<std::string> inSupportedExtensions)
 		{
 			return (std::find(inSupportedExtensions.begin(), inSupportedExtensions.end(), inExtension) != inSupportedExtensions.end());
-		}
-
-		/**
-		* Get the index of a memory type that has all the requested property bits set
-		*
-		* @param typeBits Bit mask with bits set for each memory type supported by the resource to request for (from VkMemoryRequirements)
-		* @param properties Bit mask of properties for the memory type to request
-		* @param (Optional) memTypeFound Pointer to a bool that is set to true if a matching memory type has been found
-		*
-		* @return Index of the requested memory type
-		*
-		* @throw Throws an exception if memTypeFound is null and no memory type could be found that supports the requested properties
-		*/
-		inline uint32_t GetMemoryType(const VkPhysicalDeviceMemoryProperties* inMemProperties, uint32_t inTypeBits, VkMemoryPropertyFlags inProperties, VkBool32* outMemTypeFound)
-		{
-			for (uint32_t i = 0; i < inMemProperties->memoryTypeCount; i++)
-			{
-				if ((inTypeBits & 1) == 1)
-				{
-					if ((inMemProperties->memoryTypes[i].propertyFlags & inProperties) == inProperties)
-					{
-						if (outMemTypeFound)
-						{
-							*outMemTypeFound = true;
-						}
-						return i;
-					}
-				}
-				inTypeBits >>= 1;
-			}
-
-			if (outMemTypeFound)
-			{
-				*outMemTypeFound = false;
-				return 0;
-			}
-			else
-			{
-				throw std::runtime_error("Could not find a matching memory type");
-			}
 		}
 
 		inline VkBool32 GetSupportedDepthFormat(VkPhysicalDevice inPhysicalDevice, VkFormat* outDepthFormat)
