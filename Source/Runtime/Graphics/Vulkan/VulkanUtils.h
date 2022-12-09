@@ -33,7 +33,7 @@ namespace VulkanUtils
 			uint32 Format;
 			uint32 Offset;
 
-			void WriteTo(VkVertexInputAttributeDescription& outVertexAttribute)
+			void WriteTo(VkVertexInputAttributeDescription& outVertexAttribute) const
 			{
 				outVertexAttribute.location = Location;
 				outVertexAttribute.binding = Binding;
@@ -48,7 +48,7 @@ namespace VulkanUtils
 			uint32 Stride;
 			uint32 InputRate;
 
-			void WriteTo(VkVertexInputBindingDescription& outVertexBinding)
+			void WriteTo(VkVertexInputBindingDescription& outVertexBinding) const
 			{
 				outVertexBinding.binding = Binding;
 				outVertexBinding.stride = Stride;
@@ -69,7 +69,7 @@ namespace VulkanUtils
 			float DepthBiasConstantFactor;
 			float DepthBiasSlopeFactor;
 
-			void WriteTo(VkPipelineRasterizationStateCreateInfo& outRasterizer)
+			void WriteTo(VkPipelineRasterizationStateCreateInfo& outRasterizer) const
 			{
 				outRasterizer.rasterizerDiscardEnable = RasterizerDiscardEnable;
 				outRasterizer.polygonMode = (VkPolygonMode)PolygonMode;
@@ -89,7 +89,7 @@ namespace VulkanUtils
 			uint32 Attachement;
 			uint32 Layout;
 
-			void WriteTo(VkAttachmentReference& outAttachmentReference)
+			void WriteTo(VkAttachmentReference& outAttachmentReference) const
 			{
 				outAttachmentReference.attachment = Attachement;
 				outAttachmentReference.layout = (VkImageLayout)Layout;
@@ -107,7 +107,7 @@ namespace VulkanUtils
 			uint32 InitialLayout;
 			uint32 FinalLayout;
 
-			void WriteTo(VkAttachmentDescription& outAttachmentDescription)
+			void WriteTo(VkAttachmentDescription& outAttachmentDescription) const
 			{
 				outAttachmentDescription.format = (VkFormat)Format;
 				outAttachmentDescription.samples = (VkSampleCountFlagBits)(Samples);
@@ -127,12 +127,40 @@ namespace VulkanUtils
 			uint32 DescriptorCount;
 			uint32 StageFlags;
 
-			void WriteTo(VkDescriptorSetLayoutBinding& outDescriptorSetLayoutBinding)
+			void WriteTo(VkDescriptorSetLayoutBinding& outDescriptorSetLayoutBinding) const
 			{
 				outDescriptorSetLayoutBinding.binding = Binding;
 				outDescriptorSetLayoutBinding.descriptorType = (VkDescriptorType)DescriptorType;
 				outDescriptorSetLayoutBinding.descriptorCount = DescriptorCount;
 				outDescriptorSetLayoutBinding.stageFlags = StageFlags;
+			}
+		};
+
+		struct WriteDescriptorSet
+		{
+			uint32 DstBinding;
+			VkDescriptorSet DstSet;
+			uint32 DstArrayElement;
+			uint32 DescriptorCount;
+			VkDescriptorType DescriptorType;
+
+			void WriteTo(VkWriteDescriptorSet& outWriteDescriptorSet) const
+			{
+				outWriteDescriptorSet.dstBinding = DstBinding;
+				outWriteDescriptorSet.dstSet = DstSet;
+				outWriteDescriptorSet.dstArrayElement = DstArrayElement;
+				outWriteDescriptorSet.descriptorCount = DescriptorCount;
+				outWriteDescriptorSet.descriptorType = DescriptorType;
+			}
+		};
+
+		struct DescriptorSetLayoutCreateInfo
+		{
+			VkDescriptorSetLayoutCreateFlags Flags;
+
+			void WriteTo(VkDescriptorSetLayoutCreateInfo& outDescriptorSetLayoutCreateInfo) const
+			{
+				outDescriptorSetLayoutCreateInfo.flags = Flags;
 			}
 		};
 
@@ -464,6 +492,22 @@ namespace VulkanUtils
 			BufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 
 			return BufferCreateInfo;
+		}
+
+		inline VkWriteDescriptorSet WriteDescriptorSet()
+		{
+			VkWriteDescriptorSet WriteDescriptorSet = { };
+			WriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+
+			return WriteDescriptorSet;
+		}
+
+		inline VkDescriptorPoolCreateInfo DescriptorPoolCreateInfo()
+		{
+			VkDescriptorPoolCreateInfo DescriptorPoolCreateInfo = { };
+			DescriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+
+			return DescriptorPoolCreateInfo;
 		}
 	}
 }

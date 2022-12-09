@@ -6,7 +6,7 @@
 *	MemoryHeap
 *		|
 *		Allocate Buffer : usable buffer for anything: index, vertex, storage, etc..
-* 
+*
 * A device should have its own memory heap - 1:1 ratio
 * Do NOT create a VulkanBuffer/VulkanDeviceMemory/VulkanDeviceMemoryAllocater yourself
 *	use VulkanMemoryHeap for those creations...
@@ -185,10 +185,10 @@ public:
 public:
 	/**
 	* Allocated memory on the GPU/VulkanDevice
-	* 
+	*
 	* @param inAllocationSize Size of the memory to be allocated
 	* @param inMemoryTypeIndex The memory type to be used, its index
-	* 
+	*
 	* @return uint32 The ID of the Device Memory
 	*/
 	uint32 AllocateMemory(VkDeviceSize inAllocationSize, uint32 inMemoryTypeIndex)
@@ -215,10 +215,10 @@ public:
 #if _DEBUG | _EDITOR
 		VK_CHECK_RESULT(vkAllocateMemory(*Device->GetDeviceHandle(), &inMemoryAllocateInfo, nullptr, &MemoryHandle));
 #else
-		vkAllocateMemory(*Device->GetDeviceHandle(), &inMemoryAllocateInfo, nullptr, &MemoryHandle)
+		vkAllocateMemory(*Device->GetDeviceHandle(), &inMemoryAllocateInfo, nullptr, &MemoryHandle);
 #endif // _DEBUG
 
-			VulkanDeviceMemory* DeviceMemory = new VulkanDeviceMemory(Device);
+		VulkanDeviceMemory* DeviceMemory = new VulkanDeviceMemory(Device);
 		DeviceMemory->MemoryHandle = MemoryHandle;
 		DeviceMemory->Size = inMemoryAllocateInfo.allocationSize;
 		DeviceMemory->MemoryTypeIndex = inMemoryAllocateInfo.memoryTypeIndex;
@@ -276,8 +276,8 @@ private:
 
 public:
 	VulkanBuffer(const VulkanDevice* inDevice, int32 inDeviceMemoryID, uint64 inOffset)
-		: Device(inDevice), BufferHandle(VK_NULL_HANDLE), DeviceMemoryID(inDeviceMemoryID), 
-			Size(0), Alignment(0), Offset(inOffset), DeviceMemory(nullptr) { }
+		: Device(inDevice), BufferHandle(VK_NULL_HANDLE), DeviceMemoryID(inDeviceMemoryID),
+		Size(0), Alignment(0), Offset(inOffset), DeviceMemory(nullptr) { }
 
 	/**
 	* Destroy vulkan buffer upon destruction
@@ -297,10 +297,10 @@ public:
 public:
 	/**
 	* Create Buffer handle using the create info (does extra things if BufferUsageFlags requires it), also creates
-	* 
+	*
 	* @param inAllocater The allocater to use to allocate the device memory
 	* @param inBufferCreateInfo Buffer Handle creation info
-	* 
+	*
 	* @return bool Buffer handle creation is successful
 	*/
 	bool AllocateBuffer(VulkanDeviceMemoryAllocater* const inAllocater, VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
@@ -329,10 +329,10 @@ public:
 
 		return true;
 	}
-	
+
 	/**
 	* Flushes a mapped memory range to make it visible to the device,
-	* refer to VulkanDeviceMemory::FlushMappedMemory() for in depth overview 
+	* refer to VulkanDeviceMemory::FlushMappedMemory() for in depth overview
 	*/
 	bool FlushMappedMemory(VkDeviceSize inSize, VkDeviceSize inOffset)
 	{
@@ -341,16 +341,16 @@ public:
 
 	/*
 	* Invalidate a memory range to make it visible to the host CPU
-	* refer to VulkanDeviceMemory::Invalidate() for in depth overview 
+	* refer to VulkanDeviceMemory::Invalidate() for in depth overview
 	*/
 	bool Invalidate(VkDeviceSize inSize, VkDeviceSize inOffset)
 	{
-		return DeviceMemory->Invalidate(inSize,  Offset + inOffset);
+		return DeviceMemory->Invalidate(inSize, Offset + inOffset);
 	}
 private:
 	/**
-	* Creates a buffer handle using the create info 
-	* 
+	* Creates a buffer handle using the create info
+	*
 	* @param inBufferCreateInfo Buffer handle creation info
 	*/
 	void AllocateBuffer(VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
@@ -364,7 +364,7 @@ private:
 #if _DEBUG
 		VK_CHECK_RESULT(vkCreateBuffer(*Device->GetDeviceHandle(), &BufferCreateInfo, nullptr, &BufferHandle));
 #else
-		vkCreateBuffer(*Device->GetDeviceHandle(), &BufferCreateInfo, nullptr, &BufferHandle)
+		vkCreateBuffer(*Device->GetDeviceHandle(), &BufferCreateInfo, nullptr, &BufferHandle);
 #endif
 	}
 
@@ -388,6 +388,11 @@ private:
 #endif
 	}
 public:
+	uint64 GetBufferSize() const
+	{
+		return Size;
+	}
+
 	const VkBuffer* GetBufferHandle() const
 	{
 		return &BufferHandle;
@@ -446,8 +451,8 @@ private:
 
 public:
 	/**
-	* Creates the buffer/heap 
-	* 
+	* Creates the buffer/heap
+	*
 	* @param inHeapSizeInMebibytes Size of the heap in mebibtyes
 	*/
 	VulkanMemoryHeap(VulkanDevice* inDevice, uint32 inHeapSizeInMebibytes)
@@ -550,10 +555,10 @@ private:
 
 	/**
 	* Allocates a buffer, Alignment of memory offset is done for you
-	* 
-	* @param inBufferCreateInfo information on how to create the buffer 
-	* 
-	* @return VulkanBuffer* The buffer that was created 
+	*
+	* @param inBufferCreateInfo information on how to create the buffer
+	*
+	* @return VulkanBuffer* The buffer that was created
 	*/
 	VulkanBuffer* AllocateBuffer(VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
 	{
