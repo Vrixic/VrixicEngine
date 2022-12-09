@@ -753,44 +753,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 	std::wstring T = L"Debug Log";
 	SetConsoleTitle(T.c_str());
 
-	/**
-	* ----------------------------------------------------------------
-	* TEST 
-	* 
-	* TEST
-	* ----------------------------------------------------------------
-	*/
-
-	VulkanMemoryHeap* MemoryHeap = new VulkanMemoryHeap(VTemp->Device, 2048);
-	
-	VulkanUtils::Descriptions::VulkanBufferCreateInfo BufferCreateInfo = { };
-	BufferCreateInfo.DeviceSize = 50;
-	BufferCreateInfo.BufferUsageFlags = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-	BufferCreateInfo.MemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-	VulkanBuffer* IndexBuffer = MemoryHeap->AllocateBuffer(EBufferType::Index, BufferCreateInfo);
-	void* IndexBufferMappedMemory = IndexBuffer->GetMappedPointer();
-
-	BufferCreateInfo.DeviceSize = 1200;
-	BufferCreateInfo.BufferUsageFlags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	VulkanBuffer* VertexBuffer = MemoryHeap->AllocateBuffer(EBufferType::Vertex, BufferCreateInfo);
-
-	BufferCreateInfo.DeviceSize = 100000;
-	BufferCreateInfo.BufferUsageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-	VulkanBuffer* StorageBuffer = MemoryHeap->AllocateBuffer(EBufferType::Storage, BufferCreateInfo);
-
-	delete MemoryHeap;
-
-	VkPhysicalDeviceLimits Limits = VTemp->Device->GetPhysicalDeviceProperties()->limits;
-	std::cout << "\n\n\n\n" << Limits.nonCoherentAtomSize << "\n\n\n\n";
-	/**
-	* ----------------------------------------------------------------
-	* TEST
-	*
-	* TEST
-	* ----------------------------------------------------------------
-	*/
-
 	MSG Message;
 	while (GetMessage(&Message, NULL, 0, 0))
 	{
