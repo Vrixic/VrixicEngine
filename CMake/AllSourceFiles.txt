@@ -1,5 +1,8 @@
 D:/dev/repo/VulkanRenderer/Engine/Source/Misc/Defines/GenericDefines.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/EntryPoint/EntryPoint.cpp
+D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/File/FileHelper.h
+D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/File/FileManager.h
+D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/File/FileReader.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Graphics/Vulkan/VulkanBuffer.cpp
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Graphics/Vulkan/VulkanBuffer.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Graphics/Vulkan/VulkanCommandBuffer.cpp

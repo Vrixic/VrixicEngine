@@ -45,6 +45,15 @@
     <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Misc\Defines\GenericDefines.h">
       <Filter>Source\Misc\Defines</Filter>
     </ClInclude>
+    <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\File\FileHelper.h">
+      <Filter>Source\Runtime\File</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\File\FileManager.h">
+      <Filter>Source\Runtime\File</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\File\FileReader.h">
+      <Filter>Source\Runtime\File</Filter>
+    </ClInclude>
     <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Graphics\Vulkan\VulkanBuffer.h">
       <Filter>Source\Runtime\Graphics\Vulkan</Filter>
     </ClInclude>
@@ -106,6 +115,9 @@
     </Filter>
     <Filter Include="Source\Runtime\EntryPoint">
       <UniqueIdentifier>{5E91693F-9F2A-3CF1-B08C-5AE252DE02F6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Runtime\File">
+      <UniqueIdentifier>{4530E59D-911B-3DEA-8105-A45E6E854DC0}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Runtime\Graphics">
       <UniqueIdentifier>{E43575CE-29A1-348B-975A-2BBF929139C0}</UniqueIdentifier>

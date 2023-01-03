@@ -307,6 +307,9 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   <ItemGroup>
     <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Misc\Defines\GenericDefines.h" />
     <ClCompile Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\EntryPoint\EntryPoint.cpp" />
+    <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\File\FileHelper.h" />
+    <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\File\FileManager.h" />
+    <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\File\FileReader.h" />
     <ClCompile Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Graphics\Vulkan\VulkanBuffer.cpp" />
     <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Graphics\Vulkan\VulkanBuffer.h" />
     <ClCompile Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Graphics\Vulkan\VulkanCommandBuffer.cpp" />

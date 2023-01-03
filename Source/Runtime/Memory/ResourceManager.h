@@ -29,7 +29,7 @@ public:
 	/**
 	* Creates a shader resource from specified shader code
 	*
-	* @param inFilePath - file path to the shader location
+	* @param inShaderStr - shader code to be compiled and used
 	* @param inShaderType - type of shader to create: vert, frag, etc...
 	*
 	* @return uint32 - the key to where the shader handle is located
