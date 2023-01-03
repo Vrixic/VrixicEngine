@@ -2,6 +2,12 @@
 #include "VulkanDevice.h"
 #include "Runtime/Memory/ResourceManager.h"
 
+enum class EShaderType
+{
+	Vertex,
+	Fragment
+};
+
 /*
 * Representation of a Shader in Vulkan
 * Do not manually create these.. Use VulkanShaderFactory!
@@ -25,6 +31,12 @@ public:
 
 	VulkanShader(const VulkanShader& other) = delete;
 	VulkanShader operator=(const VulkanShader& other) = delete;
+
+public:
+	uint32 GetShaderKey() const
+	{
+		return ShaderKey;
+	}
 };
 
 /* *
@@ -75,5 +87,19 @@ public:
 	* 
 	* @return VulkanVertexShader* - handle to the vertex shader created
 	*/
-	VulkanVertexShader* CreateVertexShader(VulkanDevice* inDevice, const char* inShaderPath);
+	VulkanVertexShader* CreateVertexShaderFromPath(VulkanDevice* inDevice, const char* inShaderPath);
+
+	/**
+	* @param inShaderStr - shader code 
+	*
+	* @return VulkanVertexShader* - handle to the vertex shader created
+	*/
+	VulkanVertexShader* CreateVertexShaderFromString(VulkanDevice* inDevice, const char* inShaderStr);
+
+	/**
+	* @param inShaderStr - shader code
+	*
+	* @return VulkanFragmentShader* - handle to the fragment shader created
+	*/
+	VulkanFragmentShader* CreateFragmentShaderFromString(VulkanDevice* inDevice, const char* inShaderStr);
 };

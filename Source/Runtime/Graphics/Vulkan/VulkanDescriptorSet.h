@@ -7,6 +7,8 @@
 class VulkanDescriptorSetsLayout
 {
 private:
+	friend class VulkanPipelineLayout;
+
 	VulkanDevice* Device;
 	std::vector<VkDescriptorSetLayout> DescriptorSetLayoutHandles;
 

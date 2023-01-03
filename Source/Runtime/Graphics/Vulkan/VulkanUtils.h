@@ -509,6 +509,102 @@ namespace VulkanUtils
 
 			return DescriptorPoolCreateInfo;
 		}
+
+		inline VkPipelineLayoutCreateInfo PipelineLayoutCreateInfo()
+		{
+			VkPipelineLayoutCreateInfo PipelineLayoutCreateInfo = { };
+			PipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+
+			return PipelineLayoutCreateInfo;
+		}
+
+		inline VkGraphicsPipelineCreateInfo GraphicsPipelineCreateInfo()
+		{
+			VkGraphicsPipelineCreateInfo GraphicsPipelineCreateInfo = { };
+			GraphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+
+			return GraphicsPipelineCreateInfo;
+		}
+
+		inline VkPipelineCacheCreateInfo PipelineCacheCreateInfo()
+		{
+			VkPipelineCacheCreateInfo PipelineCacheCreateInfo = { };
+			PipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+
+			return PipelineCacheCreateInfo;
+		}
+
+		inline VkPipelineShaderStageCreateInfo PipelineShaderStageCreateInfo()
+		{
+			VkPipelineShaderStageCreateInfo PipelineShaderStageCreateInfo = { };
+			PipelineShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+
+			return PipelineShaderStageCreateInfo;
+		}
+
+		inline VkPipelineInputAssemblyStateCreateInfo PipelineInputAssemblyStateCreateInfo()
+		{
+			VkPipelineInputAssemblyStateCreateInfo PipelineInputAssemblyStateCreateInfo = { };
+			PipelineInputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+
+			return PipelineInputAssemblyStateCreateInfo;
+		}
+
+		inline VkPipelineVertexInputStateCreateInfo PipelineVertexInputStateCreateInfo()
+		{
+			VkPipelineVertexInputStateCreateInfo PipelineVertexInputStateCreateInfo = { };
+			PipelineVertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
+			return PipelineVertexInputStateCreateInfo;
+		}
+
+		inline VkPipelineViewportStateCreateInfo PipelineViewportStateCreateInfo()
+		{
+			VkPipelineViewportStateCreateInfo PipelineViewportStateCreateInfo = { };
+			PipelineViewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+
+			return PipelineViewportStateCreateInfo;
+		}
+
+		inline VkPipelineRasterizationStateCreateInfo PipelineRasterizationStateCreateInfo()
+		{
+			VkPipelineRasterizationStateCreateInfo PipelineRasterizationStateCreateInfo = { };
+			PipelineRasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+
+			return PipelineRasterizationStateCreateInfo;
+		}
+
+		inline VkPipelineMultisampleStateCreateInfo PipelineMultisampleStateCreateInfo()
+		{
+			VkPipelineMultisampleStateCreateInfo PipelineMultisampleStateCreateInfo = { };
+			PipelineMultisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+
+			return PipelineMultisampleStateCreateInfo;
+		}
+
+		inline VkPipelineDepthStencilStateCreateInfo PipelineDepthStencilStateCreateInfo()
+		{
+			VkPipelineDepthStencilStateCreateInfo PipelineDepthStencilStateCreateInfo = { };
+			PipelineDepthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+
+			return PipelineDepthStencilStateCreateInfo;
+		}
+
+		inline VkPipelineColorBlendStateCreateInfo PipelineColorBlendStateCreateInfo()
+		{
+			VkPipelineColorBlendStateCreateInfo PipelineColorBlendStateCreateInfo = { };
+			PipelineColorBlendStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+
+			return PipelineColorBlendStateCreateInfo;
+		}
+
+		inline VkPipelineDynamicStateCreateInfo PipelineDynamicStateCreateInfo()
+		{
+			VkPipelineDynamicStateCreateInfo PipelineDynamicStateCreateInfo = { };
+			PipelineDynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+
+			return PipelineDynamicStateCreateInfo;
+		}
 	}
 }
 

@@ -33,10 +33,26 @@ VulkanShaderFactory::VulkanShaderFactory(ResourceManager* inResourceManagerHandl
 
 VulkanShaderFactory::~VulkanShaderFactory() { }
 
-VulkanVertexShader* VulkanShaderFactory::CreateVertexShader(VulkanDevice* inDevice, const char* inShaderPath)
+VulkanVertexShader* VulkanShaderFactory::CreateVertexShaderFromPath(VulkanDevice* inDevice, const char* inShaderPath)
 {
 	VulkanVertexShader* VertexShader = new VulkanVertexShader(inDevice);
-	VertexShader->ShaderKey = ResourceManagerHandle->CreateShaderResource(inShaderPath);
+	VertexShader->ShaderKey = ResourceManagerHandle->CreateShaderResourceFromPath(inShaderPath, (uint32)EShaderType::Vertex);
+
+	return VertexShader;
+}
+
+VulkanVertexShader* VulkanShaderFactory::CreateVertexShaderFromString(VulkanDevice* inDevice, const char* inShaderStr)
+{
+	VulkanVertexShader* VertexShader = new VulkanVertexShader(inDevice);
+	VertexShader->ShaderKey = ResourceManagerHandle->CreateShaderResourceFromString(inShaderStr, (uint32)EShaderType::Vertex);
+
+	return VertexShader;
+}
+
+VulkanFragmentShader* VulkanShaderFactory::CreateFragmentShaderFromString(VulkanDevice* inDevice, const char* inShaderStr)
+{
+	VulkanFragmentShader* VertexShader = new VulkanFragmentShader(inDevice);
+	VertexShader->ShaderKey = ResourceManagerHandle->CreateShaderResourceFromString(inShaderStr, (uint32)EShaderType::Fragment);
 
 	return VertexShader;
 }

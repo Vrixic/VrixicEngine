@@ -9,11 +9,17 @@
 #include "Runtime/Graphics/Vulkan/VulkanRenderPass.h"
 #include "Runtime/Graphics/Vulkan/VulkanFrameBuffer.h"
 #include "Runtime/Graphics/Vulkan/VulkanTextureView.h"
+#include "Runtime/Graphics/Vulkan/VulkanBuffer.h"
 
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>
 #include <Runtime/Graphics/Vulkan/VulkanBuffer.h>
+#include <Runtime/Graphics/Vulkan/VulkanShader.h>
+#include <Runtime/Graphics/Vulkan/VulkanPipeline.h>
+#include <Runtime/Memory/Vulkan/VulkanResourceManager.h>
+
+#define RENDER_DOC 1
 
 typedef uint32_t uint32;
 
@@ -28,6 +34,9 @@ std::string Name = "Vrixic";
 class VulkanAPI;
 
 VulkanAPI* VTemp;
+
+const char VertexShaderStr[] = "float4 main(float3 inVertex : POSITION) : SV_POSITION { return float4(inVertex, 1.0f); }";
+const char PixelShaderStr[] = "float4 main(float4 inPosition : SV_POSITION) : SV_TARGET { return float4(1.0f, 0.0f, 0.0f, 1.0f); }";
 
 class VulkanAPI
 {
@@ -86,6 +95,39 @@ public:
 	HINSTANCE WindowInstance;
 	HWND Window;
 
+	uint32 Indices[3] =
+	{
+		0, 1, 2
+	};
+
+	struct Vertex
+	{
+		float Position[3];
+	};
+
+	Vertex Vertices[3]
+	{
+		{0.0f, 0.75f, 0.0f}, {0.75f, -0.75f, 0.0f}, {-0.75f, -0.75f, 0.0f}
+	};
+
+	VulkanMemoryHeap* MainVulkanMemoryHeap;
+
+	VulkanBuffer* IndexBuffer;
+	VulkanBuffer* VertexBuffer;
+
+	// Create the pipeline layout, since we have no push constants nor descriptor sets, we just want an empty layout
+	VulkanPipelineLayout* PipelineLayout;
+
+	// Create the graphics pipeline 
+	VulkanGraphicsPipeline* GraphicsPipeline;
+
+	IResourceManager* MainVulkanResourceManager;
+	ResourceManager* GraphicsResourceManager;
+	VulkanShaderFactory* ShaderFactory;
+
+	VulkanVertexShader* VertShader;
+	VulkanFragmentShader* PixelShader;
+
 public:
 	VulkanAPI(uint32_t width, uint32_t height, HINSTANCE& windowInstance, HWND& window)
 	{
@@ -129,6 +171,17 @@ public:
 
 		vkDestroySemaphore(*Device->GetDeviceHandle(), PresentationComplete, nullptr);
 		vkDestroySemaphore(*Device->GetDeviceHandle(), RenderComplete, nullptr);
+
+		delete MainVulkanMemoryHeap;
+
+		delete PixelShader;
+		delete VertShader;
+		delete ShaderFactory;
+		delete GraphicsResourceManager;
+		delete MainVulkanResourceManager;
+
+		delete PipelineLayout;
+		delete GraphicsPipeline;
 
 		delete Surface;
 		delete Device;
@@ -319,7 +372,174 @@ public:
 			std::cout << "successfully created framebuffers...\n";
 		}
 
+		PrepareVulkanPipeline();
+
+		// allocate 1 gibibytes of memory -> 1024 mebibytes = 1 gib
+		MainVulkanMemoryHeap = new VulkanMemoryHeap(Device, 1024);
+
+		VulkanUtils::Descriptions::VulkanBufferCreateInfo BufferCreateInfo = { };
+		BufferCreateInfo.BufferUsageFlags = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		BufferCreateInfo.DeviceSize = sizeof(Indices);
+		BufferCreateInfo.MemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		IndexBuffer = MainVulkanMemoryHeap->AllocateBuffer(EBufferType::Index, BufferCreateInfo);
+		
+		BufferCreateInfo.BufferUsageFlags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		BufferCreateInfo.DeviceSize = sizeof(Vertices);
+		VertexBuffer = MainVulkanMemoryHeap->AllocateBuffer(EBufferType::Vertex, BufferCreateInfo);
+
+		memcpy(IndexBuffer->GetMappedPointer(), Indices, sizeof(Indices));
+		memcpy(VertexBuffer->GetMappedPointer(), Vertices, sizeof(Vertices));
+
 		return true;
+	}
+
+	void PrepareVulkanPipeline()
+	{
+		// Create the pipeline layout, since we have no push constants nor descriptor sets, we just want an empty layout
+		PipelineLayout = new VulkanPipelineLayout(VTemp->Device);
+		PipelineLayout->CreateEmpty();
+
+		// Create the graphics pipeline 
+		GraphicsPipeline = new VulkanGraphicsPipeline(VTemp->Device);
+		VkGraphicsPipelineCreateInfo GraphicsPipelineCreateInfo = VulkanUtils::Initializers::GraphicsPipelineCreateInfo();
+
+		MainVulkanResourceManager = new VulkanResourceManager(VTemp->Device);
+		GraphicsResourceManager = new ResourceManager(MainVulkanResourceManager);
+		ShaderFactory = new VulkanShaderFactory(GraphicsResourceManager);
+
+		VertShader = ShaderFactory->CreateVertexShaderFromString(VTemp->Device, VertexShaderStr);
+		PixelShader = ShaderFactory->CreateFragmentShaderFromString(VTemp->Device, PixelShaderStr);
+
+		{
+			VkPipelineShaderStageCreateInfo VertexStageCreateInfo = VulkanUtils::Initializers::PipelineShaderStageCreateInfo();
+			VertexStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+			VertexStageCreateInfo.module = *(VkShaderModule*)GraphicsResourceManager->GetShaderModule(VertShader->GetShaderKey());
+			VertexStageCreateInfo.pName = "main";
+
+			VkPipelineShaderStageCreateInfo PixelStageCreateInfo = VulkanUtils::Initializers::PipelineShaderStageCreateInfo();
+			PixelStageCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+			PixelStageCreateInfo.module = *(VkShaderModule*)GraphicsResourceManager->GetShaderModule(PixelShader->GetShaderKey());;
+			PixelStageCreateInfo.pName = "main";
+
+			VkPipelineShaderStageCreateInfo ShaderStages[2] = { VertexStageCreateInfo, PixelStageCreateInfo };
+
+			GraphicsPipelineCreateInfo.stageCount = 2;
+			GraphicsPipelineCreateInfo.pStages = ShaderStages;
+
+			VkPipelineInputAssemblyStateCreateInfo InputAssemblyStateCreateInfo = VulkanUtils::Initializers::PipelineInputAssemblyStateCreateInfo();
+			InputAssemblyStateCreateInfo.primitiveRestartEnable = false;
+			InputAssemblyStateCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+			GraphicsPipelineCreateInfo.pInputAssemblyState = &InputAssemblyStateCreateInfo;
+
+
+			VulkanUtils::Descriptions::VertexBinding VertBinding = { };
+			VertBinding.Binding = 0;
+			VertBinding.Stride = sizeof(float) * 3;
+			VertBinding.InputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+			VulkanUtils::Descriptions::VertexAttribute VertAttribute = { };
+			VertAttribute.Binding = 0;
+			VertAttribute.Format = VK_FORMAT_R32G32B32_SFLOAT;
+			VertAttribute.Location = 0;
+			VertAttribute.Offset = 0;
+
+			VkVertexInputBindingDescription VertexInputBindingDescription = { };
+			VertBinding.WriteTo(VertexInputBindingDescription);
+
+			VkVertexInputAttributeDescription VertexInputAttributeDescription = { };
+			VertAttribute.WriteTo(VertexInputAttributeDescription);
+
+			VkPipelineVertexInputStateCreateInfo VertexInputStateCreateInfo = VulkanUtils::Initializers::PipelineVertexInputStateCreateInfo();
+			VertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
+			VertexInputStateCreateInfo.vertexAttributeDescriptionCount = 1;
+			VertexInputStateCreateInfo.pVertexBindingDescriptions = &VertexInputBindingDescription;
+			VertexInputStateCreateInfo.pVertexAttributeDescriptions = &VertexInputAttributeDescription;
+
+			GraphicsPipelineCreateInfo.pVertexInputState = &VertexInputStateCreateInfo;
+
+			VkViewport Viewport = { 0, 0, VTemp->Width, VTemp->Height, 0.0f, 1.0f };
+			VkRect2D Scissor = { {0, 0}, { VTemp->Width, VTemp->Height} };
+
+			VkPipelineViewportStateCreateInfo PipelineViewportStateCreateInfo = VulkanUtils::Initializers::PipelineViewportStateCreateInfo();
+			PipelineViewportStateCreateInfo.viewportCount = 1;
+			PipelineViewportStateCreateInfo.scissorCount = 1;
+			PipelineViewportStateCreateInfo.pViewports = &Viewport;
+			PipelineViewportStateCreateInfo.pScissors = &Scissor;
+
+			GraphicsPipelineCreateInfo.pViewportState = &PipelineViewportStateCreateInfo;
+
+			VkPipelineRasterizationStateCreateInfo RasterizationStateCreateInfo = VulkanUtils::Initializers::PipelineRasterizationStateCreateInfo();
+			RasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
+			RasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+			RasterizationStateCreateInfo.lineWidth = 1.0f;
+			RasterizationStateCreateInfo.cullMode = VK_CULL_MODE_FRONT_BIT;
+			RasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+			RasterizationStateCreateInfo.depthClampEnable = VK_FALSE;
+			RasterizationStateCreateInfo.depthBiasEnable = VK_FALSE;
+			RasterizationStateCreateInfo.depthBiasClamp = 0.0f;
+			RasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f;
+			RasterizationStateCreateInfo.depthBiasSlopeFactor = 0.0f;
+
+			GraphicsPipelineCreateInfo.pRasterizationState = &RasterizationStateCreateInfo;
+
+			VkPipelineMultisampleStateCreateInfo MultisampleStateCreateInfo = VulkanUtils::Initializers::PipelineMultisampleStateCreateInfo();
+			MultisampleStateCreateInfo.sampleShadingEnable = VK_FALSE;
+			MultisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+			MultisampleStateCreateInfo.minSampleShading = 1.0f;
+			MultisampleStateCreateInfo.pSampleMask = VK_NULL_HANDLE;
+			MultisampleStateCreateInfo.alphaToCoverageEnable = VK_FALSE;
+			MultisampleStateCreateInfo.alphaToOneEnable = VK_FALSE;
+
+			GraphicsPipelineCreateInfo.pMultisampleState = &MultisampleStateCreateInfo;
+
+			VkPipelineDepthStencilStateCreateInfo DepthStencilStateCreateInfo = VulkanUtils::Initializers::PipelineDepthStencilStateCreateInfo();
+			DepthStencilStateCreateInfo.depthTestEnable = VK_TRUE;
+			DepthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
+			DepthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+			DepthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
+			DepthStencilStateCreateInfo.minDepthBounds = 0.0f;
+			DepthStencilStateCreateInfo.maxDepthBounds = 1.0f;
+			DepthStencilStateCreateInfo.stencilTestEnable = VK_FALSE;
+
+			GraphicsPipelineCreateInfo.pDepthStencilState = &DepthStencilStateCreateInfo;
+
+			VkPipelineColorBlendAttachmentState ColorBlendAttachmentState = { };
+			ColorBlendAttachmentState.colorWriteMask = 0xF;
+			ColorBlendAttachmentState.blendEnable = VK_FALSE;
+			ColorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_COLOR;
+			ColorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_DST_COLOR;
+			ColorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+			ColorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+			ColorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_DST_ALPHA;
+			ColorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+
+			VkPipelineColorBlendStateCreateInfo ColorBlendStateCreateInfo = VulkanUtils::Initializers::PipelineColorBlendStateCreateInfo();
+			ColorBlendStateCreateInfo.logicOpEnable = VK_FALSE;
+			ColorBlendStateCreateInfo.logicOp = VK_LOGIC_OP_COPY;
+			ColorBlendStateCreateInfo.attachmentCount = 1;
+			ColorBlendStateCreateInfo.pAttachments = &ColorBlendAttachmentState;
+			ColorBlendStateCreateInfo.blendConstants[0] = 0.0f;
+			ColorBlendStateCreateInfo.blendConstants[1] = 0.0f;
+			ColorBlendStateCreateInfo.blendConstants[2] = 0.0f;
+			ColorBlendStateCreateInfo.blendConstants[3] = 0.0f;
+
+			GraphicsPipelineCreateInfo.pColorBlendState = &ColorBlendStateCreateInfo;
+
+			VkDynamicState DynamicStates[2] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+
+			VkPipelineDynamicStateCreateInfo DynamicStateCreateInfo = VulkanUtils::Initializers::PipelineDynamicStateCreateInfo();
+			DynamicStateCreateInfo.dynamicStateCount = 2;
+			DynamicStateCreateInfo.pDynamicStates = DynamicStates;
+
+			GraphicsPipelineCreateInfo.pDynamicState = &DynamicStateCreateInfo;
+
+			GraphicsPipelineCreateInfo.layout = *PipelineLayout->GetPipelineLayoutHandle();
+			GraphicsPipelineCreateInfo.renderPass = *VTemp->RenderPass->GetRenderPassHandle();
+			GraphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+			GraphicsPipeline->Create(GraphicsPipelineCreateInfo);
+		}
 	}
 
 	void BuildCommandBuffers()
@@ -351,6 +571,22 @@ public:
 			scissor.offset.y = 0;
 			vkCmdSetScissor(*CommandBuffer->GetCommandBufferHandle(), 0, 1, &scissor);
 
+			VkDeviceSize offsets[1] = { 0 };
+
+			// Bind the rendering pipeline
+			// The pipeline (state object) contains all states of the rendering pipeline, binding it will set all the states specified at pipeline creation time
+			vkCmdBindPipeline(*CommandBuffer->GetCommandBufferHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, *GraphicsPipeline->GetPipelineHandle());
+
+			// Bind Vertex Buffer
+			vkCmdBindVertexBuffers(*CommandBuffer->GetCommandBufferHandle(),
+				0, 1, VertexBuffer->GetBufferHandle(), offsets);
+
+			vkCmdBindIndexBuffer(*CommandBuffer->GetCommandBufferHandle(),
+				*IndexBuffer->GetBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
+
+			vkCmdDrawIndexed(*CommandBuffer->GetCommandBufferHandle(),
+				3, 1, 0, 0, 1);
+
 			// Bind descriptor sets describing shader binding points
 			//vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
@@ -359,7 +595,6 @@ public:
 			//vkCmdBindPipeline(DrawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
 			// Bind triangle vertex buffer (contains position and colors)
-			VkDeviceSize offsets[1] = { 0 };
 			//vkCmdBindVertexBuffers(drawCmdBuffers[i], 0, 1, &vertices.buffer, offsets);
 
 			// Bind triangle index buffer
@@ -470,7 +705,7 @@ public:
 		VkApplicationInfo ApplicationInfo = VulkanUtils::Initializers::ApplicationInfo();
 		ApplicationInfo.pApplicationName = "App Name";
 		ApplicationInfo.pEngineName = "Engine Name";
-		ApplicationInfo.apiVersion = VK_API_VERSION_1_0;
+		ApplicationInfo.apiVersion = VK_API_VERSION_1_3;
 
 		std::vector<const char*> InstanceExtensions = { VK_KHR_SURFACE_EXTENSION_NAME };
 		std::vector<const char*> InstanceLayers = { };
@@ -722,11 +957,18 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 		""
 	};	*/
 
+	
+#if RENDER_DOC
+	const uint32 InstanceLayerCount = 2;
+#else
 	const uint32 InstanceLayerCount = 1;
+#endif
 	const char* InstanceLayers[InstanceLayerCount]
 	{
 		"VK_LAYER_KHRONOS_validation",
-		//"VK_LAYER_RENDERDOC_Capture"
+#if RENDER_DOC
+		"VK_LAYER_RENDERDOC_Capture"
+#endif
 	};
 
 	const uint32 DeviceExtensionsCount = 2;

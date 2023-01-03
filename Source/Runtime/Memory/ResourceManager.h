@@ -17,13 +17,24 @@ public:
 
 public:
 	/**
-	* Creates a shader resource 
+	* Creates a shader resource from specified path
 	* 
 	* @param inFilePath - file path to the shader location
+	* @param inShaderType - type of shader to create: vert, frag, etc...
 	* 
 	* @return uint32 - the key to where the shader handle is located
 	*/
-	uint32 CreateShaderResource(const VString& inFilePath);
+	uint32 CreateShaderResourceFromPath(const VString& inFilePath, uint32 inShaderType);
+
+	/**
+	* Creates a shader resource from specified shader code
+	*
+	* @param inFilePath - file path to the shader location
+	* @param inShaderType - type of shader to create: vert, frag, etc...
+	*
+	* @return uint32 - the key to where the shader handle is located
+	*/
+	uint32 CreateShaderResourceFromString(const VString& inShaderStr, uint32 inShaderType);
 
 	/**
 	* Gets the shader module

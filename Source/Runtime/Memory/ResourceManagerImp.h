@@ -9,7 +9,8 @@ public:
 	virtual ~IResourceManager() { };
 
 public:
-	virtual uint32 CreateShaderResource(const VString& inFilePath) = 0;
+	virtual uint32 CreateShaderResourceFromPath(const VString& inFilePath, uint32 inShaderType) = 0;
+	virtual uint32 CreateShaderResourceFromString(const VString& inShaderStr, uint32 inShaderType) = 0;
 
 	virtual const void* GetShaderModule(uint32 inShaderKey) const = 0;
 

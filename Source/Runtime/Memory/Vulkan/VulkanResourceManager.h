@@ -24,7 +24,9 @@ public:
 	/**
 	* @TODO: Create Better Functions to not restrict how shaders should be set up
 	*/
-	virtual uint32 CreateShaderResource(const VString& inFilePath) override;
+	virtual uint32 CreateShaderResourceFromPath(const VString& inFilePath, uint32 inShaderType) override;
+
+	virtual uint32 CreateShaderResourceFromString(const VString& inShaderCode, uint32 inShaderType) override;
 
 	virtual const void* GetShaderModule(uint32 inShaderKey) const override;
 
@@ -34,6 +36,9 @@ private:
 	/**
 	* Loads a shader module from file path
 	*/
-	VkResult LoadShaderModule(const char* inShaderPath, const char* inInputFileName, const char* inEntryPointName,
-		shaderc_shader_kind inShaderKind, const shaderc_compiler_t& inCompiler, const shaderc_compile_options_t& inOptions);
+	VkResult LoadShaderModuleFromPath(const VString* inShaderPath, uint32 inShaderKind,
+		const shaderc_compiler_t& inCompiler, const shaderc_compile_options_t& inOptions);
+
+	VkResult LoadShaderModuleFromString(const VString* inShaderCode, uint32 inShaderKind,
+		const shaderc_compiler_t& inCompiler, const shaderc_compile_options_t& inOptions);
 };

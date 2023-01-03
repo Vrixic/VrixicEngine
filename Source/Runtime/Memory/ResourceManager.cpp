@@ -5,9 +5,14 @@ ResourceManager::ResourceManager(IResourceManager* inResourceManagerImp)
 
 ResourceManager::~ResourceManager() { }
 
-uint32 ResourceManager::CreateShaderResource(const VString& inFilePath)
+uint32 ResourceManager::CreateShaderResourceFromPath(const VString& inFilePath, uint32 inShaderType)
 {
-	return ResourceManagerImp->CreateShaderResource(inFilePath);
+	return ResourceManagerImp->CreateShaderResourceFromPath(inFilePath, inShaderType);
+}
+
+uint32 ResourceManager::CreateShaderResourceFromString(const VString& inShaderStr, uint32 inShaderType)
+{
+	return ResourceManagerImp->CreateShaderResourceFromString(inShaderStr, inShaderType);
 }
 
 const void* ResourceManager::GetShaderModule(uint32 inShaderKey) const

@@ -398,9 +398,16 @@ public:
 		return &BufferHandle;
 	}
 
+	/**
+	* Returns the mapped pointer to the data 
+	* The actual pointer gets offseted to reach buffer data 
+	*/
 	void* GetMappedPointer() const
 	{
-		return DeviceMemory->GetMappedPointer();
+		char* PointerOffseter = (char*)DeviceMemory->GetMappedPointer();
+		PointerOffseter += Offset;
+
+		return PointerOffseter;
 	}
 
 private:

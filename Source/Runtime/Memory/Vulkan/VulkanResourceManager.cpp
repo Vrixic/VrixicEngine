@@ -16,19 +16,36 @@ VulkanResourceManager::~VulkanResourceManager()
 	}
 }
 
-uint32 VulkanResourceManager::CreateShaderResource(const VString& inFilePath)
+uint32 VulkanResourceManager::CreateShaderResourceFromPath(const VString& inFilePath, uint32 inShaderType)
 {
 	// Intialize runtime shader compiler HLSL -> SPIRV
 	shaderc_compiler_t compiler = shaderc_compiler_initialize();
 	shaderc_compile_options_t options = shaderc_compile_options_initialize();
 	shaderc_compile_options_set_source_language(options, shaderc_source_language_hlsl);
 	// TODO: Part 3C
-	shaderc_compile_options_set_invert_y(options, false);
+	shaderc_compile_options_set_invert_y(options, true);
 #ifndef NDEBUG
 	shaderc_compile_options_set_generate_debug_info(options);
 #endif
 
-	VK_CHECK_RESULT(LoadShaderModule(inFilePath.c_str(), "main.vert", "main", shaderc_vertex_shader, compiler, options));
+	VK_CHECK_RESULT(LoadShaderModuleFromPath(&inFilePath, inShaderType, compiler, options));
+
+	return ShaderModules.size() - 1;
+}
+
+uint32 VulkanResourceManager::CreateShaderResourceFromString(const VString& inShaderCode, uint32 inShaderType)
+{
+	// Intialize runtime shader compiler HLSL -> SPIRV
+	shaderc_compiler_t compiler = shaderc_compiler_initialize();
+	shaderc_compile_options_t options = shaderc_compile_options_initialize();
+	shaderc_compile_options_set_source_language(options, shaderc_source_language_hlsl);
+	// TODO: Part 3C
+	shaderc_compile_options_set_invert_y(options, true);
+#ifndef NDEBUG
+	shaderc_compile_options_set_generate_debug_info(options);
+#endif
+
+	VK_CHECK_RESULT(LoadShaderModuleFromString(&inShaderCode, inShaderType, compiler, options));
 
 	return ShaderModules.size() - 1;
 }
@@ -48,10 +65,10 @@ void VulkanResourceManager::FreeAllMemory(VulkanDevice* inDevice) const
 	}
 }
 
-VkResult VulkanResourceManager::LoadShaderModule(const char* inShaderPath, const char* inInputFileName, const char* inEntryPointName,
-	shaderc_shader_kind inShaderKind, const shaderc_compiler_t& inCompiler, const shaderc_compile_options_t& inOptions)
+VkResult VulkanResourceManager::LoadShaderModuleFromPath(const VString* inShaderPath, uint32 inShaderKind,
+	const shaderc_compiler_t& inCompiler, const shaderc_compile_options_t& inOptions)
 {
-	std::ifstream FileHandle(inShaderPath);
+	std::ifstream FileHandle(inShaderPath->c_str());
 	if (!FileHandle.is_open())
 	{
 #if _DEBUG
@@ -66,11 +83,58 @@ VkResult VulkanResourceManager::LoadShaderModule(const char* inShaderPath, const
 	FileHandle.seekg(0);
 	FileHandle.read(&ShaderSource[0], Size);
 
+	shaderc_shader_kind ShaderKind = { };
+	VString InputFileName = "";
+	VString EntryPointName = "";
+	switch (inShaderKind)
+	{
+	case 0:
+		ShaderKind = shaderc_vertex_shader;
+		InputFileName = "main.vert";
+		EntryPointName = "main";
+		break;
+
+	case 1:
+		ShaderKind = shaderc_fragment_shader;
+		InputFileName = "main.frag";
+		EntryPointName = "main";
+		break;
+	default:
+		break;
+	}
+
+	std::string ShaderSourceStr = std::string(ShaderSource);
+	return LoadShaderModuleFromString(&ShaderSourceStr, inShaderKind, inCompiler, inOptions);
+}
+
+VkResult VulkanResourceManager::LoadShaderModuleFromString(const VString* inShaderCode, uint32 inShaderKind,
+	const shaderc_compiler_t& inCompiler, const shaderc_compile_options_t& inOptions)
+{
+	shaderc_shader_kind ShaderKind = { };
+	VString InputFileName = "";
+	VString EntryPointName = "";
+	switch (inShaderKind)
+	{
+	case 0:
+		ShaderKind = shaderc_vertex_shader;
+		InputFileName = "main.vert";
+		EntryPointName = "main";
+		break;
+
+	case 1:
+		ShaderKind = shaderc_fragment_shader;
+		InputFileName = "main.frag";
+		EntryPointName = "main";
+		break;
+	default:
+		break;
+	}
+
 	shaderc_compilation_result_t result = shaderc_compile_into_spv( // compile
-		inCompiler, ShaderSource.c_str(), ShaderSource.length(),
-		inShaderKind, inInputFileName, inEntryPointName, inOptions);
+		inCompiler, inShaderCode->c_str(), inShaderCode->length(),
+		ShaderKind, InputFileName.c_str(), EntryPointName.c_str(), inOptions);
 	if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) // errors?
-		std::cout << "Vertex Shader Errors: " << shaderc_result_get_error_message(result) << std::endl;
+		std::cout << "Shader Errors: " << shaderc_result_get_error_message(result) << std::endl;
 
 	VkShaderModuleCreateInfo ShaderModuleCreateInfo = {};
 	ShaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
