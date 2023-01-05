@@ -375,7 +375,7 @@ public:
 		PrepareVulkanPipeline();
 
 		// allocate 1 gibibytes of memory -> 1024 mebibytes = 1 gib
-		MainVulkanMemoryHeap = new VulkanMemoryHeap(Device, 1024);
+		MainVulkanMemoryHeap = new VulkanMemoryHeap(Device, 1);
 
 		VulkanUtils::Descriptions::VulkanBufferCreateInfo BufferCreateInfo = { };
 		BufferCreateInfo.BufferUsageFlags = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
@@ -861,6 +861,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return (DefWindowProc(hWnd, uMsg, wParam, lParam));
 }
 
+MemoryManager* MemoryManager::Instance = nullptr;
+
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, int nCmdShow)
 {
 	WindowInstance = hInstance;
@@ -994,21 +996,43 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 	std::wstring T = L"Debug Log";
 	SetConsoleTitle(T.c_str());
 
-	MSG Message;
-	while (GetMessage(&Message, NULL, 0, 0))
-	{
-		TranslateMessage(&Message);
+	MemoryManager::GetInstance()->PreInit();
 
-		switch (Message.message)
+	uint64** Num = (uint64**)MemoryManager::GetInstance()->Malloc<uint64>(1);
+	**Num = 21;
+
+	uint64** NumArr = (uint64**)MemoryManager::GetInstance()->Malloc<uint64>(5);
+	for (uint32 i = 0; i < 5; ++i)
+	{
+		(*NumArr)[i] = i + 1;
+	}
+
+	std::cout << "\n\n Pre-Num: \n\n " << **Num << std::endl;
+
+	MemoryManager::GetInstance()->PostInit(1024); // On GiB
+
+	std::cout << "\n Post-Num: \n\n " << **Num << std::endl;
+
+	for (uint32 i = 0; i < 5; ++i)
+	{
+		std::cout << "\n Post-Num: \n " << (*NumArr)[i] << std::endl;
+	}
+
+	MSG Message;
+	while (true)
+	{
+		if (PeekMessage(&Message, Window, 0, 0, PM_NOREMOVE))
 		{
-		case WM_QUIT:
-			std::cout << "Quit Message Posted";
-			break;
-		default:
-			break;
+			GetMessage(&Message, NULL, 0, 0);
+			TranslateMessage(&Message);
+			DispatchMessage(&Message);
 		}
 
-		DispatchMessage(&Message);
+		if (Message.message == WM_QUIT)
+		{
+			std::cout << "Quit Message Posted\n\n";
+			break;
+		}
 
 		// Draw
 		{
@@ -1048,7 +1072,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 
 	delete VTemp;
 
-	std::cout << "Press Enter to exit....\n\n";
+	if (MemoryManager::GetInstance()->GetMemoryUsed() > 0)
+	{
+		std::cout << "\nMemoryUsed: " << MemoryManager::GetInstance()->GetMemoryUsed() << std::endl;
+	}
+
+	MemoryManager::GetInstance()->FreeAllMemory();
+	delete MemoryManager::GetInstance();
+
+	std::cout << "\nPress Enter to exit....\n\n";
 	std::cin.get();
 
 	return 0;

@@ -87,6 +87,9 @@
     <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Graphics\Vulkan\VulkanUtils.h">
       <Filter>Source\Runtime\Graphics\Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Memory\Core\MemoryManager.h">
+      <Filter>Source\Runtime\Memory\Core</Filter>
+    </ClInclude>
     <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Memory\Vulkan\VulkanResourceManager.h">
       <Filter>Source\Runtime\Memory\Vulkan</Filter>
     </ClInclude>
@@ -127,6 +130,9 @@
     </Filter>
     <Filter Include="Source\Runtime\Memory">
       <UniqueIdentifier>{DA5635FB-7D53-3089-BC46-68CA0CF1BA5A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Runtime\Memory\Core">
+      <UniqueIdentifier>{8330645E-186F-36D6-813F-995A662ABAE8}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Runtime\Memory\Vulkan">
       <UniqueIdentifier>{56F6E675-580E-30A4-B6E6-823C19A971CA}</UniqueIdentifier>

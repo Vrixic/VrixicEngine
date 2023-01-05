@@ -1,5 +1,6 @@
 #pragma once
 #include "VulkanDevice.h"
+#include <Runtime/Memory/Core/MemoryManager.h>
 
 /**
 * Buffer allocation diagram
@@ -459,6 +460,7 @@ private:
 public:
 	/**
 	* Creates the buffer/heap
+	*	1048576 bytes is one MiB(mebibytes)
 	*
 	* @param inHeapSizeInMebibytes Size of the heap in mebibtyes
 	*/
@@ -466,8 +468,8 @@ public:
 		: Device(inDevice), HeapSizeInMebibytes(inHeapSizeInMebibytes)
 	{
 		DeviceMemoryAllocater = new VulkanDeviceMemoryAllocater(inDevice);
-
-		uint64 HeapSize = inHeapSizeInMebibytes * 1048576;
+		
+		uint64 HeapSize = MEBIBYTES_TO_BYTES(inHeapSizeInMebibytes);
 
 		VulkanUtils::Descriptions::VulkanBufferCreateInfo BufferCreateInfo = { };
 		BufferCreateInfo.DeviceSize = (VkDeviceSize)HeapSize;

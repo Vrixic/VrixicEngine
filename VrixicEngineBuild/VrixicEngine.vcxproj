@@ -305,6 +305,8 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Source\Runtime\Memory\Core\LinearMemoryAllocater.h" />
+    <ClInclude Include="..\Source\Runtime\Memory\Core\MemoryAllocater.h" />
     <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Misc\Defines\GenericDefines.h" />
     <ClCompile Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\EntryPoint\EntryPoint.cpp" />
     <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\File\FileHelper.h" />
@@ -331,6 +333,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Graphics\Vulkan\VulkanTextureView.cpp" />
     <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Graphics\Vulkan\VulkanTextureView.h" />
     <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Graphics\Vulkan\VulkanUtils.h" />
+    <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Memory\Core\MemoryManager.h" />
     <ClCompile Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Memory\Vulkan\VulkanResourceManager.cpp" />
     <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Memory\Vulkan\VulkanResourceManager.h" />
     <ClCompile Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Memory\ResourceManager.cpp" />
