@@ -24,7 +24,10 @@ D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Graphics/Vulkan/VulkanShader.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Graphics/Vulkan/VulkanTextureView.cpp
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Graphics/Vulkan/VulkanTextureView.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Graphics/Vulkan/VulkanUtils.h
+D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Memory/Core/LinearMemoryAllocater.h
+D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Memory/Core/MemoryAllocater.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Memory/Core/MemoryManager.h
+D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Memory/Core/MemoryPool.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Memory/Vulkan/VulkanResourceManager.cpp
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Memory/Vulkan/VulkanResourceManager.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Memory/ResourceManager.cpp

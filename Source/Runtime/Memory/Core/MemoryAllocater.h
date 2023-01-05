@@ -37,22 +37,31 @@ protected:
 	uint64 MemoryUsedByMemInfo;
 
 public:
-	MemoryAllocater(char* inStart, uint64 inSize)
-		: MemoryStartPtr(inStart), MemorySize(inSize), MemoryUsed(0), MemoryUsedByMemInfo(0) { };
+	MemoryAllocater()
+		: MemoryStartPtr(nullptr), MemorySize(0), MemoryUsed(0), MemoryUsedByMemInfo(0) { }
+
+	virtual ~MemoryAllocater() { } 
 
 public:
+	virtual void Init(char* inStart, uint64 inSize)
+	{
+		MemoryStartPtr = inStart + sizeof(MemoryAllocater); // for this class
+		MemorySize = inSize;
+	}
+
 	/**
 	* Returns extra bytes required when giving this allocater some memory
+	*	Extra 32 bytes counting this classes member variables 
 	*	
 	* @param inSize - the size of bytes this allocater will be given to use 
 	*/
-	static uint64 GetAllocationBytes(const uint64& inSize)
+	/*static uint64 GetAllocationBytes(const uint64& inSize)
 	{
 		float AlignmentCheck = static_cast<float>(inSize * 0.1f) / sizeof(MemoryInfo);
 		AlignmentCheck = ceilf(AlignmentCheck);
 
-		return static_cast<uint64>(AlignmentCheck * sizeof(MemoryInfo));
-	}
+		return static_cast<uint64>(AlignmentCheck * sizeof(MemoryInfo)) + sizeof(MemoryAllocater);
+	}*/
 
 	/*
 	* Returns how much memory this allocater is alloted

@@ -18,6 +18,7 @@
 #include <Runtime/Graphics/Vulkan/VulkanShader.h>
 #include <Runtime/Graphics/Vulkan/VulkanPipeline.h>
 #include <Runtime/Memory/Vulkan/VulkanResourceManager.h>
+#include <Runtime/Memory/Core/LinearMemoryAllocater.h>
 
 #define RENDER_DOC 1
 
@@ -1017,6 +1018,25 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 	{
 		std::cout << "\n Post-Num: \n " << (*NumArr)[i] << std::endl;
 	}
+
+	LinearMemoryAllocater** LMA = MemoryManager::GetInstance()->MallocAllocater<LinearMemoryAllocater>(100);
+
+	uint64** Num_LMA = (*LMA)->Malloc<uint64>(5);
+
+	for (uint32 i = 0; i < 5; ++i)
+	{
+		(*Num_LMA)[i] = i + 5;
+	}
+
+	for (uint32 i = 0; i < 5; ++i)
+	{
+		std::cout << "\n Post-Num: \n " << (*Num_LMA)[i] << std::endl;
+	}
+
+	uint64** Num_LMA_2 = (*LMA)->Malloc<uint64>(1);
+	**Num_LMA_2 = 21;
+
+	std::cout << "\n Post-Num_LMA_2: \n\n " << **Num_LMA_2 << std::endl;
 
 	MSG Message;
 	while (true)

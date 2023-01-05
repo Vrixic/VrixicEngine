@@ -87,7 +87,16 @@
     <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Graphics\Vulkan\VulkanUtils.h">
       <Filter>Source\Runtime\Graphics\Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Memory\Core\LinearMemoryAllocater.h">
+      <Filter>Source\Runtime\Memory\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Memory\Core\MemoryAllocater.h">
+      <Filter>Source\Runtime\Memory\Core</Filter>
+    </ClInclude>
     <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Memory\Core\MemoryManager.h">
+      <Filter>Source\Runtime\Memory\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Memory\Core\MemoryPool.h">
       <Filter>Source\Runtime\Memory\Core</Filter>
     </ClInclude>
     <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Memory\Vulkan\VulkanResourceManager.h">
@@ -98,12 +107,6 @@
     </ClInclude>
     <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Memory\ResourceManagerImp.h">
       <Filter>Source\Runtime\Memory</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\Runtime\Memory\Core\MemoryAllocater.h">
-      <Filter>Source\Runtime\Memory\Core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\Runtime\Memory\Core\LinearMemoryAllocater.h">
-      <Filter>Source\Runtime\Memory\Core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

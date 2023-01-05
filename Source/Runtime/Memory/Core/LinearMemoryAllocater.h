@@ -8,8 +8,12 @@
 class LinearMemoryAllocater : public MemoryAllocater
 {
 public:
-	LinearMemoryAllocater(char* inStart, uint64 inSize)
-		: MemoryAllocater(inStart, inSize) { }
+	LinearMemoryAllocater()
+		: MemoryAllocater() { }
+
+	virtual ~LinearMemoryAllocater() { }
+
+public:
 
 	/**
 	* Allocates memory
@@ -19,19 +23,19 @@ public:
 	* @return char** pointer pointing to the allocated memory
 	*/
 	template<typename T>
-	const char** Malloc(uint32 inCount)
+	T** Malloc(uint32 inCount)
 	{
 		uint64 RequestedSize = sizeof(T) * inCount;
 #if _DEBUG | _EDITOR
-		ASSERT(MemoryUsed + MemoryUsedByMemInfo + RequestedSize + sizeof(MemoryInfo) > Size);
+		ASSERT((MemoryUsed + MemoryUsedByMemInfo + RequestedSize + sizeof(MemoryInfo)) < MemorySize);
 #endif
-		MemoryInfo* MemInfo = ((MemoryStartPtr + Size) - MemoryUsedByMemInfo - sizeof(MemoryInfo);
+		MemoryInfo* MemInfo = (MemoryInfo*)((MemoryStartPtr + MemorySize) - MemoryUsedByMemInfo - sizeof(MemoryInfo));
 		MemInfo->MemoryStartPtr = MemoryStartPtr + MemoryUsed;
-		MemInfo->Size = RequestedSize;
+		MemInfo->MemorySize = RequestedSize;
 
 		MemoryUsed += RequestedSize;
 		MemoryUsedByMemInfo += sizeof(MemoryInfo);
 
-		return &MemInfo->MemoryStartPtr;
+		return (T**)&MemInfo->MemoryStartPtr;
 	}
 };

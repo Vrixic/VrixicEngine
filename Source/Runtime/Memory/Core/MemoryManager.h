@@ -1,8 +1,10 @@
 #pragma once
 #include <Misc/Defines/GenericDefines.h>
 #include <Runtime/Memory/Core/MemoryAllocater.h>
+#include <Runtime/Memory/Core/MemoryPool.h>
 
-#define MEBIBYTES_TO_BYTES(inMiB) inMiB * 1048576
+#include <iostream>
+#include <type_traits>
 
 /**
 * Singleton
@@ -12,23 +14,23 @@
 class MemoryManager
 {
 private:
-	// Instance for singleton
+	/* Instance for singleton */
 	static MemoryManager* Instance;
-
-	// Giant memory block whose memory will be passed around
-	char* MemoryPool;
 
 	// PostInit should only be called once 
 	bool HasPostInitialized;
 
-	// Size of memory allocated
-	uint64 AllocationSize;
+	/* Memory handle to the main block of memory, main memory pool */
+	MemoryPool* MemoryPoolHandle;
 
-	// amount of memory in use
-	uint64 MemoryUsed;
+	/* amount of memory allocated for main memory pool */
+	uint64 MemoryAllocationSize;
 
-	// amount of memory in use for memory infos
-	uint64 MemoryUsedByMemInfo;
+	/* Memory handle to the pool for memory infos */
+	MemoryPool* MemoryInfoPoolHandle;
+
+	/* amount of memory allocated for memory info pool */
+	uint64 MemoryInfoAllocationSize;
 
 public:
 	static MemoryManager* GetInstance()
@@ -49,10 +51,14 @@ public:
 	void PreInit()
 	{
 #if _DEBUG
-		ASSERT(AllocationSize == 0);
+		ASSERT(MemoryAllocationSize == 0);
+		ASSERT(MemoryInfoAllocationSize == 0);
 #endif
-		AllocationSize = MEBIBYTES_TO_BYTES(100);
-		MemoryPool = new char[AllocationSize];
+		MemoryAllocationSize = MEBIBYTES_TO_BYTES(100);
+		MemoryInfoAllocationSize = MEBIBYTES_TO_BYTES(10);
+
+		MemoryPoolHandle = new MemoryPool(MemoryAllocationSize);
+		MemoryInfoPoolHandle = new MemoryPool(MemoryInfoAllocationSize);
 	}
 
 	/**
@@ -66,37 +72,34 @@ public:
 #if _DEBUG
 		ASSERT(!HasPostInitialized);
 #endif
-		uint64 LastAllocationSize = AllocationSize;
-		AllocationSize = MEBIBYTES_TO_BYTES(inSizeInMebibytes);
+		uint64 LastAllocationSize = MemoryAllocationSize;
+		MemoryAllocationSize = MEBIBYTES_TO_BYTES(inSizeInMebibytes);
+		
+		// Re-Allocate more memory, copy of data is done by the pool
+		char* NewMemPtr = MemoryPoolHandle->Resize(MemoryAllocationSize);
 
-		// Copy over memory
-		char* NewMemPool = new char[AllocationSize];
-		char* NewMemPoolEnd = NewMemPool + AllocationSize;
+		// Update the memory infos to point to the new memory 
+		char* MemInfoMemPtr = MemoryInfoPoolHandle->GetMemoryHandle();
+		uint64 MemInfoByteOffset = MemoryInfoPoolHandle->GetByteOffsetFromStart();
+		uint64 ByteOffsetFromStart = 0;
 
-		// Only copy data memory
-		memcpy(NewMemPool, MemoryPool, MemoryUsed);
-
-		// Copy over mem info
-		memcpy(NewMemPoolEnd - MemoryUsedByMemInfo,(MemoryInfo*) (MemoryPool + LastAllocationSize) - MemoryUsedByMemInfo, MemoryUsedByMemInfo);
-
-		uint64 TempMemUsedByMemInfos = MemoryUsedByMemInfo;
-		while (TempMemUsedByMemInfos != 0)
+		while (MemInfoByteOffset != ByteOffsetFromStart)
 		{
-			// Re-Assign data pointer to new memory location
-			MemoryInfo* MemInfo = (MemoryInfo*)(NewMemPoolEnd - TempMemUsedByMemInfos);
-			MemInfo->MemoryStartPtr = NewMemPool + MemoryUsed - MemInfo->MemorySize;
+			MemoryInfo* MemInfo = (MemoryInfo*)MemInfoMemPtr;
+			MemInfo->MemoryStartPtr = NewMemPtr;
 
-			TempMemUsedByMemInfos -= sizeof(MemoryInfo);
+			ByteOffsetFromStart += sizeof(MemoryInfo);
+
+			MemInfoMemPtr += ByteOffsetFromStart;
+			NewMemPtr += MemInfo->MemorySize;
 		}
-
-		delete[] MemoryPool;
-		MemoryPool = NewMemPool;
+		
 		HasPostInitialized = true;
 	}
 
 	/**
 	* Allocate memory based on the item and count
-	*
+	*u
 	* @param inNumCount - count of how many to allocate
 	*
 	* @return char** pointer pointing to the memory location
@@ -106,17 +109,9 @@ public:
 	{
 		uint64 RequestedSize = sizeof(T) * inNumCount;
 
-		// Check if we can allocate enough memory
-#if _DEBUG | _EDITOR
-		ASSERT((MemoryUsed + RequestedSize + MemoryUsedByMemInfo + sizeof(MemoryInfo)) < AllocationSize);
-#endif
-
-		MemoryInfo* MemInfo = (MemoryInfo*)(MemoryPool + AllocationSize) - MemoryUsedByMemInfo - sizeof(MemoryInfo);
-		MemInfo->MemoryStartPtr = MemoryPool + MemoryUsed;
+		MemoryInfo* MemInfo = MemoryInfoPoolHandle->Malloc<MemoryInfo>(1);
+		MemInfo->MemoryStartPtr = (char*)(new (MemoryPoolHandle->Malloc(RequestedSize)) T());
 		MemInfo->MemorySize = RequestedSize;
-
-		MemoryUsed += RequestedSize;
-		MemoryUsedByMemInfo += sizeof(MemInfo);
 
 		return &MemInfo->MemoryStartPtr;
 	}
@@ -125,31 +120,33 @@ public:
 	/**
 	* Allocate memory for allocater and also create one, calls constructor
 	*
-	* @param inRequestedSize - memory size the allocater will get
+	* @param inSizeInBytes - memory size the allocater will get
+	* @param inExtraBytesPercent - how much to increase the bytes size by for extra memory, by default 10%
 	*
 	* @return char** pointer pointing to the allocater
 	*/
 	template<typename T>
-	char** MallocAllocater(uint64 inRequestedSize)
+	T** MallocAllocater(uint64 inSizeInBytes, float inExtraBytesPercent = 0.1f)
 	{
 		// Check if we can allocate enough memory
 #if _DEBUG | _EDITOR
-		ASSERT(!std::is_base_of<MemoryAllocater>(T));
-		ASSERT((MemoryUsed + inRequestedSize + MemoryUsedByMemInfo + sizeof(MemoryInfo)) > AllocationSize);
+		bool IsAllocater = std::is_base_of<MemoryAllocater, T>::value;
+		ASSERT(IsAllocater);
 #endif
 
-		inRequestedSize += ((MemoryAllocater)T)::GetAllocationBytes(inRequestedSize);
+		float AlignmentCheck = static_cast<float>(inSizeInBytes * inExtraBytesPercent) / sizeof(MemoryInfo);
+		AlignmentCheck = ceilf(AlignmentCheck);
 
-		MemoryInfo* MemInfo = (MemoryInfo*)(MemoryPool + AllocationSize) - MemoryUsedByMemInfo - sizeof(MemoryInfo);
-		MemInfo->MemoryStartPtr = MemoryPool + MemoryUsed;
-		MemInfo->MemorySize = inRequestedSize;
+		inSizeInBytes += static_cast<uint64>(AlignmentCheck * sizeof(MemoryInfo)) + 32;
 
-		MemoryUsed += inRequestedSize;
-		MemoryUsedByMemInfo += sizeof(MemInfo);
+		MemoryInfo* MemInfo = MemoryInfoPoolHandle->Malloc<MemoryInfo>(1);
+		T* TInstance = (new (MemoryPoolHandle->Malloc(inSizeInBytes)) T()); // placement-new
+		MemInfo->MemoryStartPtr =(char*) TInstance; 
+		MemInfo->MemorySize = inSizeInBytes;
 
-		(*MemInfo->MemoryStartPtr)(MemInfo->MemoryStartPtr, inRequestedSize);
+		TInstance->Init(MemInfo->MemoryStartPtr, inSizeInBytes);
 
-		return &MemInfo->MemoryStartPtr;
+		return (T**)&MemInfo->MemoryStartPtr;
 	}
 
 	/**
@@ -157,10 +154,8 @@ public:
 	*/
 	void FreeAllMemory()
 	{
-		delete[] MemoryPool;
-		MemoryPool = nullptr;
-		MemoryUsed = 0;
-		MemoryUsedByMemInfo = 0;
+		delete MemoryPoolHandle;
+		delete MemoryInfoPoolHandle;
 	}
 
 	/**
@@ -168,6 +163,6 @@ public:
 	*/
 	uint64 GetMemoryUsed()
 	{
-		return MemoryUsed + MemoryUsedByMemInfo;
+		return MemoryPoolHandle->GetMemoryUsed() + MemoryInfoPoolHandle->GetMemoryUsed();
 	}
 };
