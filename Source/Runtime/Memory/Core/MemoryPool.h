@@ -109,6 +109,31 @@ public:
 	}
 
 	/**
+	* Resize the pool, allocates more memory, do not scale down
+	* User in charge of freeing the memory from 'outLastMemHandle'
+	*
+	* @param outLastMemHandle - handle to the last memory location
+	* @return char** pointer pointing to the memory location
+	*/
+	char* Resize(uint64 inSizeInBytes, char* outLastMemHandle)
+	{
+		uint64 LastPoolSize = PoolSize;
+		PoolSize = inSizeInBytes;
+
+#if _DEBUG | _EDITOR
+		ASSERT(PoolSize > LastPoolSize);
+#endif // _DEBUG | _EDITOR
+
+		char* NewMemoryPtr = new char[PoolSize];
+		memcpy(NewMemoryPtr, MemoryPtr, MemoryUsed);
+
+		outLastMemHandle = MemoryPtr;
+		MemoryPtr = NewMemoryPtr;
+
+		return MemoryPtr;
+	}
+
+	/**
 	* Calculated total memory in used currently
 	*/
 	void Free(uint64 inSize)

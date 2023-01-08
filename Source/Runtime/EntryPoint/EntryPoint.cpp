@@ -862,8 +862,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return (DefWindowProc(hWnd, uMsg, wParam, lParam));
 }
 
-MemoryManager* MemoryManager::Instance = nullptr;
-
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, int nCmdShow)
 {
 	WindowInstance = hInstance;
@@ -997,12 +995,13 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 	std::wstring T = L"Debug Log";
 	SetConsoleTitle(T.c_str());
 
-	MemoryManager::GetInstance()->PreInit();
+	MemoryManager::Get().StartUp();
 
-	uint64** Num = (uint64**)MemoryManager::GetInstance()->Malloc<uint64>(1);
+	uint128** Num = (uint128**)MemoryManager::Get().MallocAligned<uint128>(8);
 	**Num = 21;
 
-	uint64** NumArr = (uint64**)MemoryManager::GetInstance()->Malloc<uint64>(5);
+
+	uint64** NumArr = (uint64**)MemoryManager::Get().MallocAligned<uint64>(sizeof(uint64) * 5);
 	for (uint32 i = 0; i < 5; ++i)
 	{
 		(*NumArr)[i] = i + 1;
@@ -1010,7 +1009,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 
 	std::cout << "\n\n Pre-Num: \n\n " << **Num << std::endl;
 
-	MemoryManager::GetInstance()->PostInit(1024); // On GiB
+	MemoryManager::Get().Resize(1024); // On GiB
 
 	std::cout << "\n Post-Num: \n\n " << **Num << std::endl;
 
@@ -1019,7 +1018,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 		std::cout << "\n Post-Num: \n " << (*NumArr)[i] << std::endl;
 	}
 
-	LinearMemoryAllocater** LMA = MemoryManager::GetInstance()->MallocAllocater<LinearMemoryAllocater>(100);
+	LinearMemoryAllocater** LMA = MemoryManager::Get().MallocAllocater<LinearMemoryAllocater>(100);
 
 	uint64** Num_LMA = (*LMA)->Malloc<uint64>(5);
 
@@ -1092,13 +1091,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 
 	delete VTemp;
 
-	if (MemoryManager::GetInstance()->GetMemoryUsed() > 0)
+	if (MemoryManager::Get().GetMemoryUsed() > 0)
 	{
-		std::cout << "\nMemoryUsed: " << MemoryManager::GetInstance()->GetMemoryUsed() << std::endl;
+		std::cout << "\nMemoryUsed: " << MemoryManager::Get().GetMemoryUsed() << std::endl;
 	}
 
-	MemoryManager::GetInstance()->FreeAllMemory();
-	delete MemoryManager::GetInstance();
+	MemoryManager::Get().Shutdown();
 
 	std::cout << "\nPress Enter to exit....\n\n";
 	std::cin.get();

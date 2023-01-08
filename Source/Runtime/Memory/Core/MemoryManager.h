@@ -6,6 +6,13 @@
 #include <iostream>
 #include <type_traits>
 
+/*
+* @TODO: Convert the memory manager to pass out only Aligned Memory..
+*	- Remove old instancing code
+*	- Update MallocAllocater for memory alignment
+*	- 256 alignment restriction solution? Special case solution maybe 
+*/
+
 /**
 * Singleton
 *
@@ -15,7 +22,7 @@ class MemoryManager
 {
 private:
 	/* Instance for singleton */
-	static MemoryManager* Instance;
+	//static MemoryManager* Instance;
 
 	// PostInit should only be called once 
 	bool HasPostInitialized;
@@ -33,50 +40,48 @@ private:
 	uint64 MemoryInfoAllocationSize;
 
 public:
-	static MemoryManager* GetInstance()
-	{
-		if (Instance == nullptr)
-		{
-			Instance = new MemoryManager();
-		}
+	MemoryManager() : HasPostInitialized(false), MemoryPoolHandle(nullptr), MemoryAllocationSize(0),
+		MemoryInfoPoolHandle(nullptr), MemoryInfoAllocationSize(0) { }
 
+	~MemoryManager() { }
+
+	/**
+	* Returns the one and only Instance to the Manager
+	*/
+	static MemoryManager& Get()
+	{
+		static MemoryManager Instance;
 		return Instance;
 	}
 
 public:
-	/**
-	* Pre-Inits the memory manager with default memory until size if know to allocate more memory
-	*	Should be called on launch
-	*/
-	void PreInit()
-	{
-#if _DEBUG
-		ASSERT(MemoryAllocationSize == 0);
-		ASSERT(MemoryInfoAllocationSize == 0);
-#endif
-		MemoryAllocationSize = MEBIBYTES_TO_BYTES(100);
-		MemoryInfoAllocationSize = MEBIBYTES_TO_BYTES(10);
 
-		MemoryPoolHandle = new MemoryPool(MemoryAllocationSize);
-		MemoryInfoPoolHandle = new MemoryPool(MemoryInfoAllocationSize);
+	/**
+	* Initialize the manager, allocates 100 mebibytes of memory by default,
+	*	for more memory call Resize() once known
+	*/
+	void StartUp()
+	{
+		PreInit();
 	}
 
 	/**
-	* Final initialization of memory manager with size known
+	* Resize memory manager - Avoid calling this as its EXPENSIVE
 	*	1048576 bytes is one MiB(mebibytes)
 	*
 	* @param inSizeInMebibytes - The size of the memory in mebibytes, 1024 mib = 1 gib
 	*/
-	void PostInit(uint32 inSizeInMebibytes)
+	void Resize(uint32 inSizeInMebibytes)
 	{
 #if _DEBUG
 		ASSERT(!HasPostInitialized);
 #endif
 		uint64 LastAllocationSize = MemoryAllocationSize;
 		MemoryAllocationSize = MEBIBYTES_TO_BYTES(inSizeInMebibytes);
-		
+
 		// Re-Allocate more memory, copy of data is done by the pool
-		char* NewMemPtr = MemoryPoolHandle->Resize(MemoryAllocationSize);
+		char* OldMemPtr = nullptr;
+		char* NewMemPtr = MemoryPoolHandle->Resize(MemoryAllocationSize, OldMemPtr);
 
 		// Update the memory infos to point to the new memory 
 		char* MemInfoMemPtr = MemoryInfoPoolHandle->GetMemoryHandle();
@@ -86,34 +91,100 @@ public:
 		while (MemInfoByteOffset != ByteOffsetFromStart)
 		{
 			MemoryInfo* MemInfo = (MemoryInfo*)MemInfoMemPtr;
-			MemInfo->MemoryStartPtr = NewMemPtr;
+			// Extract the shift preform for memory alignment
+			intptr Shift = ((uint8*)MemInfo->MemoryStartPtr)[-1];
+			if (Shift == 0)
+			{
+				Shift = 256;
+			}
+			MemInfo->MemoryStartPtr = (NewMemPtr + Shift);
 
 			ByteOffsetFromStart += sizeof(MemoryInfo);
 
 			MemInfoMemPtr += ByteOffsetFromStart;
 			NewMemPtr += MemInfo->MemorySize;
 		}
-		
+
+		delete[] OldMemPtr;
 		HasPostInitialized = true;
 	}
 
+	template<typename T>
+	inline T* AlignPointer(T* inPtr, uint64 inAlignment)
+	{
+		const uintptr Address = reinterpret_cast<uintptr>(inPtr);
+		const uintptr AddressAligned = AlignAddress(Address, inAlignment);
+		return reinterpret_cast<T*>(AddressAligned);
+	}
+
 	/**
-	* Allocate memory based on the item and count
-	*u
+	* Aligns the address: Shifts the given address upwards if/as necessary to ensure it's aligned to the given
+	* number of byes
+	*/
+	inline uintptr AlignAddress(uintptr inAddress, uint64 inAlignment)
+	{
+		const uint128 Mask = inAlignment - 1;
+#if _DEBUG || _EDITOR
+		ASSERT((inAlignment & Mask) == 0); // Power of 2
+#endif
+		return (inAddress + Mask) & ~Mask;
+	}
+
+	/**
+	* Allocate memory based on the count, also align pointer by sizeof(T),
+	* sizeof(T) must be a power of 2
+	*
 	* @param inNumCount - count of how many to allocate
 	*
 	* @return char** pointer pointing to the memory location
 	*/
 	template<typename T>
-	char** Malloc(uint32 inNumCount)
+	T** MallocAligned(uint128 inSizeInBytes)
 	{
-		uint64 RequestedSize = sizeof(T) * inNumCount;
-
 		MemoryInfo* MemInfo = MemoryInfoPoolHandle->Malloc<MemoryInfo>(1);
-		MemInfo->MemoryStartPtr = (char*)(new (MemoryPoolHandle->Malloc(RequestedSize)) T());
-		MemInfo->MemorySize = RequestedSize;
 
-		return &MemInfo->MemoryStartPtr;
+		// Find the worse case number of bytes we might have to shift
+		inSizeInBytes += sizeof(T); // allocate extra
+
+		uint8* RawMemPtr = (uint8*)MemoryPoolHandle->Malloc(inSizeInBytes);
+		// Align the block, if their isn't alignment, shift it up the full 'align' bytes, so we always 
+		// have room to store the shift 
+		uint8* AlignedPtr = AlignPointer<uint8>(RawMemPtr, sizeof(T));
+		if (AlignedPtr == RawMemPtr)
+		{
+			AlignedPtr += sizeof(T);
+		}
+
+		// Determine the shift, and store it for later when freeing
+		// (This works for up to 256-byte alignment.)
+		intptr Shift = AlignedPtr - RawMemPtr;
+#if _DEBUG || _EDITOR
+		ASSERT(Shift > 0 && Shift <= 256);
+#endif
+
+		AlignedPtr[-1] = static_cast<uint8>(Shift & 0xff);
+
+		MemInfo->MemoryStartPtr = (char*)(new (AlignedPtr) T());
+		MemInfo->MemorySize = inSizeInBytes;
+
+		return (T**)&MemInfo->MemoryStartPtr;
+	}
+
+	/**
+	* Allocate memory based on the count
+	*
+	* @param inNumCount - count of how many to allocate
+	*
+	* @return char** pointer pointing to the memory location
+	*/
+	template<typename T>
+	T** Malloc(uint128 inSizeInBytes)
+	{
+		MemoryInfo* MemInfo = MemoryInfoPoolHandle->Malloc<MemoryInfo>(1);
+		MemInfo->MemoryStartPtr = (char*)(new (MemoryPoolHandle->Malloc(inSizeInBytes)) T());
+		MemInfo->MemorySize = inSizeInBytes;
+
+		return (T**)&MemInfo->MemoryStartPtr;
 	}
 
 
@@ -141,12 +212,35 @@ public:
 
 		MemoryInfo* MemInfo = MemoryInfoPoolHandle->Malloc<MemoryInfo>(1);
 		T* TInstance = (new (MemoryPoolHandle->Malloc(inSizeInBytes)) T()); // placement-new
-		MemInfo->MemoryStartPtr =(char*) TInstance; 
+		MemInfo->MemoryStartPtr = (char*)TInstance;
 		MemInfo->MemorySize = inSizeInBytes;
 
 		TInstance->Init(MemInfo->MemoryStartPtr, inSizeInBytes);
 
 		return (T**)&MemInfo->MemoryStartPtr;
+	}
+
+	void Shutdown()
+	{
+		FreeAllMemory();
+	}
+
+private:
+	/**
+	* Pre-Inits the memory manager with default memory until size if know to allocate more memory
+	*	Should be called on launch
+	*/
+	void PreInit()
+	{
+#if _DEBUG
+		ASSERT(MemoryAllocationSize == 0);
+		ASSERT(MemoryInfoAllocationSize == 0);
+#endif
+		MemoryAllocationSize = MEBIBYTES_TO_BYTES(100);
+		MemoryInfoAllocationSize = MEBIBYTES_TO_BYTES(10);
+
+		MemoryPoolHandle = new MemoryPool(MemoryAllocationSize);
+		MemoryInfoPoolHandle = new MemoryPool(MemoryInfoAllocationSize);
 	}
 
 	/**
@@ -158,6 +252,7 @@ public:
 		delete MemoryInfoPoolHandle;
 	}
 
+public:
 	/**
 	* Returns amount of memory in use
 	*/

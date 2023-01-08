@@ -1,29 +1,61 @@
 #pragma once
 #include <string>
 
-/* unsigned int 8-bit */
+/*
+* unsigned int 8-bits, byte size: 1
+*/
 typedef unsigned char		uint8;
 
-/* unsigned int 16-bit */
+/*
+* unsigned int 16-bits, byte size: 2
+*/
 typedef unsigned short		uint16;
 
-/* unsigned int 32-bit */
+/*
+* unsigned int 32-bits, byte size: 4
+*/
 typedef unsigned int		uint32;
 
-/* unsigned int 64-bit */
+/**
+* unsigned int 64-bits, byte size: 4
+*/
 typedef unsigned long		uint64;
 
-/* signed int 8-bit */
+/**
+* unsigned int 128-bits, byte size: 8
+*/
+typedef unsigned long long  uint128;
+
+/**
+* signed int 8-bits, byte size: 1
+*/
 typedef signed char			int8;
 
-/* signed int 16-bit */
+/**
+* signed int 16-bits, byte size: 2
+*/
 typedef signed short		int16;
 
-/* signed int 32-bit */
+/**
+* signed int 32-bits, byte size: 4
+*/
 typedef signed int			int32;
 
-/* signed int 64-bit */
-typedef signed long			int64;
+/**
+* signed int 64-bits, byte size: 8
+*/
+typedef signed long	long	int64;
+
+/**
+* unsigned int pointer 128-bits, byte size: 8
+*/
+typedef uint128             uintptr;
+
+/**
+* signed int pointer 128-bits, byte size: 8
+*/
+typedef int64               intptr;
+
 #pragma once
 
 #define _DEBUG !NDEBUG

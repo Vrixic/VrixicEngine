@@ -7,8 +7,7 @@
 #include "vulkan/vulkan.h"
 #include <vulkan/vulkan_win32.h>
 #include <iostream>
-
-typedef unsigned uint32;
+#include <Misc/Defines/GenericDefines.h>
 
 /* The # macro will turn the expression f into a string literal */
 #define VK_CHECK_RESULT(f)																				\
@@ -225,7 +224,7 @@ namespace VulkanUtils
 			// Try to find a queue family index that supports Compute but not Graphics
 			if ((inQueueFlags & VK_QUEUE_COMPUTE_BIT) == inQueueFlags)
 			{
-				for (uint32_t i = 0; i < static_cast<uint32_t>(inQueueFamilyProperties.size()); i++)
+				for (uint32 i = 0; i < static_cast<uint32>(inQueueFamilyProperties.size()); i++)
 				{
 					if ((inQueueFamilyProperties[i].queueFlags & VK_QUEUE_COMPUTE_BIT) && ((inQueueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0))
 					{
@@ -238,7 +237,7 @@ namespace VulkanUtils
 			// Try to find a queue family index that supports Transfer but not Graphics and Compute
 			if ((inQueueFlags & VK_QUEUE_TRANSFER_BIT) == inQueueFlags)
 			{
-				for (uint32_t i = 0; i < static_cast<uint32_t>(inQueueFamilyProperties.size()); i++)
+				for (uint32 i = 0; i < static_cast<uint32>(inQueueFamilyProperties.size()); i++)
 				{
 					if ((inQueueFamilyProperties[i].queueFlags & VK_QUEUE_TRANSFER_BIT) && ((inQueueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0) && ((inQueueFamilyProperties[i].queueFlags & VK_QUEUE_COMPUTE_BIT) == 0))
 					{
@@ -248,7 +247,7 @@ namespace VulkanUtils
 			}
 
 			// For other queue types or if no separate Compute queue is present, return the first one to support the requested flags
-			for (uint32_t i = 0; i < static_cast<uint32_t>(inQueueFamilyProperties.size()); i++)
+			for (uint32 i = 0; i < static_cast<uint32>(inQueueFamilyProperties.size()); i++)
 			{
 				if ((inQueueFamilyProperties[i].queueFlags & inQueueFlags) == inQueueFlags)
 				{

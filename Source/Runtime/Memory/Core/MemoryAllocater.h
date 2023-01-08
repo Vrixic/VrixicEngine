@@ -2,6 +2,14 @@
 #include <Misc/Defines/GenericDefines.h>
 
 /**
+* @TODO: remake the allocater system, scrap double-ended stack buffer by default, also allocater should not keep in track of memory usage
+*	- Linear -> should be straight forward, no way to free memory w/o fragmentation
+*	- Stack -> only one way to free, from the top, though there could be a possible way to remove from middle or start by swaping pointers
+*	- Double-Ended stack -> two ways to free memory, from front or back pointer
+*	- Pool -> keeps track of objects for repooling 
+*/
+
+/**
 * Information on how the memory block is spliced
 */
 struct MemoryInfo
@@ -10,7 +18,7 @@ struct MemoryInfo
 	char* MemoryStartPtr;
 
 	// The size of the memory, used as offset to the end of memory
-	uint64 MemorySize;
+	uint128 MemorySize;
 };
 
 /**
