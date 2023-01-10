@@ -108,6 +108,9 @@
     <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\Memory\ResourceManagerImp.h">
       <Filter>Source\Runtime\Memory</Filter>
     </ClInclude>
+    <ClInclude Include="..\Source\Runtime\Memory\Core\StackMemoryAllocater.h">
+      <Filter>Source\Runtime\Memory\Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="D:\dev\repo\VulkanRenderer\Engine\CMake\CMakeLists.txt" />

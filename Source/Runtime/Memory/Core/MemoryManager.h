@@ -7,10 +7,7 @@
 #include <type_traits>
 
 /*
-* @TODO: Convert the memory manager to pass out only Aligned Memory..
-*	- Remove old instancing code
-*	- Update MallocAllocater for memory alignment
-*	- 256 alignment restriction solution? Special case solution maybe 
+* @TODO: 256 alignment restriction solution? Special case solution maybe.
 */
 
 /**
@@ -31,13 +28,13 @@ private:
 	MemoryPool* MemoryPoolHandle;
 
 	/* amount of memory allocated for main memory pool */
-	uint64 MemoryAllocationSize;
+	uint128 MemoryAllocationSize;
 
 	/* Memory handle to the pool for memory infos */
 	MemoryPool* MemoryInfoPoolHandle;
 
 	/* amount of memory allocated for memory info pool */
-	uint64 MemoryInfoAllocationSize;
+	uint128 MemoryInfoAllocationSize;
 
 public:
 	MemoryManager() : HasPostInitialized(false), MemoryPoolHandle(nullptr), MemoryAllocationSize(0),
@@ -139,20 +136,20 @@ public:
 	* @return char** pointer pointing to the memory location
 	*/
 	template<typename T>
-	T** MallocAligned(uint128 inSizeInBytes)
+	T** MallocAligned(uint128 inSizeInBytes, uint64 inAlignment = sizeof(T*))
 	{
 		MemoryInfo* MemInfo = MemoryInfoPoolHandle->Malloc<MemoryInfo>(1);
 
 		// Find the worse case number of bytes we might have to shift
-		inSizeInBytes += sizeof(T); // allocate extra
+		inSizeInBytes += inAlignment; // allocate extra
 
 		uint8* RawMemPtr = (uint8*)MemoryPoolHandle->Malloc(inSizeInBytes);
 		// Align the block, if their isn't alignment, shift it up the full 'align' bytes, so we always 
 		// have room to store the shift 
-		uint8* AlignedPtr = AlignPointer<uint8>(RawMemPtr, sizeof(T));
+		uint8* AlignedPtr = AlignPointer<uint8>(RawMemPtr, inAlignment);
 		if (AlignedPtr == RawMemPtr)
 		{
-			AlignedPtr += sizeof(T);
+			AlignedPtr += inAlignment;
 		}
 
 		// Determine the shift, and store it for later when freeing
@@ -171,33 +168,14 @@ public:
 	}
 
 	/**
-	* Allocate memory based on the count
-	*
-	* @param inNumCount - count of how many to allocate
-	*
-	* @return char** pointer pointing to the memory location
-	*/
-	template<typename T>
-	T** Malloc(uint128 inSizeInBytes)
-	{
-		MemoryInfo* MemInfo = MemoryInfoPoolHandle->Malloc<MemoryInfo>(1);
-		MemInfo->MemoryStartPtr = (char*)(new (MemoryPoolHandle->Malloc(inSizeInBytes)) T());
-		MemInfo->MemorySize = inSizeInBytes;
-
-		return (T**)&MemInfo->MemoryStartPtr;
-	}
-
-
-	/**
 	* Allocate memory for allocater and also create one, calls constructor
 	*
 	* @param inSizeInBytes - memory size the allocater will get
-	* @param inExtraBytesPercent - how much to increase the bytes size by for extra memory, by default 10%
 	*
 	* @return char** pointer pointing to the allocater
 	*/
 	template<typename T>
-	T** MallocAllocater(uint64 inSizeInBytes, float inExtraBytesPercent = 0.1f)
+	T** MallocAllocaterAligned(uint128 inSizeInBytes, uint64 inAlignment = sizeof(T))
 	{
 		// Check if we can allocate enough memory
 #if _DEBUG | _EDITOR
@@ -205,17 +183,31 @@ public:
 		ASSERT(IsAllocater);
 #endif
 
-		float AlignmentCheck = static_cast<float>(inSizeInBytes * inExtraBytesPercent) / sizeof(MemoryInfo);
-		AlignmentCheck = ceilf(AlignmentCheck);
-
-		inSizeInBytes += static_cast<uint64>(AlignmentCheck * sizeof(MemoryInfo)) + 32;
-
 		MemoryInfo* MemInfo = MemoryInfoPoolHandle->Malloc<MemoryInfo>(1);
-		T* TInstance = (new (MemoryPoolHandle->Malloc(inSizeInBytes)) T()); // placement-new
-		MemInfo->MemoryStartPtr = (char*)TInstance;
-		MemInfo->MemorySize = inSizeInBytes;
 
-		TInstance->Init(MemInfo->MemoryStartPtr, inSizeInBytes);
+		// Find the worse case number of bytes we might have to shift
+		uint128 ClassPaddedSize = inSizeInBytes + inAlignment + sizeof(T);
+
+		uint8* RawMemPtr = (uint8*)MemoryPoolHandle->Malloc(ClassPaddedSize);
+		// Align the block, if their isn't alignment, shift it up the full 'align' bytes, so we always 
+		// have room to store the shift 
+		uint8* AlignedPtr = AlignPointer<uint8>(RawMemPtr, inAlignment);
+		if (AlignedPtr == RawMemPtr)
+		{
+			AlignedPtr += inAlignment;
+		}
+
+		// Determine the shift, and store it for later when freeing
+		// (This works for up to 256-byte alignment.)
+		intptr Shift = AlignedPtr - RawMemPtr;
+#if _DEBUG || _EDITOR
+		ASSERT(Shift > 0 && Shift <= 256);
+#endif
+
+		AlignedPtr[-1] = static_cast<uint8>(Shift & 0xff);
+
+		MemInfo->MemoryStartPtr = (char*)(new (AlignedPtr) T((char*)AlignedPtr + sizeof(T), inSizeInBytes));
+		MemInfo->MemorySize = ClassPaddedSize;
 
 		return (T**)&MemInfo->MemoryStartPtr;
 	}
@@ -256,7 +248,7 @@ public:
 	/**
 	* Returns amount of memory in use
 	*/
-	uint64 GetMemoryUsed()
+	uint128 GetMemoryUsed()
 	{
 		return MemoryPoolHandle->GetMemoryUsed() + MemoryInfoPoolHandle->GetMemoryUsed();
 	}

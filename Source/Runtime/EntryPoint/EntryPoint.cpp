@@ -19,6 +19,7 @@
 #include <Runtime/Graphics/Vulkan/VulkanPipeline.h>
 #include <Runtime/Memory/Vulkan/VulkanResourceManager.h>
 #include <Runtime/Memory/Core/LinearMemoryAllocater.h>
+#include <Runtime/Memory/Core/StackMemoryAllocater.h>
 
 #define RENDER_DOC 1
 
@@ -997,45 +998,70 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 
 	MemoryManager::Get().StartUp();
 
-	uint128** Num = (uint128**)MemoryManager::Get().MallocAligned<uint128>(8);
-	**Num = 21;
+	/**
+	* -----------------------------------------------------------------------------
+	* |							MEMORY MANAGER/ALLOCATERS TEST					  |
+	* -----------------------------------------------------------------------------
+	*/
 
+	LinearMemoryAllocater** LMA = MemoryManager::Get().MallocAllocaterAligned<LinearMemoryAllocater>(100);
 
-	uint64** NumArr = (uint64**)MemoryManager::Get().MallocAligned<uint64>(sizeof(uint64) * 5);
-	for (uint32 i = 0; i < 5; ++i)
-	{
-		(*NumArr)[i] = i + 1;
-	}
+	uint64* Num1 = (*LMA)->Malloc<uint64>(sizeof(uint64));
+	uint64* Num2 = (*LMA)->Malloc<uint64>(sizeof(uint64));
+	
+	*Num1 = 21;
+	*Num2 = *Num1 - 20;
 
-	std::cout << "\n\n Pre-Num: \n\n " << **Num << std::endl;
+	std::cout << "\nNum 1: " << *Num1 << std::endl;
+	std::cout << "\nNum 2: " << *Num2 << std::endl;
 
-	MemoryManager::Get().Resize(1024); // On GiB
+	uint64* Num3 = (*LMA)->Malloc<uint64>(sizeof(uint64));
 
-	std::cout << "\n Post-Num: \n\n " << **Num << std::endl;
+	*Num3 = *Num2 + 20;
 
-	for (uint32 i = 0; i < 5; ++i)
-	{
-		std::cout << "\n Post-Num: \n " << (*NumArr)[i] << std::endl;
-	}
+	std::cout << "\nNum 3: " << *Num3 << std::endl;
 
-	LinearMemoryAllocater** LMA = MemoryManager::Get().MallocAllocater<LinearMemoryAllocater>(100);
+	uint64* NumArr = (*LMA)->Malloc<uint64>(sizeof(uint64) * 22);
 
-	uint64** Num_LMA = (*LMA)->Malloc<uint64>(5);
+	StackMemoryAllocaterE** SMAE = MemoryManager::Get().MallocAllocaterAligned<StackMemoryAllocaterE>(100);
+	StackMemoryAllocater** SMA = MemoryManager::Get().MallocAllocaterAligned<StackMemoryAllocater>(100);
 
-	for (uint32 i = 0; i < 5; ++i)
-	{
-		(*Num_LMA)[i] = i + 5;
-	}
+	uint64* Num4 = (*SMAE)->Malloc<uint64>(sizeof(uint64));
+	uint64* Num5 = (*SMAE)->Malloc<uint64>(sizeof(uint64));
 
-	for (uint32 i = 0; i < 5; ++i)
-	{
-		std::cout << "\n Post-Num: \n " << (*Num_LMA)[i] << std::endl;
-	}
+	(*SMA)->Malloc<uint64>(sizeof(uint64));
+	(*SMA)->Malloc<uint64>(sizeof(uint64));
 
-	uint64** Num_LMA_2 = (*LMA)->Malloc<uint64>(1);
-	**Num_LMA_2 = 21;
+	*Num4 = 100;
+	*Num5 = 121;
 
-	std::cout << "\n Post-Num_LMA_2: \n\n " << **Num_LMA_2 << std::endl;
+	std::cout << "\nNum 4: " << *Num4 << std::endl;
+	std::cout << "\nNum 5: " << *Num5 << std::endl;
+
+	(*SMAE)->Free(Num5);
+
+	std::cout << "\nNum 5 (Before New Allocation): " << *Num5 << std::endl;
+
+	uint64* Num6 = (*SMAE)->Malloc<uint64>(sizeof(uint64));
+	*Num6 = 100;
+
+	std::cout << "\nNum 5 (After New Allocation): " << *Num5 << std::endl;
+
+	std::cout << "\nNum 6: " << *Num6 << std::endl;
+
+	std::cout << "\nSMA memory used: " << (*SMA)->GetMemoryUsed() << std::endl;
+	std::cout << "\nSMAE memory used: " << (*SMAE)->GetMemoryUsed() << std::endl;
+
+	std::cout << "LMA memory used before flush: " << (*LMA)->GetMemoryUsed() << std::endl;
+	(*LMA)->Flush();
+	std::cout << "LMA memory used after flush: " << (*LMA)->GetMemoryUsed() << std::endl;
+	(*LMA)->Malloc<uint64>(4);
+
+	/**
+	* -----------------------------------------------------------------------------
+	* |							MEMORY MANAGER/ALLOCATERS TEST					  |
+	* -----------------------------------------------------------------------------
+	*/
 
 	MSG Message;
 	while (true)
@@ -1093,7 +1119,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 
 	if (MemoryManager::Get().GetMemoryUsed() > 0)
 	{
-		std::cout << "\nMemoryUsed: " << MemoryManager::Get().GetMemoryUsed() << std::endl;
+		std::cout << "\nMemoryUsed: " << MemoryManager::Get().GetMemoryUsed() << " bytes" << std::endl;
 	}
 
 	MemoryManager::Get().Shutdown();

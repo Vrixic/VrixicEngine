@@ -14,67 +14,56 @@
 */
 struct MemoryInfo
 {
-	// The pointer pointing to the start of the memory 
-	char* MemoryStartPtr;
-
 	// The size of the memory, used as offset to the end of memory
 	uint128 MemorySize;
+
+	// The pointer pointing to the start of the memory 
+	char* MemoryStartPtr;
 };
 
 /**
-* A basic memory allocater -> Given 10% more memory than it is asked, it will be sizeof(MemoryInfo) aligned. to make sure memory infos fit in correctly..
-*	It is a double ended stack buffer with start and end pointers....
-*	Extra memory is used to store memory info for defragmentation later on if need be....
-*	MemoryInfos will be stored at the end of the double ended stack buffer..
+* A memory allocater interface, has no functionality 
 * 
 *	This should be extended but NOT USED
 */
 class MemoryAllocater
 {
 protected:
-	// Pointer to the start of the memory this allocater can use
-	char* MemoryStartPtr;
-
 	// The size of the memory available to be used by this allocater 
-	uint64 MemorySize;
+	uint128 MemorySize;
 
 	// The amount of memory in use by this allocater
-	uint64 MemoryUsed;
+	uint128 MemoryUsed;
 
-	// Amount of memory being used by memory infos
-	uint64 MemoryUsedByMemInfo;
+	// Pointer to the start of the memory this allocater can use
+	char* MemoryHandle;
 
 public:
-	MemoryAllocater()
-		: MemoryStartPtr(nullptr), MemorySize(0), MemoryUsed(0), MemoryUsedByMemInfo(0) { }
+	MemoryAllocater(char* inMemoryHandle, uint128 inSize)
+	{ 
+		MemoryHandle = inMemoryHandle;
+		MemorySize = inSize;
+
+		MemoryUsed = 0;
+	}
 
 	virtual ~MemoryAllocater() { } 
 
-public:
-	virtual void Init(char* inStart, uint64 inSize)
+	/**
+	* Frees all memory in the allocater to be reused
+	*	- Doesn't free the allocater itself
+	*/
+	virtual void Flush()
 	{
-		MemoryStartPtr = inStart + sizeof(MemoryAllocater); // for this class
-		MemorySize = inSize;
+		MemoryUsed = 0;
 	}
 
-	/**
-	* Returns extra bytes required when giving this allocater some memory
-	*	Extra 32 bytes counting this classes member variables 
-	*	
-	* @param inSize - the size of bytes this allocater will be given to use 
-	*/
-	/*static uint64 GetAllocationBytes(const uint64& inSize)
-	{
-		float AlignmentCheck = static_cast<float>(inSize * 0.1f) / sizeof(MemoryInfo);
-		AlignmentCheck = ceilf(AlignmentCheck);
-
-		return static_cast<uint64>(AlignmentCheck * sizeof(MemoryInfo)) + sizeof(MemoryAllocater);
-	}*/
+public:
 
 	/*
 	* Returns how much memory this allocater is alloted
 	*/
-	inline uint64 GetMemorySize()
+	inline uint128 GetMemorySize()
 	{
 		return MemorySize;
 	}
@@ -82,7 +71,7 @@ public:
 	/**
 	* Returns how much memory is in used currently
 	*/
-	inline uint64 GetMemoryUsed()
+	inline uint128 GetMemoryUsed()
 	{
 		return MemoryUsed;
 	}

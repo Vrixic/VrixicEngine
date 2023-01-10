@@ -70,7 +70,7 @@ public:
 	*
 	* @return char* pointer pointing to the memory location
 	*/
-	char* Malloc(uint64 inSizeInBytes)
+	char* Malloc(uint128 inSizeInBytes)
 	{
 		// Check if we can allocate enough memory
 #if _DEBUG | _EDITOR

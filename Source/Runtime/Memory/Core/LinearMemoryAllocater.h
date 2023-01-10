@@ -2,44 +2,36 @@
 #include <Runtime/Memory/Core/MemoryAllocater.h>
 
 /**
-* @TODO: Remake the allocater 
-*/
-
-/**
 * Linear memory allocater
 */
 
 class LinearMemoryAllocater : public MemoryAllocater
 {
 public:
-	LinearMemoryAllocater()
-		: MemoryAllocater() { }
+	LinearMemoryAllocater(char* inMemoryHandle, uint128 inSize)
+		: MemoryAllocater(inMemoryHandle, inSize) { }
 
 	virtual ~LinearMemoryAllocater() { }
 
 public:
 
 	/**
-	* Allocates memory
+	* Allocates memory, does not align memory
+	*	For alignment, ask the MemManager to return the aligned memory
 	*
-	* @param inCount - How many objects to create
+	* @param inSizeInBytes - how many bytes to allocate
 	*
-	* @return char** pointer pointing to the allocated memory
+	* @return T* pointer pointing to the allocated memory/allocated object
 	*/
 	template<typename T>
-	T** Malloc(uint32 inCount)
+	T* Malloc(uint64 inSizeInBytes)
 	{
-		uint64 RequestedSize = sizeof(T) * inCount;
 #if _DEBUG | _EDITOR
-		ASSERT((MemoryUsed + MemoryUsedByMemInfo + RequestedSize + sizeof(MemoryInfo)) < MemorySize);
+		ASSERT(MemoryUsed + inSizeInBytes < (MemorySize + 1));
 #endif
-		MemoryInfo* MemInfo = (MemoryInfo*)((MemoryStartPtr + MemorySize) - MemoryUsedByMemInfo - sizeof(MemoryInfo));
-		MemInfo->MemoryStartPtr = MemoryStartPtr + MemoryUsed;
-		MemInfo->MemorySize = RequestedSize;
+		T* MemHandle = (new ((MemoryHandle + MemoryUsed)) T()); // placement-new
+		MemoryUsed += inSizeInBytes;
 
-		MemoryUsed += RequestedSize;
-		MemoryUsedByMemInfo += sizeof(MemoryInfo);
-
-		return (T**)&MemInfo->MemoryStartPtr;
+		return MemHandle;
 	}
 };

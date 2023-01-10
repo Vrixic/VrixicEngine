@@ -305,6 +305,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Source\Runtime\Memory\Core\StackMemoryAllocater.h" />
     <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Misc\Defines\GenericDefines.h" />
     <ClCompile Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\EntryPoint\EntryPoint.cpp" />
     <ClInclude Include="D:\dev\repo\VulkanRenderer\Engine\Source\Runtime\File\FileHelper.h" />
