@@ -9,13 +9,13 @@
 * 
 * Memory Diagram = |Data|Size|Data|Size|
 */
-class StackMemoryAllocater : public MemoryAllocater
+class StackAllocater : public MemoryAllocater
 {
 public:
-	StackMemoryAllocater(char* inMemoryHandle, uint128 inSizeInBytes) 
+	StackAllocater(char* inMemoryHandle, uint128 inSizeInBytes) 
 		: MemoryAllocater(inMemoryHandle, inSizeInBytes) { }
 
-	virtual ~StackMemoryAllocater() { }
+	virtual ~StackAllocater() { }
 
 public:
 
@@ -30,7 +30,7 @@ public:
 	T* Malloc(uint64 inSizeInBytes)
 	{
 #if _DEBUG | _EDITOR
-		ASSERT(MemoryUsed + (inSizeInBytes + sizeof(uint64)) < (MemorySize - 1));
+		ASSERT(MemoryUsed + (inSizeInBytes + sizeof(uint64)) < (MemorySize + 1));
 #endif
 		char* RawMemPtr = (MemoryHandle + MemoryUsed);
 		T* MemHandle = (new (RawMemPtr) T()); // placement-new
@@ -47,6 +47,9 @@ public:
 	*/
 	virtual void Free()
 	{
+#if _DEBUG | _EDITOR
+		ASSERT(MemoryUsed != 0);
+#endif
 		MemoryUsed -= 4;
 		uint64* PtrToSize = (uint64*)(MemoryHandle + MemoryUsed);
 		MemoryUsed -= (*PtrToSize);
@@ -58,11 +61,11 @@ public:
 *	Pointers need to be kept track of manually for freeing the stack, otherwise no way of knowing
 *	how much to free except clearing
 */
-class StackMemoryAllocaterE : public LinearMemoryAllocater
+class StackMemoryAllocaterE : public LinearAllocater
 {
 public:
 	StackMemoryAllocaterE(char* inMemoryHandle, uint128 inSizeInBytes)
-		: LinearMemoryAllocater(inMemoryHandle, inSizeInBytes) { }
+		: LinearAllocater(inMemoryHandle, inSizeInBytes) { }
 
 	virtual ~StackMemoryAllocaterE() { }
 
@@ -77,7 +80,7 @@ public:
 	{
 		uint64 MemSizeToFree = ((MemoryHandle + MemoryUsed) - ((char*)inPtrToMem));
 #if _DEBUG | _EDITOR
-		ASSERT(MemSizeToFree < (MemorySize - 1));
+		ASSERT(MemSizeToFree < (MemorySize + 1));
 #endif
 		MemoryUsed -= MemSizeToFree;
 	}

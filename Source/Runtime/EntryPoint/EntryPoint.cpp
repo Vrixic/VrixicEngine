@@ -20,6 +20,7 @@
 #include <Runtime/Memory/Vulkan/VulkanResourceManager.h>
 #include <Runtime/Memory/Core/LinearMemoryAllocater.h>
 #include <Runtime/Memory/Core/StackMemoryAllocater.h>
+#include <Runtime/Memory/Core/DoubleEndedStackMemoryAllocater.h>
 
 #define RENDER_DOC 1
 
@@ -1004,7 +1005,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 	* -----------------------------------------------------------------------------
 	*/
 
-	LinearMemoryAllocater** LMA = MemoryManager::Get().MallocAllocaterAligned<LinearMemoryAllocater>(100);
+	LinearAllocater** LMA = MemoryManager::Get().MallocAllocaterAligned<LinearAllocater>(100);
 
 	uint64* Num1 = (*LMA)->Malloc<uint64>(sizeof(uint64));
 	uint64* Num2 = (*LMA)->Malloc<uint64>(sizeof(uint64));
@@ -1024,7 +1025,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 	uint64* NumArr = (*LMA)->Malloc<uint64>(sizeof(uint64) * 22);
 
 	StackMemoryAllocaterE** SMAE = MemoryManager::Get().MallocAllocaterAligned<StackMemoryAllocaterE>(100);
-	StackMemoryAllocater** SMA = MemoryManager::Get().MallocAllocaterAligned<StackMemoryAllocater>(100);
+	StackAllocater** SMA = MemoryManager::Get().MallocAllocaterAligned<StackAllocater>(100);
 
 	uint64* Num4 = (*SMAE)->Malloc<uint64>(sizeof(uint64));
 	uint64* Num5 = (*SMAE)->Malloc<uint64>(sizeof(uint64));
@@ -1056,6 +1057,38 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 	(*LMA)->Flush();
 	std::cout << "LMA memory used after flush: " << (*LMA)->GetMemoryUsed() << std::endl;
 	(*LMA)->Malloc<uint64>(4);
+
+	DoubleEndedStackAllocater** DESA = MemoryManager::Get().MallocAllocaterAligned<DoubleEndedStackAllocater>(16, 8);
+
+	uint64* Num7 = (*DESA)->MallocTop<uint64>(sizeof(uint64));
+
+	*Num7 = 1000;
+
+	std::cout << "\nNum 7(Top): " << *Num7 << std::endl;
+
+	std::cout << "\nNum 7(Top) Before New Alloc: " << *Num7 << std::endl;
+	(*DESA)->FreeTop();
+	uint64* Num8 = (*DESA)->MallocTop<uint64>(sizeof(uint64));
+	*Num8 = 1021;
+
+	std::cout << "Num 7(Top) After New Alloc: " << *Num7 << std::endl;
+	std::cout << "Num 8(Top): " << *Num8 << std::endl;
+
+	uint64* Num9 = (*DESA)->MallocBottom<uint64>(sizeof(uint64));
+	*Num9 = 2000;
+
+	std::cout << "\nNum 9(Bottom): " << *Num9 << std::endl;
+
+	std::cout << "\nNum 9(Bottom) Before New Alloc: " << *Num9 << std::endl;
+	(*DESA)->FreeBottom();
+	uint64* Num10 = (*DESA)->MallocBottom<uint64>(sizeof(uint64));
+	*Num10 = 2021;
+
+	std::cout << "Num 9(Bottom) After New Alloc: " << *Num9 << std::endl;
+	std::cout << "Num 10(Bottom): " << *Num10 << std::endl;
+
+	std::cout << "\nDESA memory used: " << (*DESA)->GetMemoryUsed() << std::endl;
+
 
 	/**
 	* -----------------------------------------------------------------------------

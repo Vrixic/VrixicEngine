@@ -71,7 +71,7 @@ public:
 	/**
 	* Returns how much memory is in used currently
 	*/
-	inline uint128 GetMemoryUsed()
+	inline virtual uint128 GetMemoryUsed()
 	{
 		return MemoryUsed;
 	}

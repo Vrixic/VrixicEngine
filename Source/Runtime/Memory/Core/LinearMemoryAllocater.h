@@ -5,13 +5,13 @@
 * Linear memory allocater
 */
 
-class LinearMemoryAllocater : public MemoryAllocater
+class LinearAllocater : public MemoryAllocater
 {
 public:
-	LinearMemoryAllocater(char* inMemoryHandle, uint128 inSize)
+	LinearAllocater(char* inMemoryHandle, uint128 inSize)
 		: MemoryAllocater(inMemoryHandle, inSize) { }
 
-	virtual ~LinearMemoryAllocater() { }
+	virtual ~LinearAllocater() { }
 
 public:
 
