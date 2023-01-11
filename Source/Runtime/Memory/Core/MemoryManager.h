@@ -11,12 +11,13 @@
 *	- 256 alignment restriction solution? Special case solution maybe.
 *	- Find a way to keep track of freed memory in O(1) time complexity (constant time)
 *		- As of right now memory is 'freed' by setting te pointer to nullptr for indetification
+*	- Differentiate between game and editor memory heaps 
 */
 
 /**
 * Singleton
 *
-* Memory pool -> double ended start buffer, ends store the memory infos
+* Memory Manager - just a general purpose heap
 */
 class MemoryManager
 {
