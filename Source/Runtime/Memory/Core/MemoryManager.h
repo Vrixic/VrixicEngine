@@ -7,7 +7,10 @@
 #include <type_traits>
 
 /*
-* @TODO: 256 alignment restriction solution? Special case solution maybe.
+* @TODO: 
+*	- 256 alignment restriction solution? Special case solution maybe.
+*	- Find a way to keep track of freed memory in O(1) time complexity (constant time)
+*		- As of right now memory is 'freed' by setting te pointer to nullptr for indetification
 */
 
 /**
@@ -87,7 +90,7 @@ public:
 
 		while (MemInfoByteOffset != ByteOffsetFromStart)
 		{
-			MemoryInfo* MemInfo = (MemoryInfo*)MemInfoMemPtr;
+			MemoryInfo* MemInfo = (MemoryInfo*)(MemInfoMemPtr + ByteOffsetFromStart);
 			// Extract the shift preform for memory alignment
 			intptr Shift = ((uint8*)MemInfo->MemoryStartPtr)[-1];
 			if (Shift == 0)
@@ -98,7 +101,6 @@ public:
 
 			ByteOffsetFromStart += sizeof(MemoryInfo);
 
-			MemInfoMemPtr += ByteOffsetFromStart;
 			NewMemPtr += MemInfo->MemorySize;
 		}
 
@@ -121,7 +123,7 @@ public:
 	inline uintptr AlignAddress(uintptr inAddress, uint64 inAlignment)
 	{
 		const uint128 Mask = inAlignment - 1;
-#if _DEBUG || _EDITOR
+#if _DEBUG || _DEBUG_EDITOR
 		ASSERT((inAlignment & Mask) == 0); // Power of 2
 #endif
 		return (inAddress + Mask) & ~Mask;
@@ -138,12 +140,25 @@ public:
 	template<typename T>
 	T** MallocAligned(uint128 inSizeInBytes, uint64 inAlignment = sizeof(T*))
 	{
-		MemoryInfo* MemInfo = MemoryInfoPoolHandle->Malloc<MemoryInfo>(1);
+		// check if the last allocated item was freed, if so, just used that 
+		// otherwise alloc more memory for it 
+		char* LastMemInfo = (MemoryInfoPoolHandle->GetMemoryHandle() + MemoryInfoPoolHandle->GetByteOffsetFromStart()) - sizeof(MemoryInfo);
+		MemoryInfo* MemInfo = (MemoryInfo*)LastMemInfo;
+		if (MemInfo->MemoryStartPtr != nullptr)
+		{
+			MemInfo = MemoryInfoPoolHandle->Malloc<MemoryInfo>(1);
+		}
 
 		// Find the worse case number of bytes we might have to shift
 		inSizeInBytes += inAlignment; // allocate extra
 
 		uint8* RawMemPtr = (uint8*)MemoryPoolHandle->Malloc(inSizeInBytes);
+
+#if _DEBUG || _DEBUG_EDITOR || _EDITOR
+		std::cout << "[Memory Manager] Memory Allocated, size in bytes: " << inSizeInBytes <<
+			", with alignment: " << inAlignment << "\n";
+#endif
+
 		// Align the block, if their isn't alignment, shift it up the full 'align' bytes, so we always 
 		// have room to store the shift 
 		uint8* AlignedPtr = AlignPointer<uint8>(RawMemPtr, inAlignment);
@@ -155,7 +170,7 @@ public:
 		// Determine the shift, and store it for later when freeing
 		// (This works for up to 256-byte alignment.)
 		intptr Shift = AlignedPtr - RawMemPtr;
-#if _DEBUG || _EDITOR
+#if _DEBUG || _DEBUG_EDITOR
 		ASSERT(Shift > 0 && Shift <= 256);
 #endif
 
@@ -178,7 +193,7 @@ public:
 	T** MallocAllocaterAligned(uint128 inSizeInBytes, uint64 inAlignment = sizeof(T))
 	{
 		// Check if we can allocate enough memory
-#if _DEBUG | _EDITOR
+#if _DEBUG | _DEBUG_EDITOR
 		bool IsAllocater = std::is_base_of<MemoryAllocater, T>::value;
 		ASSERT(IsAllocater);
 #endif
@@ -200,8 +215,11 @@ public:
 		// Determine the shift, and store it for later when freeing
 		// (This works for up to 256-byte alignment.)
 		intptr Shift = AlignedPtr - RawMemPtr;
-#if _DEBUG || _EDITOR
+#if _DEBUG || _DEBUG_EDITOR
 		ASSERT(Shift > 0 && Shift <= 256);
+
+		std::cout << "[Memory Manager] Memory Allocater allocated, size requested: " << inSizeInBytes
+			<< ", with alignment: " << inAlignment << "\n";
 #endif
 
 		AlignedPtr[-1] = static_cast<uint8>(Shift & 0xff);
@@ -210,6 +228,17 @@ public:
 		MemInfo->MemorySize = ClassPaddedSize;
 
 		return (T**)&MemInfo->MemoryStartPtr;
+	}
+
+	/**
+	* Frees the memory at the pointer passed in
+	*
+	* @param inPtrToMemory - Pointer to the memory to be freed
+	*/
+	void Free(void** inPtrToMemory)
+	{
+		*inPtrToMemory = nullptr;
+		MemoryInfoPoolHandle->Free(sizeof(MemoryInfo));
 	}
 
 	void Shutdown()
@@ -229,7 +258,7 @@ private:
 		ASSERT(MemoryInfoAllocationSize == 0);
 #endif
 		MemoryAllocationSize = MEBIBYTES_TO_BYTES(100);
-		MemoryInfoAllocationSize = MEBIBYTES_TO_BYTES(10);
+		MemoryInfoAllocationSize = MEBIBYTES_TO_BYTES(50);
 
 		MemoryPoolHandle = new MemoryPool(MemoryAllocationSize);
 		MemoryInfoPoolHandle = new MemoryPool(MemoryInfoAllocationSize);

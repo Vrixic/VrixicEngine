@@ -58,7 +58,13 @@ typedef int64               intptr;
 
 #pragma once
 
+// In debug mode 
 #define _DEBUG !NDEBUG
+
+// In editor in debug mode 
+#define _DEBUG_EDITOR !NDEBUG
+
+// In editor 
 #define _EDITOR !NDEBUG
 
 /* Assertion */

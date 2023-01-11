@@ -28,7 +28,7 @@ public:
 	template<typename T>
 	T* MallocBottom(uint64 inSizeInBytes)
 	{
-#if _DEBUG | _EDITOR
+#if _DEBUG | _DEBUG_EDITOR
 		ASSERT((MemoryUsed + MemoryUsedFromTop) + (inSizeInBytes + sizeof(uint64)) < (MemorySize + 1));
 #endif
 		char* RawMemPtr = (MemoryHandle + MemoryUsed);
@@ -51,7 +51,7 @@ public:
 	template<typename T>
 	T* MallocTop(uint64 inSizeInBytes)
 	{
-#if _DEBUG | _EDITOR
+#if _DEBUG | _DEBUG_EDITOR
 		ASSERT((MemoryUsed + MemoryUsedFromTop) + (inSizeInBytes + sizeof(uint64)) < (MemorySize + 1));
 #endif
 		char* RawMemPtr = (MemoryHandle + ((MemorySize - MemoryUsedFromTop) - inSizeInBytes));
@@ -69,7 +69,7 @@ public:
 	*/
 	virtual void FreeTop()
 	{
-#if _DEBUG | _EDITOR
+#if _DEBUG | _DEBUG_EDITOR
 		ASSERT(MemoryUsedFromTop != 0);
 #endif
 		uint64* PtrToSize = (uint64*)(MemoryHandle + (MemorySize - MemoryUsedFromTop));
@@ -81,7 +81,7 @@ public:
 	*/
 	virtual void FreeBottom()
 	{
-#if _DEBUG | _EDITOR
+#if _DEBUG | _DEBUG_EDITOR
 		ASSERT(MemoryUsed != 0);
 #endif
 		MemoryUsed -= 4;

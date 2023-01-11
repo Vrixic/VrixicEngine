@@ -29,7 +29,7 @@ public:
 	template<typename T>
 	T* Malloc(uint64 inSizeInBytes)
 	{
-#if _DEBUG | _EDITOR
+#if _DEBUG | _DEBUG_EDITOR
 		ASSERT(MemoryUsed + (inSizeInBytes + sizeof(uint64)) < (MemorySize + 1));
 #endif
 		char* RawMemPtr = (MemoryHandle + MemoryUsed);
@@ -47,7 +47,7 @@ public:
 	*/
 	virtual void Free()
 	{
-#if _DEBUG | _EDITOR
+#if _DEBUG | _DEBUG_EDITOR
 		ASSERT(MemoryUsed != 0);
 #endif
 		MemoryUsed -= 4;
@@ -79,7 +79,7 @@ public:
 	virtual void Free(void* inPtrToMem)
 	{
 		uint64 MemSizeToFree = ((MemoryHandle + MemoryUsed) - ((char*)inPtrToMem));
-#if _DEBUG | _EDITOR
+#if _DEBUG | _DEBUG_EDITOR
 		ASSERT(MemSizeToFree < (MemorySize + 1));
 #endif
 		MemoryUsed -= MemSizeToFree;

@@ -1058,6 +1058,17 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 	std::cout << "LMA memory used after flush: " << (*LMA)->GetMemoryUsed() << std::endl;
 	(*LMA)->Malloc<uint64>(4);
 
+	uint32** LargeMem = MemoryManager::Get().MallocAligned<uint32>(((1024) * 1024) * 55);
+
+	std::cout << "\n\nMemoryUsed: " << MemoryManager::Get().GetMemoryUsed() << " bytes\n" << std::endl;
+
+	// Resize general memory heap
+	std::clock_t Clock = clock();
+	MemoryManager::Get().Resize(1024);
+	std:clock_t End = clock();
+
+	std::cout << "\n\nTime for resize: " << 1000.0f * ((float)(End - Clock) / CLOCKS_PER_SEC) << " ms" << std::endl;
+
 	DoubleEndedStackAllocater** DESA = MemoryManager::Get().MallocAllocaterAligned<DoubleEndedStackAllocater>(16, 8);
 
 	uint64* Num7 = (*DESA)->MallocTop<uint64>(sizeof(uint64));
@@ -1089,6 +1100,28 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 
 	std::cout << "\nDESA memory used: " << (*DESA)->GetMemoryUsed() << std::endl;
 
+	std::clock_t Start = clock();
+	for (uint32 i = 0; i < 100000000; ++i)
+	{
+		uint32* Alloc = new uint32(100);
+		*Alloc = 90;
+		delete Alloc;
+	}
+	End = clock();
+	double MSTime1 = 1000.0 * ((double)(End - Start) / CLOCKS_PER_SEC);
+	std::cout << "\n\nTime for new/delete: " << MSTime1 << " ms" << std::endl;
+
+	Start = clock();
+	for (uint32 i = 0; i < 100000000; ++i)
+	{
+		uint32** Alloc = MemoryManager::Get().MallocAligned<uint32>(4, 4);
+		MemoryManager::Get().Free((void**)Alloc);
+	}
+	End = clock();
+	double MSTime2 = 1000.0 * ((double)(End - Start) / CLOCKS_PER_SEC);
+	std::cout << "\n\nTime for Malloc/Free: " << MSTime2 << " ms" << std::endl;
+
+	std::cout << "\n\nPerformance gain: " << (MSTime1 / MSTime2) << std::endl;
 
 	/**
 	* -----------------------------------------------------------------------------

@@ -66,7 +66,7 @@ public:
 	*/
 	void* Map(VkDeviceSize inSize, VkDeviceSize inOffset)
 	{
-#if _DEBUG | _EDITOR
+#if _DEBUG | _DEBUG_EDITOR
 		VK_CHECK_RESULT(vkMapMemory(*Device->GetDeviceHandle(), MemoryHandle, inOffset, inSize, 0, &MappedDataPtr));
 #else
 		vkMapMemory(*Device->GetDeviceHandle(), MemoryHandle, inOffset, inSize, 0, &MappedDataPtr);
@@ -213,7 +213,7 @@ public:
 	uint32 AllocateMemory(const VkMemoryAllocateInfo& inMemoryAllocateInfo)
 	{
 		VkDeviceMemory MemoryHandle = VK_NULL_HANDLE;
-#if _DEBUG | _EDITOR
+#if _DEBUG | _DEBUG_EDITOR
 		VK_CHECK_RESULT(vkAllocateMemory(*Device->GetDeviceHandle(), &inMemoryAllocateInfo, nullptr, &MemoryHandle));
 #else
 		vkAllocateMemory(*Device->GetDeviceHandle(), &inMemoryAllocateInfo, nullptr, &MemoryHandle);

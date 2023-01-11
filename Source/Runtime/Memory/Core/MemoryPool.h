@@ -13,16 +13,16 @@ private:
 	char* MemoryPtr;
 
 	/* size of the memory pool */
-	uint64 PoolSize;
+	uint128 PoolSize;
 
 	/* locates the next memory block which can be given */
-	uint64 MemoryUsed;
+	uint128 MemoryUsed;
 
 	/* total amount of memory being used */
-	uint64 MemoryUsedTotal;
+	uint128 MemoryUsedTotal;
 
 public:
-	MemoryPool(uint64 inSizeInBytes)
+	MemoryPool(uint128 inSizeInBytes)
 		: MemoryUsed(0), MemoryUsedTotal(0)
 	{
 		PoolSize = inSizeInBytes;
@@ -51,7 +51,7 @@ public:
 		uint64 RequestedSize = sizeof(T) * inNumCount;
 
 		// Check if we can allocate enough memory
-#if _DEBUG | _EDITOR
+#if _DEBUG | _DEBUG_EDITOR
 		ASSERT((MemoryUsed + RequestedSize) < PoolSize);
 #endif
 
@@ -73,7 +73,7 @@ public:
 	char* Malloc(uint128 inSizeInBytes)
 	{
 		// Check if we can allocate enough memory
-#if _DEBUG | _EDITOR
+#if _DEBUG | _DEBUG_EDITOR
 		ASSERT((MemoryUsed + inSizeInBytes) < PoolSize);
 #endif
 
@@ -94,7 +94,7 @@ public:
 		uint64 LastPoolSize = PoolSize;
 		PoolSize = inSizeInBytes;
 
-#if _DEBUG | _EDITOR
+#if _DEBUG | _DEBUG_EDITOR
 		ASSERT(PoolSize > LastPoolSize);
 #endif // _DEBUG | _EDITOR
 
@@ -115,12 +115,12 @@ public:
 	* @param outLastMemHandle - handle to the last memory location
 	* @return char** pointer pointing to the memory location
 	*/
-	char* Resize(uint64 inSizeInBytes, char* outLastMemHandle)
+	char* Resize(uint128 inSizeInBytes, char* outLastMemHandle)
 	{
-		uint64 LastPoolSize = PoolSize;
+		uint128 LastPoolSize = PoolSize;
 		PoolSize = inSizeInBytes;
 
-#if _DEBUG | _EDITOR
+#if _DEBUG | _DEBUG_EDITOR
 		ASSERT(PoolSize > LastPoolSize);
 #endif // _DEBUG | _EDITOR
 

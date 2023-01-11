@@ -4,7 +4,6 @@
 /**
 * Linear memory allocater
 */
-
 class LinearAllocater : public MemoryAllocater
 {
 public:
@@ -26,7 +25,7 @@ public:
 	template<typename T>
 	T* Malloc(uint64 inSizeInBytes)
 	{
-#if _DEBUG | _EDITOR
+#if _DEBUG | _DEBUG_EDITOR
 		ASSERT(MemoryUsed + inSizeInBytes < (MemorySize + 1));
 #endif
 		T* MemHandle = (new ((MemoryHandle + MemoryUsed)) T()); // placement-new
