@@ -1,7 +1,7 @@
 #pragma once
-#include <Misc/Defines/GenericDefines.h>
 #include <Runtime/Memory/Core/MemoryAllocater.h>
 #include <Runtime/Memory/Core/MemoryPool.h>
+#include <Runtime/Memory/Core/MemoryUtils.h>
 
 #include <iostream>
 #include <type_traits>
@@ -125,27 +125,6 @@ public:
 		HasPostInitialized = true;
 	}
 
-	template<typename T>
-	inline T* AlignPointer(T* inPtr, uint64 inAlignment)
-	{
-		const uintptr Address = reinterpret_cast<uintptr>(inPtr);
-		const uintptr AddressAligned = AlignAddress(Address, inAlignment);
-		return reinterpret_cast<T*>(AddressAligned);
-	}
-
-	/**
-	* Aligns the address: Shifts the given address upwards if/as necessary to ensure it's aligned to the given
-	* number of byes
-	*/
-	inline uintptr AlignAddress(uintptr inAddress, uint64 inAlignment)
-	{
-		const uint128 Mask = inAlignment - 1;
-#if _DEBUG || _DEBUG_EDITOR
-		ASSERT((inAlignment & Mask) == 0); // Power of 2
-#endif
-		return (inAddress + Mask) & ~Mask;
-	}
-
 	/**
 	* Allocate memory based on the count, also align pointer by sizeof(T),
 	* sizeof(T) must be a power of 2
@@ -178,7 +157,7 @@ public:
 
 		// Align the block, if their isn't alignment, shift it up the full 'align' bytes, so we always 
 		// have room to store the shift 
-		uint8* AlignedPtr = AlignPointer<uint8>(RawMemPtr, inAlignment);
+		uint8* AlignedPtr = MemoryUtils::AlignPointer<uint8>(RawMemPtr, inAlignment);
 		if (AlignedPtr == RawMemPtr)
 		{
 			AlignedPtr += inAlignment;
@@ -223,7 +202,7 @@ public:
 		uint8* RawMemPtr = (uint8*)MemoryPoolHandle->Malloc(ClassPaddedSize);
 		// Align the block, if their isn't alignment, shift it up the full 'align' bytes, so we always 
 		// have room to store the shift 
-		uint8* AlignedPtr = AlignPointer<uint8>(RawMemPtr, inAlignment);
+		uint8* AlignedPtr = MemoryUtils::AlignPointer<uint8>(RawMemPtr, inAlignment);
 		if (AlignedPtr == RawMemPtr)
 		{
 			AlignedPtr += inAlignment;
