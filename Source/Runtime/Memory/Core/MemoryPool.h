@@ -141,6 +141,26 @@ public:
 		MemoryUsedTotal -= inSize;
 	}
 
+	/**
+	* Flushs the Heap, but doesn't delete memory
+	*/
+	void FlushNoDelete()
+	{
+		MemoryUsed = 0;
+		MemoryUsedTotal = 0;
+	}
+
+	/**
+	* Frees/deletes all memory
+	*/
+	void Flush()
+	{
+		if (MemoryPtr != nullptr)
+		{
+			delete[] MemoryPtr;
+		}
+	}
+
 public:
 	inline uint64 GetPoolSize() const
 	{
@@ -151,11 +171,11 @@ public:
 	{
 		return MemoryPtr;
 	}
-	
+
 	/**
 	* Call free whenever memory is freed for accurate value
 	*/
-	inline uint64 GetMemoryUsed() const 
+	inline uint64 GetMemoryUsed() const
 	{
 		return MemoryUsedTotal;
 	}
@@ -163,7 +183,7 @@ public:
 	/**
 	* Returns the current location of memory to be given next
 	*/
-	inline uint64 GetByteOffsetFromStart() const 
+	inline uint64 GetByteOffsetFromStart() const
 	{
 		return MemoryUsed;
 	}

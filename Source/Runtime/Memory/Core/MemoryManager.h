@@ -7,12 +7,28 @@
 #include <type_traits>
 
 /*
-* @TODO: 
+* @TODO:
 *	- 256 alignment restriction solution? Special case solution maybe.
 *	- Find a way to keep track of freed memory in O(1) time complexity (constant time)
 *		- As of right now memory is 'freed' by setting te pointer to nullptr for indetification
-*	- Differentiate between game and editor memory heaps 
+*	- Differentiate between game and editor memory heaps
 */
+
+/**
+* Represents a freed memory location/block/Node, 16-byte aligned
+*
+*/
+struct FreeMemoryNode
+{
+	/** Pointer to the memory location */
+	char* MemoryPtr;
+
+	/** Size of memory */
+	uint64 Size;
+
+	/** How far from this node is the next node in bytes */
+	uint64 Next;
+};
 
 /**
 * Singleton
@@ -242,9 +258,21 @@ public:
 		MemoryInfoPoolHandle->Free(sizeof(MemoryInfo));
 	}
 
+	/**
+	* Flushs the Heap, but doesn't delete memory
+	*/
+	void FlushNoDelete()
+	{
+		MemoryPoolHandle->FlushNoDelete();
+		MemoryInfoPoolHandle->FlushNoDelete();
+	}
+
+	/**
+	* Shuts down the manager, Releases All allocated memory
+	*/
 	void Shutdown()
 	{
-		FreeAllMemory();
+		Flush();
 	}
 
 private:
@@ -265,10 +293,11 @@ private:
 		MemoryInfoPoolHandle = new MemoryPool(MemoryInfoAllocationSize);
 	}
 
+
 	/**
-	* Frees all memory
+	* Frees/deletes all memory
 	*/
-	void FreeAllMemory()
+	void Flush()
 	{
 		delete MemoryPoolHandle;
 		delete MemoryInfoPoolHandle;
