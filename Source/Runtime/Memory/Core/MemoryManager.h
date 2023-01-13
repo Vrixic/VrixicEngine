@@ -21,13 +21,13 @@
 struct FreeMemoryNode
 {
 	/** Pointer to the memory location */
-	char* MemoryPtr;
+	void* MemoryPtr;
 
 	/** Size of memory */
 	uint64 Size;
 
 	/** How far from this node is the next node in bytes */
-	uint64 Next;
+	int32 Next;
 };
 
 /**
@@ -38,9 +38,6 @@ struct FreeMemoryNode
 class MemoryManager
 {
 private:
-	/* Instance for singleton */
-	//static MemoryManager* Instance;
-
 	// PostInit should only be called once 
 	bool HasPostInitialized;
 
@@ -56,9 +53,19 @@ private:
 	/* amount of memory allocated for memory info pool */
 	uint128 MemoryInfoAllocationSize;
 
+	/* Handle to the pool of free memory nodes */
+	MemoryPool* FreePoolHandle;
+
+	/* Size of the Free Nodes pool*/
+	uint128 FreePoolSize;
+
+	/* How many free nodes are currently there */
+	uint32 FreeNodesCount;
+
 public:
 	MemoryManager() : HasPostInitialized(false), MemoryPoolHandle(nullptr), MemoryAllocationSize(0),
-		MemoryInfoPoolHandle(nullptr), MemoryInfoAllocationSize(0) { }
+		MemoryInfoPoolHandle(nullptr), MemoryInfoAllocationSize(0), FreePoolHandle(nullptr), 
+		FreePoolSize(0), FreeNodesCount(0) { }
 
 	~MemoryManager() { }
 
@@ -136,23 +143,88 @@ public:
 	template<typename T>
 	T** MallocAligned(uint128 inSizeInBytes, uint64 inAlignment = sizeof(T*))
 	{
-		// check if the last allocated item was freed, if so, just used that 
-		// otherwise alloc more memory for it 
-		char* LastMemInfo = (MemoryInfoPoolHandle->GetMemoryHandle() + MemoryInfoPoolHandle->GetByteOffsetFromStart()) - sizeof(MemoryInfo);
-		MemoryInfo* MemInfo = (MemoryInfo*)LastMemInfo;
-		if (MemInfo->MemoryStartPtr != nullptr)
+		//// check if the last allocated item was freed, if so, just used that 
+		//// otherwise alloc more memory for it 
+		//char* LastMemInfo = (MemoryInfoPoolHandle->GetMemoryHandle() + MemoryInfoPoolHandle->GetByteOffsetFromStart()) - sizeof(MemoryInfo);
+		//MemoryInfo* MemInfo = (MemoryInfo*)LastMemInfo;
+		//if (MemInfo->MemoryStartPtr != nullptr)
+		//{
+		//	MemInfo = MemoryInfoPoolHandle->Malloc<MemoryInfo>(sizeof(MemoryInfo));
+		//}
+
+		MemoryInfo* MemInfo = nullptr;
+		FreeMemoryNode* HeadNode = (FreeMemoryNode*)FreePoolHandle->GetMemoryHandle();
+		// Find the worse case number of bytes we might have to shift
+		inSizeInBytes += inAlignment - 1; // allocate extra, -1 for faster if check 
+
+		for (uint32 i = 0; i < FreeNodesCount; ++i)
 		{
-			MemInfo = MemoryInfoPoolHandle->Malloc<MemoryInfo>(1);
+			FreeMemoryNode& CurrentFreeNode = HeadNode[i];
+			// Check if there is a free node available with Size greater than what we want
+			if (CurrentFreeNode.Size > inSizeInBytes)
+			{
+				// Get the memory info the FreeNode points to
+				MemInfo = (MemoryInfo*)CurrentFreeNode.MemoryPtr;
+
+				// Calculate the bytes left over 
+				uint128 ExtraBytes = CurrentFreeNode.Size - inSizeInBytes;
+				if (ExtraBytes < 257) // Just give all bytes to requester 
+				{
+					MemInfo->MemorySize = CurrentFreeNode.Size;
+					
+					// Swap last allocated node with current
+					if (FreePoolHandle->GetMemoryUsed() > 0)
+					{
+						FreePoolHandle->FreeLast(sizeof(FreeMemoryNode));
+						FreeNodesCount--;
+
+						FreeMemoryNode* LastNodePtr = (FreeMemoryNode*)(((char*)HeadNode) + FreePoolHandle->GetMemoryUsed());
+			
+						CurrentFreeNode.MemoryPtr = LastNodePtr->MemoryPtr;
+						CurrentFreeNode.Size = LastNodePtr->Size;
+						//memcpy(&CurrentFreeNode, LastNodePtr, sizeof(FreeMemoryNode));
+
+						CurrentFreeNode.Next = i + 1;
+					}				
+
+					// Found a spot in heap we could reuse
+					break;
+				}
+
+				MemInfo->MemorySize = inSizeInBytes + 1;
+				// Create a new memory info for the left over memory
+				MemoryInfo* NewMemInfo = MemoryInfoPoolHandle->Malloc<MemoryInfo>(sizeof(MemoryInfo));
+				NewMemInfo->MemorySize = ExtraBytes - 1;
+				NewMemInfo->MemoryStartPtr = (MemInfo->MemoryStartPtr + (inSizeInBytes + 1));
+
+				// Set to left over bytes which can still be reused
+				CurrentFreeNode.Size = NewMemInfo->MemorySize;
+
+				// Found a spot in heap we could reuse
+				break;
+			}
 		}
 
-		// Find the worse case number of bytes we might have to shift
-		inSizeInBytes += inAlignment; // allocate extra
+		inSizeInBytes += 1; // add the one subtracted for faster if check
 
-		uint8* RawMemPtr = (uint8*)MemoryPoolHandle->Malloc(inSizeInBytes);
+		uint8* RawMemPtr = nullptr;
+		// If no memory was freed, allocate a new memory info
+		if (MemInfo == nullptr)
+		{
+			MemInfo = MemoryInfoPoolHandle->Malloc<MemoryInfo>(sizeof(MemoryInfo));
+			RawMemPtr = MemoryPoolHandle->Malloc<uint8>(inSizeInBytes);
+
+			MemInfo->MemorySize = inSizeInBytes;
+		}
+		else
+		{
+			RawMemPtr = (uint8*)MemInfo->MemoryStartPtr;
+		}
+		
 
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		std::cout << "[Memory Manager] Memory Allocated, size in bytes: " << inSizeInBytes <<
-			", with alignment: " << inAlignment << "\n";
+		//std::cout << "[Memory Manager] Memory Allocated, size in bytes: " << inSizeInBytes <<
+			//", with alignment: " << inAlignment << "\n";
 #endif
 
 		// Align the block, if their isn't alignment, shift it up the full 'align' bytes, so we always 
@@ -173,8 +245,7 @@ public:
 		AlignedPtr[-1] = static_cast<uint8>(Shift & 0xff);
 
 		MemInfo->MemoryStartPtr = (char*)(new (AlignedPtr) T());
-		MemInfo->MemorySize = inSizeInBytes;
-
+		
 		return (T**)&MemInfo->MemoryStartPtr;
 	}
 
@@ -194,7 +265,7 @@ public:
 		ASSERT(IsAllocater);
 #endif
 
-		MemoryInfo* MemInfo = MemoryInfoPoolHandle->Malloc<MemoryInfo>(1);
+		MemoryInfo* MemInfo = MemoryInfoPoolHandle->MallocClass<MemoryInfo>(1);
 
 		// Find the worse case number of bytes we might have to shift
 		uint128 ClassPaddedSize = inSizeInBytes + inAlignment + sizeof(T);
@@ -233,8 +304,24 @@ public:
 	*/
 	void Free(void** inPtrToMemory)
 	{
-		*inPtrToMemory = nullptr;
+		//*inPtrToMemory = nullptr;
 		MemoryInfoPoolHandle->Free(sizeof(MemoryInfo));
+
+		// Retreive the size of bytes allocated by this MemoryInfo
+		MemoryInfo* MemInfo = ((MemoryInfo*)((char*)(inPtrToMemory)-sizeof(uint128)));
+		
+		// Create a free node that points to the memory node 
+		FreeMemoryNode* FreeMemNode = FreePoolHandle->Malloc<FreeMemoryNode>(sizeof(FreeMemoryNode));
+		FreeMemNode->MemoryPtr = MemInfo;
+		FreeMemNode->Next = 0;
+		FreeMemNode->Size = MemInfo->MemorySize;
+		
+		if (FreePoolHandle->GetMemoryUsed() != 0)
+		{
+			FreeMemNode[-1].Next = FreeNodesCount;
+		}
+		
+		FreeNodesCount++;
 	}
 
 	/**
@@ -244,6 +331,8 @@ public:
 	{
 		MemoryPoolHandle->FlushNoDelete();
 		MemoryInfoPoolHandle->FlushNoDelete();
+		FreePoolHandle->FlushNoDelete();
+		FreeNodesCount = 0;
 	}
 
 	/**
@@ -267,9 +356,11 @@ private:
 #endif
 		MemoryAllocationSize = MEBIBYTES_TO_BYTES(100);
 		MemoryInfoAllocationSize = MEBIBYTES_TO_BYTES(50);
+		FreePoolSize = MEBIBYTES_TO_BYTES(50);
 
 		MemoryPoolHandle = new MemoryPool(MemoryAllocationSize);
 		MemoryInfoPoolHandle = new MemoryPool(MemoryInfoAllocationSize);
+		FreePoolHandle = new MemoryPool(FreePoolSize);
 	}
 
 
@@ -280,6 +371,8 @@ private:
 	{
 		delete MemoryPoolHandle;
 		delete MemoryInfoPoolHandle;
+		delete FreePoolHandle;
+		FreeNodesCount = 0;
 	}
 
 public:

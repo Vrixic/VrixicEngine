@@ -5,6 +5,7 @@
 
 /**
 * A pool of memory, used by the Memory Manager
+* Has no defragmentation options
 */
 class MemoryPool
 {
@@ -39,14 +40,14 @@ public:
 
 public:
 	/**
-	* Allocate memory based on the item and count, Calls constructors
+	* Allocate memory based on the item and count, Calls constructors of the class Allocated
 	*
 	* @param inNumCount - count of how many to allocate
 	*
 	* @return char* pointer pointing to the memory location
 	*/
 	template<typename T>
-	T* Malloc(uint32 inNumCount)
+	T* MallocClass(uint32 inNumCount)
 	{
 		uint64 RequestedSize = sizeof(T) * inNumCount;
 
@@ -70,7 +71,8 @@ public:
 	*
 	* @return char* pointer pointing to the memory location
 	*/
-	char* Malloc(uint128 inSizeInBytes)
+	template<typename T>
+	T* Malloc(uint128 inSizeInBytes)
 	{
 		// Check if we can allocate enough memory
 #if _DEBUG | _DEBUG_EDITOR
@@ -81,15 +83,16 @@ public:
 		MemoryUsed += inSizeInBytes;
 		MemoryUsedTotal += inSizeInBytes;
 
-		return MemPtr;
+		return (T*)MemPtr;
 	}
 
 	/**
-	* Resize the pool, allocates more memory, do not scale down
+	* Resize the pool, allocates more memory, do not scale down,
+	* Frees last memory handle 
 	*
 	* @return char** pointer pointing to the memory location
 	*/
-	char* Resize(uint64 inSizeInBytes)
+	char* ResizeAndFlush(uint64 inSizeInBytes)
 	{
 		uint64 LastPoolSize = PoolSize;
 		PoolSize = inSizeInBytes;
@@ -138,6 +141,17 @@ public:
 	*/
 	void Free(uint64 inSize)
 	{
+		MemoryUsedTotal -= inSize;
+	}
+
+	/**
+	* Frees memory from current location 
+	* 
+	* Frees last allocated object 
+	*/
+	void FreeLast(uint64 inSize)
+	{
+		MemoryUsed -= inSize;
 		MemoryUsedTotal -= inSize;
 	}
 
