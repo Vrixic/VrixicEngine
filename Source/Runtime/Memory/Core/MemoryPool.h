@@ -1,11 +1,11 @@
 #pragma once
 #include <Misc/Defines/GenericDefines.h>
-
-#define MEBIBYTES_TO_BYTES(inMiB) inMiB * 1048576
+#include <Runtime/Memory/Core/MemoryUtils.h>
 
 /**
 * A pool of memory, used by the Memory Manager
 * Has no defragmentation options
+* DEPRECATED
 */
 class MemoryPool
 {
@@ -14,17 +14,20 @@ private:
 	char* MemoryPtr;
 
 	/* size of the memory pool */
-	uint128 PoolSize;
+	uint64 PoolSize;
 
 	/* locates the next memory block which can be given */
-	uint128 MemoryUsed;
+	uint64 MemoryUsed;
 
 	/* total amount of memory being used */
-	uint128 MemoryUsedTotal;
+	uint64 MemoryUsedTotal;
+
+	/* Count of all allocations made to this Pool */
+	uint64 MemoryAllocationsCount;
 
 public:
-	MemoryPool(uint128 inSizeInBytes)
-		: MemoryUsed(0), MemoryUsedTotal(0)
+	MemoryPool(uint64 inSizeInBytes)
+		: MemoryUsed(0), MemoryUsedTotal(0), MemoryAllocationsCount(0)
 	{
 		PoolSize = inSizeInBytes;
 		MemoryPtr = new char[PoolSize];
@@ -61,6 +64,8 @@ public:
 		MemoryUsed += RequestedSize;
 		MemoryUsedTotal += RequestedSize;
 
+		MemoryAllocationsCount++;
+
 		return MemPtr;
 	}
 
@@ -72,7 +77,7 @@ public:
 	* @return char* pointer pointing to the memory location
 	*/
 	template<typename T>
-	T* Malloc(uint128 inSizeInBytes)
+	T* Malloc(uint64 inSizeInBytes)
 	{
 		// Check if we can allocate enough memory
 #if _DEBUG | _DEBUG_EDITOR
@@ -82,6 +87,8 @@ public:
 		char* MemPtr = MemoryPtr + MemoryUsed;
 		MemoryUsed += inSizeInBytes;
 		MemoryUsedTotal += inSizeInBytes;
+
+		MemoryAllocationsCount++;
 
 		return (T*)MemPtr;
 	}
@@ -118,9 +125,9 @@ public:
 	* @param outLastMemHandle - handle to the last memory location
 	* @return char** pointer pointing to the memory location
 	*/
-	char* Resize(uint128 inSizeInBytes, char* outLastMemHandle)
+	char* Resize(uint64 inSizeInBytes, char* outLastMemHandle)
 	{
-		uint128 LastPoolSize = PoolSize;
+		uint64 LastPoolSize = PoolSize;
 		PoolSize = inSizeInBytes;
 
 #if _DEBUG | _DEBUG_EDITOR
@@ -171,8 +178,37 @@ public:
 	{
 		if (MemoryPtr != nullptr)
 		{
+			intptr Shift = ((uint8*)MemoryPtr)[-1];
+			if (Shift == 0)
+			{
+				Shift = 256;
+			}
+			MemoryPtr = (MemoryPtr - Shift);
+
 			delete[] MemoryPtr;
 		}
+	}
+
+	void AlignMemoryHandle(uint64 inAlignment)
+	{
+		// Align the block, if their isn't alignment, shift it up the full 'align' bytes, so we always 
+		// have room to store the shift 
+		uint8* AlignedPtr = MemoryUtils::AlignPointer<uint8>((uint8*)MemoryPtr, inAlignment);
+		if (AlignedPtr == (uint8*)MemoryPtr)
+		{
+			AlignedPtr += inAlignment;
+		}
+
+		// Determine the shift, and store it for later when freeing
+		// (This works for up to 256-byte alignment.)
+		intptr Shift = AlignedPtr - (uint8*)MemoryPtr;
+#if _DEBUG || _DEBUG_EDITOR
+		ASSERT(Shift > 0 && Shift <= 256);
+#endif
+
+		AlignedPtr[-1] = static_cast<uint8>(Shift & 0xff);
+
+		MemoryPtr = (char*)AlignedPtr;
 	}
 
 public:
@@ -202,3 +238,4 @@ public:
 		return MemoryUsed;
 	}
 };
+

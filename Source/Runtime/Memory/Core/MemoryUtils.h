@@ -1,6 +1,8 @@
 #pragma once
 #include <Misc/Defines/GenericDefines.h>
 
+#define MEBIBYTES_TO_BYTES(inMiB) inMiB * 1048576
+
 /**
 * Static class that contains functions for manipulating memory/pointers
 */
