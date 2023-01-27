@@ -7,30 +7,34 @@
 class LinearAllocater : public MemoryAllocater
 {
 public:
-	LinearAllocater(char* inMemoryHandle, uint128 inSize)
-		: MemoryAllocater(inMemoryHandle, inSize) { }
+	LinearAllocater()
+		: MemoryAllocater() { }
 
 	virtual ~LinearAllocater() { }
 
 public:
 
 	/**
-	* Allocates memory, does not align memory
-	*	For alignment, ask the MemManager to return the aligned memory
+	* Allocates memory, does not align memory, calls constructors.
+	* If this allocater is 32-byte aligned and requester asks for 32-bytes, it will return aligned memory 
 	*
 	* @param inSizeInBytes - how many bytes to allocate
 	*
-	* @return T* pointer pointing to the allocated memory/allocated object
+	* @return ulong32 - an index into the Data() pointer 
 	*/
 	template<typename T>
-	T* Malloc(uint64 inSizeInBytes)
+	ulong32 Malloc(ulong32 inSizeInBytes)
 	{
-#if _DEBUG | _DEBUG_EDITOR
+#if _DEBUG || _DEBUG_EDITOR || _EDITOR
 		ASSERT(MemoryUsed + inSizeInBytes < (MemorySize + 1));
+
+		AllocationCount++;
 #endif
-		T* MemHandle = (new ((MemoryHandle + MemoryUsed)) T()); // placement-new
+		T* MemHandle = (new ((Data() + MemoryUsed)) T()); // placement-new
+
+		uint32 Index = MemoryUsed;
 		MemoryUsed += inSizeInBytes;
 
-		return MemHandle;
+		return Index;
 	}
 };

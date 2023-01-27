@@ -14,19 +14,19 @@ private:
 	char* MemoryPtr;
 
 	/* size of the memory pool */
-	uint64 PoolSize;
+	uint32 PoolSize;
 
 	/* locates the next memory block which can be given */
-	uint64 MemoryUsed;
+	uint32 MemoryUsed;
 
 	/* total amount of memory being used */
-	uint64 MemoryUsedTotal;
+	uint32 MemoryUsedTotal;
 
 	/* Count of all allocations made to this Pool */
-	uint64 MemoryAllocationsCount;
+	uint32 MemoryAllocationsCount;
 
 public:
-	MemoryPool(uint64 inSizeInBytes)
+	MemoryPool(uint32 inSizeInBytes)
 		: MemoryUsed(0), MemoryUsedTotal(0), MemoryAllocationsCount(0)
 	{
 		PoolSize = inSizeInBytes;
@@ -52,7 +52,7 @@ public:
 	template<typename T>
 	T* MallocClass(uint32 inNumCount)
 	{
-		uint64 RequestedSize = sizeof(T) * inNumCount;
+		uint32 RequestedSize = sizeof(T) * inNumCount;
 
 		// Check if we can allocate enough memory
 #if _DEBUG | _DEBUG_EDITOR
@@ -77,7 +77,7 @@ public:
 	* @return char* pointer pointing to the memory location
 	*/
 	template<typename T>
-	T* Malloc(uint64 inSizeInBytes)
+	T* Malloc(uint32 inSizeInBytes)
 	{
 		// Check if we can allocate enough memory
 #if _DEBUG | _DEBUG_EDITOR
@@ -99,9 +99,9 @@ public:
 	*
 	* @return char** pointer pointing to the memory location
 	*/
-	char* ResizeAndFlush(uint64 inSizeInBytes)
+	char* ResizeAndFlush(uint32 inSizeInBytes)
 	{
-		uint64 LastPoolSize = PoolSize;
+		uint32 LastPoolSize = PoolSize;
 		PoolSize = inSizeInBytes;
 
 #if _DEBUG | _DEBUG_EDITOR
@@ -125,9 +125,9 @@ public:
 	* @param outLastMemHandle - handle to the last memory location
 	* @return char** pointer pointing to the memory location
 	*/
-	char* Resize(uint64 inSizeInBytes, char* outLastMemHandle)
+	char* Resize(uint32 inSizeInBytes, char* outLastMemHandle)
 	{
-		uint64 LastPoolSize = PoolSize;
+		uint32 LastPoolSize = PoolSize;
 		PoolSize = inSizeInBytes;
 
 #if _DEBUG | _DEBUG_EDITOR
@@ -146,7 +146,7 @@ public:
 	/**
 	* Calculated total memory in used currently
 	*/
-	void Free(uint64 inSize)
+	void Free(uint32 inSize)
 	{
 		MemoryUsedTotal -= inSize;
 	}
@@ -156,7 +156,7 @@ public:
 	* 
 	* Frees last allocated object 
 	*/
-	void FreeLast(uint64 inSize)
+	void FreeLast(uint32 inSize)
 	{
 		MemoryUsed -= inSize;
 		MemoryUsedTotal -= inSize;
@@ -189,7 +189,7 @@ public:
 		}
 	}
 
-	void AlignMemoryHandle(uint64 inAlignment)
+	void AlignMemoryHandle(uint32 inAlignment)
 	{
 		// Align the block, if their isn't alignment, shift it up the full 'align' bytes, so we always 
 		// have room to store the shift 
@@ -212,7 +212,7 @@ public:
 	}
 
 public:
-	inline uint64 GetPoolSize() const
+	inline uint32 GetPoolSize() const
 	{
 		return PoolSize;
 	}
@@ -225,7 +225,7 @@ public:
 	/**
 	* Call free whenever memory is freed for accurate value
 	*/
-	inline uint64 GetMemoryUsed() const
+	inline uint32 GetMemoryUsed() const
 	{
 		return MemoryUsedTotal;
 	}
@@ -233,7 +233,7 @@ public:
 	/**
 	* Returns the current location of memory to be given next
 	*/
-	inline uint64 GetByteOffsetFromStart() const
+	inline uint32 GetByteOffsetFromStart() const
 	{
 		return MemoryUsed;
 	}

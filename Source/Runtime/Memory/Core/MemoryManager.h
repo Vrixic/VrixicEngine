@@ -1,7 +1,6 @@
 #pragma once
-#include <Runtime/Memory/Core/MemoryAllocater.h>
-#include <Runtime/Memory/Core/MemoryPool.h>
 #include <Runtime/Memory/Core/MemoryHeap.h>
+#include <Runtime/Memory/Core/MemoryUtils.h>
 
 #include <iostream>
 #include <type_traits>
@@ -18,13 +17,13 @@ class MemoryManager
 {
 private:
 	/* Memory handle to the main block of memory, main memory pool */
-	MemoryHeap* MemoryHeapHandle;
+	TMemoryHeap<uint8>* MemoryHeapHandle;
 
 	/* amount of memory allocated for main memory pool */
 	uint64 MemoryHeapSize;
 
 	/* Memory handle to the pool for memory pages */
-	MemoryHeap* MemoryPageHeapHandle;
+	TMemoryHeap<MemoryPage>* MemoryPageHeapHandle;
 
 	/* amount of memory allocated for memory page pool */
 	uint64 MemoryPageHeapSize;
@@ -35,10 +34,7 @@ public:
 
 	~MemoryManager()
 	{
-		if (MemoryHeapHandle != nullptr)
-		{
-			Shutdown();
-		}
+		Shutdown();
 	}
 
 	/**
@@ -73,16 +69,16 @@ public:
 	*/
 	void Resize(uint32 inSizeInMebibytes)
 	{
-		uint64 LastAllocationSize = MemoryHeapSize;
+		uint32 LastAllocationSize = MemoryHeapSize;
 		MemoryHeapSize = MEBIBYTES_TO_BYTES(inSizeInMebibytes);
 
 		// Re-Allocate more memory, copy of data is done by the pool
-		uint8* NewMemoryHandle = MemoryHeapHandle->ResizeAndFlush(MemoryHeapSize);
+		uint8* NewMemoryHandle = MemoryHeapHandle->ResizeAndFlushByBytes(MemoryHeapSize);
 
 		// Update the memory infos to point to the new memory 
 		uint8* MemoryPageHandle = MemoryPageHeapHandle->GetMemoryHandle();
-		uint64 MemoryPageBytesUsed = MemoryPageHeapHandle->GetHeapUsed();
-		uint64 BytesUsed = 0;
+		uint32 MemoryPageBytesUsed = MemoryPageHeapHandle->GetHeapUsed();
+		uint32 BytesUsed = 0;
 
 		while (MemoryPageBytesUsed != BytesUsed)
 		{
@@ -103,41 +99,26 @@ public:
 	* @return T** - pointer pointing to the memory location
 	*/
 	template<typename T>
-	T** MallocAligned(uint64 inSizeInBytes, uint64 inAlignment = sizeof(T))
+	T** MallocAligned(uint32 inSizeInBytes, uint32 inAlignment = sizeof(T))
 	{
-		// Allocate a new memory page
-		MemoryPage* MemPage = MemoryPageHeapHandle->Malloc<MemoryPage>(sizeof(MemoryPage));
-
-		// Calculate the data offset from heap start + the alignment that will get applied
-		MemPage->OffsetFromHeapStart = MemoryHeapHandle->GetHeapUsed() + inAlignment;
+		// Allocate a new memory page, only 1
+		MemoryPage* MemPage = MemoryPageHeapHandle->Malloc(1);
 
 		// Find the worse case number of bytes we might have to shift
 		inSizeInBytes += inAlignment; // allocate extra
 
-		uint8* RawMemPtr = MemoryHeapHandle->Malloc<uint8>(inSizeInBytes);
+		uint8* RawMemPtr = MemoryHeapHandle->Malloc(inSizeInBytes);
 
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
 		std::cout << "[Memory Manager] Memory Allocated, size in bytes: " << inSizeInBytes <<
 			", with alignment: " << inAlignment << "\n";
 #endif
 
-		// Align the block, if their isn't alignment, shift it up the full 'align' bytes, so we always 
-		// have room to store the shift 
-		uint8* AlignedPtr = MemoryUtils::AlignPointer<uint8>(RawMemPtr, inAlignment);
-		if (AlignedPtr == RawMemPtr)
-		{
-			AlignedPtr += inAlignment;
-		}
+		// Align the pointer
+		uint8* AlignedPtr = AlignPointerAndShift(RawMemPtr, inAlignment);
 
-		// Determine the shift, and store it for later when freeing
-		// (This works for up to 256-byte alignment.)
-		intptr Shift = AlignedPtr - RawMemPtr;
-#if _DEBUG || _DEBUG_EDITOR
-		ASSERT(Shift > 0 && Shift <= 256);
-#endif
-
-		AlignedPtr[-1] = static_cast<uint8>(Shift & 0xff);
-
+		// Calculate the data offset from heap start + the alignment that will get applied
+		MemPage->OffsetFromHeapStart = (MemoryHeapHandle->GetHeapUsed() - inSizeInBytes) + (uint8)AlignedPtr[-1];
 		MemPage->Data = (uint8*)(new (AlignedPtr) T());
 		MemPage->MemorySize = inSizeInBytes;
 
@@ -185,26 +166,71 @@ private:
 		MemoryHeapSize = MEBIBYTES_TO_BYTES(100);
 		MemoryPageHeapSize = MEBIBYTES_TO_BYTES(50);
 
-		MemoryHeapHandle = new MemoryHeap(MemoryHeapSize);
-		MemoryPageHeapHandle = new MemoryHeap(MemoryPageHeapSize);
+		MemoryHeapHandle = new TMemoryHeap<uint8>();
+		MemoryHeapHandle->AllocateByBytes(MemoryHeapSize);
+
+		MemoryPageHeapHandle = new TMemoryHeap<MemoryPage>();
+		MemoryPageHeapHandle->AllocateByBytes(MemoryPageHeapSize);
 	}
 
+	/**
+	* Aligns pointer and stores the shift [-1] of the pointer
+	*
+	* @param inPtrToAlign - the pointer that will be aligned
+	* @param inAlignment - n-byte alignment
+	* @returns uint8* - aligned pointer
+	*/
+	uint8* AlignPointerAndShift(uint8* inPtrToAlign, uint32 inAlignment)
+	{
+		// Align the block, if their isn't alignment, shift it up the full 'align' bytes, so we always 
+		// have room to store the shift 
+		uint8* AlignedPtr = MemoryUtils::AlignPointer<uint8>(inPtrToAlign, inAlignment);
+		if (AlignedPtr == inPtrToAlign)
+		{
+			AlignedPtr += inAlignment;
+		}
+
+		// Determine the shift, and store it for later when freeing
+		// (This works for up to 256-byte alignment.)
+		intptr Shift = AlignedPtr - inPtrToAlign;
+#if _DEBUG || _DEBUG_EDITOR
+		ASSERT(Shift > 0 && Shift <= 256);
+#endif
+
+		AlignedPtr[-1] = static_cast<uint8>(Shift & 0xff);
+
+		return AlignedPtr;
+	}
 
 	/**
 	* Frees/deletes all memory
 	*/
 	void Flush()
 	{
-		delete MemoryHeapHandle;
-		delete MemoryPageHeapHandle;
+		if (MemoryHeapHandle != nullptr)
+		{
+			delete MemoryHeapHandle;
+			MemoryHeapHandle = nullptr;
+		}
+
+		if (MemoryPageHeapHandle != nullptr)
+		{
+			delete MemoryPageHeapHandle;
+			MemoryPageHeapHandle = nullptr;
+		}
 	}
 
 public:
 	/**
 	* Returns amount of memory in use
 	*/
-	uint64 GetMemoryUsed()
+	inline uint64 GetMemoryUsed() const
 	{
 		return MemoryHeapHandle->GetMemoryUsed() + MemoryPageHeapHandle->GetMemoryUsed();
+	}
+
+	inline uint64 GetAllocationsCount() const
+	{
+		return MemoryHeapHandle->GetMemoryAllocationCount() + MemoryPageHeapHandle->GetMemoryAllocationCount();
 	}
 };

@@ -1,53 +1,70 @@
 #pragma once
-#include <Misc/Defines/GenericDefines.h>
+#include <Runtime/Memory/Core/MemoryManager.h>
 
 /**
 * @TODO: remake the allocater system, scrap double-ended stack buffer by default, also allocater should not keep in track of memory usage
 *	- Linear -> should be straight forward, no way to free memory w/o fragmentation
 *	- Stack -> only one way to free, from the top, though there could be a possible way to remove from middle or start by swaping pointers
 *	- Double-Ended stack -> two ways to free memory, from front or back pointer
-*	- Pool -> keeps track of objects for repooling 
-*/
-
-/**
-* Information on how the memory block is spliced
-*/
-struct MemoryInfo
-{
-	// The size of the memory, used as offset to the end of memory
-	uint128 MemorySize;
-
-	// The pointer pointing to the start of the memory 
-	char* MemoryStartPtr;
-};
-
-/**
-* A memory allocater interface, has no functionality 
+*	- Pool -> keeps track of objects for repooling
 * 
+*	- Add resize options 
+*/
+
+/**
+* A memory allocater interface, has no functionality
+*	-- Allocate() - should only be called once 
+*
 *	This should be extended but NOT USED
 */
 class MemoryAllocater
 {
 protected:
-	// The size of the memory available to be used by this allocater 
-	uint128 MemorySize;
+	/** The size of the memory available to be used by this allocater */
+	ulong32 MemorySize;
 
-	// The amount of memory in use by this allocater
-	uint128 MemoryUsed;
+	/** The amount of memory in use by this allocater*/
+	ulong32 MemoryUsed;
 
-	// Pointer to the start of the memory this allocater can use
-	char* MemoryHandle;
+	/** Pointer to the allocater itself*/
+	uint8** MemoryHandle;
+
+#if _DEBUG || _DEBUG_EDITOR ||_DEBUG
+
+	/** Number of allocations done on this allocater */
+	uint64 AllocationCount = 0;
+#endif
 
 public:
-	MemoryAllocater(char* inMemoryHandle, uint128 inSize)
-	{ 
-		MemoryHandle = inMemoryHandle;
-		MemorySize = inSize;
+	MemoryAllocater()
+		: MemoryHandle(nullptr), MemorySize(0), MemoryUsed(0) { }
 
-		MemoryUsed = 0;
+	virtual ~MemoryAllocater() 
+	{ 
+		if (MemoryHandle != nullptr)
+		{
+			MemoryManager::Get().Free((void**)MemoryHandle);
+		}		
 	}
 
-	virtual ~MemoryAllocater() { } 
+public:
+
+	/**
+	* Allocates memory for this allocater to use 
+	* SHOULD ONLY BE CALLED ONCE
+	* 
+	* @param inSizeInBytes - amount of memory to allocate in bytes 
+	* @param inAlignment - alignment of the allocated memory, has to be of power 2, default = 4
+	*/
+	virtual void Create(ulong32 inSizeInBytes, ulong32 inAlignment = 4)
+	{
+#if _DEBUG || _DEBUG_EDITOR || _EDITOR
+		ASSERT(MemoryHandle == nullptr);
+		ASSERT(inAlignment > 0);
+#endif
+		MemoryHandle = MemoryManager::Get().MallocAligned<uint8>(inSizeInBytes, inAlignment);
+		MemorySize = inSizeInBytes;
+	}
 
 	/**
 	* Frees all memory in the allocater to be reused
@@ -59,11 +76,21 @@ public:
 	}
 
 public:
+	template<typename T>
+	inline T* Get(ulong32 inIndex)
+	{
+		return (T*)&(Data()[inIndex]);
+	}
+
+	inline uint8* Data() const
+	{
+		return *MemoryHandle;
+	}
 
 	/*
 	* Returns how much memory this allocater is alloted
 	*/
-	inline uint128 GetMemorySize()
+	inline ulong32 GetMemorySize() const
 	{
 		return MemorySize;
 	}
@@ -71,7 +98,7 @@ public:
 	/**
 	* Returns how much memory is in used currently
 	*/
-	inline virtual uint128 GetMemoryUsed()
+	inline virtual ulong32 GetMemoryUsed() const
 	{
 		return MemoryUsed;
 	}

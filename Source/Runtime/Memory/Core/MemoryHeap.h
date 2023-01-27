@@ -3,15 +3,19 @@
 #include <Misc/Defines/GenericDefines.h>
 
 /**
+* @TODO: Offer heap alignment 
+*/
+
+/**
 * Information on how the memory block is spliced
 */
 struct MemoryPage
 {
 	/** The size of the memory, used as offset to the end of memory */
-	uint64 MemorySize;
+	ulong32 MemorySize;
 
 	/** Amount of bytes form HeapStartPointer to MemoryStartPointer */
-	uint64 OffsetFromHeapStart;
+	ulong32 OffsetFromHeapStart;
 
 	/** The pointer pointing to the start of the memory / pointing to data */
 	uint8* Data;
@@ -21,9 +25,9 @@ struct MemoryPage
 * A chunk of memory on the Heap (Pool of memory)
 * Does not defragment by itself
 */
-class MemoryHeap
+template<typename T>
+class TMemoryHeap
 {
-private:
 	/** Pointer/Handle to the memory */
 	uint8* MemoryHandle;
 
@@ -42,45 +46,106 @@ private:
 	/** Count of all allocations made to this heap */
 	uint64 MemoryAllocationCount;
 
-public:
-	MemoryHeap(uint64 inSizeInBytesToAllocate)
-		: MemoryUsed(0), MemoryAllocationCount(0), HeapUsed(0)
-	{
-		HeapSize = inSizeInBytesToAllocate;
-		MemoryHandle = new uint8[inSizeInBytesToAllocate];
+	/** Alignment added to the MemoryHandle Pointer */
+	uint64 Alignment;
 
-		MemoryUsedPtr = MemoryHandle;
+public:
+	TMemoryHeap()
+		: MemoryHandle(nullptr), MemoryUsedPtr(nullptr), MemoryUsed(0), MemoryAllocationCount(0),
+		HeapUsed(0), Alignment(0), HeapSize(0)
+	{
+
 	}
 
-	~MemoryHeap()
+	~TMemoryHeap()
 	{
-		if (MemoryHandle != nullptr)
-		{
-			delete[] MemoryHandle;
-		}
+		Flush();
 	}
 
 public:
+	/*
+	* Allocates T count objects(since class is Template)
+	*
+	* @param inCount - count of T objects to allocate
+	* @param inAlignment - the alignment of the heap (default = sizeof(T))
+	*/
+	void AllocateByCount(ulong32 inCount, uint64 inAlignment = sizeof(T))
+	{
+		uint64 SizeInBytes = sizeof(T) * inCount;
+		AllocateByBytes(SizeInBytes);
+	}
+
 	/**
-	* Allocate memory based on the object, Does not call constructors
+	* Allocates heap by bytes
 	*
-	* @param inSizeInBytes - amount of memory to allocate
+	* @param inSizeInBytes - amount of bytes to allocate
+	* @param inAlignment - alignment of the heap
+	* @warning calculate whole block size for T if (T != a byte)
+	*/
+	void AllocateByBytes(uint64 inSizeInBytes, uint64 inAlignment = sizeof(T))
+	{
+		HeapSize = inSizeInBytes;
+
+		inSizeInBytes += inAlignment;
+		uint8* RawMemoryPtr = new uint8[inSizeInBytes];
+		uint8* AlignedPtr = AlignPointerAndShift(RawMemoryPtr, inAlignment);
+
+		MemoryHandle = AlignedPtr;
+		MemoryUsedPtr = AlignedPtr;
+	}
+
+	/**
+	* Aligns pointer and stores the shift [-1] of the pointer
 	*
+	* @param inPtrToAlign - the pointer that will be aligned
+	* @param inAlignment - n-byte alignment
+	* @returns uint8* - aligned pointer
+	*/
+	uint8* AlignPointerAndShift(uint8* inPtrToAlign, uint32 inAlignment)
+	{
+		// Align the block, if their isn't alignment, shift it up the full 'align' bytes, so we always 
+		// have room to store the shift 
+		uint8* AlignedPtr = MemoryUtils::AlignPointer<uint8>(inPtrToAlign, inAlignment);
+		if (AlignedPtr == inPtrToAlign)
+		{
+			AlignedPtr += inAlignment;
+		}
+
+		// Determine the shift, and store it for later when freeing
+		// (This works for up to 256-byte alignment.)
+		intptr Shift = AlignedPtr - inPtrToAlign;
+#if _DEBUG || _DEBUG_EDITOR
+		ASSERT(Shift > 0 && Shift <= 256);
+#endif
+
+		AlignedPtr[-1] = static_cast<uint8>(Shift & 0xff);
+		Alignment = Shift;
+
+		return AlignedPtr;
+	}
+
+public:
+
+	/**
+	* Allocates memory, Does not call Constructor, sizeof(T) * inCountToAllocate = BytesAllocated
+	*
+	* @param inCountToAllocate - count of how many T objects to allocate
 	* @return T* - pointer pointing to the memory location
 	*/
-	template<typename T>
-	T* Malloc(uint64 inSizeInBytes)
+	T* Malloc(ulong32 inCountToAllocate)
 	{
+		uint64 SizeInBytes = sizeof(T) * inCountToAllocate;
+
 		// Check if we can allocate enough memory
 #if _DEBUG | _DEBUG_EDITOR
-		ASSERT((HeapUsed + inSizeInBytes) < HeapSize);
+		ASSERT((HeapUsed + SizeInBytes) < HeapSize);
 #endif
 
 		uint8* PointerToMemory = MemoryUsedPtr;
 
-		MemoryUsedPtr = MemoryUsedPtr + inSizeInBytes;
-		MemoryUsed += inSizeInBytes;
-		HeapUsed += inSizeInBytes;
+		MemoryUsedPtr = MemoryUsedPtr + SizeInBytes;
+		MemoryUsed += SizeInBytes;
+		HeapUsed += SizeInBytes;
 
 		MemoryAllocationCount++;
 
@@ -93,30 +158,37 @@ public:
 	*
 	* @return uint8* pointer pointing to the new memory location
 	*/
-	uint8* ResizeAndFlush(uint64 inSizeInBytes)
+	T* ResizeAndFlushByBytes(uint64 inSizeInBytes, uint64 inAlignment = sizeof(T))
 	{
 		uint64 LastHeapSize = HeapSize;
 		HeapSize = inSizeInBytes;
+
+		inSizeInBytes += inAlignment;
 
 #if _DEBUG | _DEBUG_EDITOR
 		ASSERT(HeapSize > LastHeapSize);
 #endif // _DEBUG | _EDITOR
 
-		uint8* NewMemoryPtr = new uint8[HeapSize];
-		memcpy(NewMemoryPtr, MemoryHandle, HeapUsed);
+		// Shift alignment to get the start of heap 
+		uint8* ActualMemoryHandle = MemoryHandle - Alignment;
 
-		delete[] MemoryHandle;
+		uint8* RawMemoryPtr = new uint8[inSizeInBytes];
+		uint8* AlignedPtr = AlignPointerAndShift(RawMemoryPtr, inAlignment);
 
-		MemoryHandle = NewMemoryPtr;
-		MemoryUsedPtr = MemoryHandle + HeapUsed;
+		memcpy(AlignedPtr, MemoryHandle, HeapUsed);
 
-		return MemoryHandle;
+		delete[] ActualMemoryHandle;
+
+		MemoryHandle = AlignedPtr;
+		MemoryUsedPtr = AlignedPtr + HeapUsed;
+
+		return (T*)MemoryHandle;
 	}
 
 	/**
 	* Calculated total memory in used currently
 	*/
-	void Free(uint64 inSize)
+	void Free(ulong32 inSize)
 	{
 		MemoryUsed -= inSize;
 	}
@@ -139,7 +211,11 @@ public:
 	{
 		if (MemoryHandle != nullptr)
 		{
+			// Shift alignment to get the start of heap 
+			MemoryHandle -= Alignment;
+
 			delete[] MemoryHandle;
+			MemoryHandle = nullptr;
 		}
 	}
 
@@ -155,7 +231,7 @@ public:
 	}
 
 	/**
-	* @returns uint128 - memory in use, in bytes
+	* @returns uint64 - memory in use, in bytes
 	*/
 	inline uint64 GetMemoryUsed() const
 	{
@@ -163,10 +239,15 @@ public:
 	}
 
 	/**
-	* @returns uint128 - memory used from start to current heap pointer (CurrentHeapPointer - StartHeapPointer)
+	* @returns uint64 - memory used from start to current heap pointer (CurrentHeapPointer - StartHeapPointer)
 	*/
 	inline uint64 GetHeapUsed() const
 	{
 		return HeapUsed;
+	}
+
+	inline uint64 GetMemoryAllocationCount() const
+	{
+		return MemoryAllocationCount;
 	}
 };

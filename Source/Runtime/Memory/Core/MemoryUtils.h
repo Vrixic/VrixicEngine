@@ -9,7 +9,7 @@
 struct MemoryUtils
 {
 	template<typename T>
-	inline static T* AlignPointer(T* inPtr, uint64 inAlignment)
+	inline static T* AlignPointer(T* inPtr, uint32 inAlignment)
 	{
 		const uintptr Address = reinterpret_cast<uintptr>(inPtr);
 		const uintptr AddressAligned = AlignAddress(Address, inAlignment);
@@ -20,9 +20,9 @@ struct MemoryUtils
 	* Aligns the address: Shifts the given address upwards if/as necessary to ensure it's aligned to the given
 	* number of byes
 	*/
-	inline static uintptr AlignAddress(uintptr inAddress, uint64 inAlignment)
+	inline static uintptr AlignAddress(uintptr inAddress, uint32 inAlignment)
 	{
-		const uint128 Mask = inAlignment - 1;
+		const uint64 Mask = inAlignment - 1;
 #if _DEBUG || _DEBUG_EDITOR
 		ASSERT((inAlignment & Mask) == 0); // Power of 2
 #endif
