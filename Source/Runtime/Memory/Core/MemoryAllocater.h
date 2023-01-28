@@ -36,7 +36,7 @@ protected:
 #endif
 
 public:
-	MemoryAllocater()
+	explicit MemoryAllocater()
 		: MemoryHandle(nullptr), MemorySize(0), MemoryUsed(0) { }
 
 	virtual ~MemoryAllocater() 
@@ -50,13 +50,24 @@ public:
 public:
 
 	/**
-	* Allocates memory for this allocater to use 
+	* Frees all memory in the allocater to be reused
+	*	- Doesn't free the allocater itself
+	*/
+	virtual void Flush()
+	{
+		MemoryUsed = 0;
+	}
+
+protected:
+
+	/**
+	* Allocates memory for this allocater to use
 	* SHOULD ONLY BE CALLED ONCE
-	* 
-	* @param inSizeInBytes - amount of memory to allocate in bytes 
+	*
+	* @param inSizeInBytes - amount of memory to allocate in bytes
 	* @param inAlignment - alignment of the allocated memory, has to be of power 2, default = 4
 	*/
-	virtual void Create(ulong32 inSizeInBytes, ulong32 inAlignment = 4)
+	void Init(ulong32 inSizeInBytes, ulong32 inAlignment = 4)
 	{
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
 		ASSERT(MemoryHandle == nullptr);
@@ -64,15 +75,6 @@ public:
 #endif
 		MemoryHandle = MemoryManager::Get().MallocAligned<uint8>(inSizeInBytes, inAlignment);
 		MemorySize = inSizeInBytes;
-	}
-
-	/**
-	* Frees all memory in the allocater to be reused
-	*	- Doesn't free the allocater itself
-	*/
-	virtual void Flush()
-	{
-		MemoryUsed = 0;
 	}
 
 public:

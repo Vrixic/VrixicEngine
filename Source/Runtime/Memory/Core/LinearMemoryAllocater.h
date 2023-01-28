@@ -7,12 +7,19 @@
 class LinearAllocater : public MemoryAllocater
 {
 public:
-	LinearAllocater()
+	explicit LinearAllocater()
 		: MemoryAllocater() { }
 
 	virtual ~LinearAllocater() { }
 
 public:
+	/**
+	* Initializes the allocater 
+	*/
+	void Init(ulong32 inSizeInBytes, ulong32 inAlignment = 4)
+	{
+		MemoryAllocater::Init(inSizeInBytes, inAlignment);
+	}
 
 	/**
 	* Allocates memory, does not align memory, calls constructors.

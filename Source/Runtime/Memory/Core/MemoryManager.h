@@ -119,6 +119,42 @@ public:
 
 		// Calculate the data offset from heap start + the alignment that will get applied
 		MemPage->OffsetFromHeapStart = (MemoryHeapHandle->GetHeapUsed() - inSizeInBytes) + (uint8)AlignedPtr[-1];
+		MemPage->Data =AlignedPtr;
+		MemPage->MemorySize = inSizeInBytes;
+
+		return (T**)&MemPage->Data;
+	}
+
+	/**
+	* Constructs the object T, calls its constructor then returns a pointer to it.
+	* Allocate memory based on the count, also align pointer by sizeof(T),
+	* sizeof(T) must be a power of 2
+	*
+	* @param inNumCount - count of how many to allocate
+	*
+	* @return T** - pointer pointing to the memory location
+	*/
+	template<typename T>
+	T** MallocConstructAligned(uint32 inSizeInBytes, uint32 inAlignment = sizeof(T))
+	{
+		// Allocate a new memory page, only 1
+		MemoryPage* MemPage = MemoryPageHeapHandle->Malloc(1);
+
+		// Find the worse case number of bytes we might have to shift
+		inSizeInBytes += inAlignment; // allocate extra
+
+		uint8* RawMemPtr = MemoryHeapHandle->Malloc(inSizeInBytes);
+
+#if _DEBUG || _DEBUG_EDITOR || _EDITOR
+		std::cout << "[Memory Manager] Memory Allocated, size in bytes: " << inSizeInBytes <<
+			", with alignment: " << inAlignment << "\n";
+#endif
+
+		// Align the pointer
+		uint8* AlignedPtr = AlignPointerAndShift(RawMemPtr, inAlignment);
+
+		// Calculate the data offset from heap start + the alignment that will get applied
+		MemPage->OffsetFromHeapStart = (MemoryHeapHandle->GetHeapUsed() - inSizeInBytes) + (uint8)AlignedPtr[-1];
 		MemPage->Data = (uint8*)(new (AlignedPtr) T());
 		MemPage->MemorySize = inSizeInBytes;
 
