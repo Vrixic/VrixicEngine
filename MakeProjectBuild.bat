@@ -6,6 +6,7 @@ start /wait SetupCMake.bat
 	     
 start /wait RunCMake.bat
 
-move VrixicEngineBuild ../
+timeout /T 2
+move VrixicEngineBuild ../Build
 
 exit
