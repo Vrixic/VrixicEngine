@@ -13,7 +13,7 @@
 
 /**
 * A memory allocater interface, has no functionality
-*	-- Allocate() - should only be called once 
+*	-- Init() - should only be called once 
 *
 *	This should be extended but NOT USED
 */
@@ -39,9 +39,12 @@ public:
 	explicit MemoryAllocater()
 		: MemoryHandle(nullptr), MemorySize(0), MemoryUsed(0) { }
 
+	explicit MemoryAllocater(uint8** inMemoryHandle, ulong32 inMemorySize)
+		: MemoryHandle(inMemoryHandle), MemorySize(inMemorySize), MemoryUsed(0) { }
+
 	virtual ~MemoryAllocater() 
 	{ 
-		if (MemoryHandle != nullptr)
+		if (MemoryHandle != nullptr && MemoryManager::Get().GetIsActive())
 		{
 			MemoryManager::Get().Free((void**)MemoryHandle);
 		}		
@@ -62,7 +65,7 @@ protected:
 
 	/**
 	* Allocates memory for this allocater to use
-	* SHOULD ONLY BE CALLED ONCE
+	* SHOULD ONLY BE CALLED ONCE IF ALLOCATER IS STATICALLY MADE
 	*
 	* @param inSizeInBytes - amount of memory to allocate in bytes
 	* @param inAlignment - alignment of the allocated memory, has to be of power 2, default = 4
@@ -78,12 +81,16 @@ protected:
 	}
 
 public:
-	template<typename T>
+	// Deprecated 
+	/*template<typename T>
 	inline T* Get(ulong32 inIndex)
 	{
 		return (T*)&(Data()[inIndex]);
-	}
+	}*/
 
+	/**
+	* Returns the start of the allocater 
+	*/
 	inline uint8* Data() const
 	{
 		return *MemoryHandle;

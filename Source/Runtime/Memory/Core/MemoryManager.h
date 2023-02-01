@@ -11,6 +11,10 @@
 *	- Find a way to keep track of freed memory in O(1) time complexity (constant time)
 *		- As of right now memory is 'freed' by setting te pointer to nullptr for indetification
 *	- Differentiate between game and editor memory heaps
+*	
+*	- As of now, Resize() option is given, but MemoryAllocaters will be invalidated if resized(),
+*		- Solution: Make Multiple Heaps which can be used, instead of resizing() current heap, 
+*			make a new one.
 */
 
 class MemoryManager
@@ -28,9 +32,12 @@ private:
 	/* amount of memory allocated for memory page pool */
 	uint64 MemoryPageHeapSize;
 
+	/** Is this manager active? */
+	bool bIsActive;
+
 public:
 	MemoryManager() :MemoryHeapHandle(nullptr), MemoryHeapSize(0),
-		MemoryPageHeapHandle(nullptr), MemoryPageHeapSize(0) { }
+		MemoryPageHeapHandle(nullptr), MemoryPageHeapSize(0), bIsActive(false) { }
 
 	~MemoryManager()
 	{
@@ -55,9 +62,10 @@ public:
 	void StartUp()
 	{
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		ASSERT(MemoryHeapHandle == nullptr);
+		ASSERT(!bIsActive);
 		Shutdown();
 #endif
+		bIsActive = true;
 		PreInit();
 	}
 
@@ -69,7 +77,7 @@ public:
 	*/
 	void Resize(uint32 inSizeInMebibytes)
 	{
-		uint32 LastAllocationSize = MemoryHeapSize;
+		uint64 LastAllocationSize = MemoryHeapSize;
 		MemoryHeapSize = MEBIBYTES_TO_BYTES(inSizeInMebibytes);
 
 		// Re-Allocate more memory, copy of data is done by the pool
@@ -77,8 +85,8 @@ public:
 
 		// Update the memory infos to point to the new memory 
 		uint8* MemoryPageHandle = MemoryPageHeapHandle->GetMemoryHandle();
-		uint32 MemoryPageBytesUsed = MemoryPageHeapHandle->GetHeapUsed();
-		uint32 BytesUsed = 0;
+		uint64 MemoryPageBytesUsed = MemoryPageHeapHandle->GetHeapUsed();
+		uint64 BytesUsed = 0;
 
 		while (MemoryPageBytesUsed != BytesUsed)
 		{
@@ -162,6 +170,44 @@ public:
 	}
 
 	/**
+	* 
+	* @return T** - pointer pointing to the memory location
+	*/
+	template<typename T, typename... ArgTypes>
+	T** MallocAllocater(uint32 inSizeInBytesForAllocater, uint32 inAllocaterAlignment = sizeof(T), ArgTypes&&... Args)
+	{
+#if _DEBUG || _DEBUG_EDITOR || _EDITOR
+		bool IsAllocater = std::is_base_of<MemoryAllocater, T>::value;
+		ASSERT(IsAllocater);
+#endif
+		// Extra bytes for alignment (* 2)
+		ulong32 SizeOfAllocaterInBytes = sizeof(T) * 2;
+
+		// Allocate a new memory page, only 1 for allocater
+		MemoryPage* MemPageForAllocater = MemoryPageHeapHandle->Malloc(1);
+
+		// Raw pointer to the allocater 
+		uint8* RawAllocaterPtr = MemoryHeapHandle->Malloc(SizeOfAllocaterInBytes);
+
+		// Align the pointer
+		uint8* AlignedAllocaterPtr = AlignPointerAndShift(RawAllocaterPtr, sizeof(T));
+
+		// Calculate the data offset from heap start + the alignment that will get applied
+		MemPageForAllocater->OffsetFromHeapStart = (MemoryHeapHandle->GetHeapUsed() - SizeOfAllocaterInBytes) + (uint8)AlignedAllocaterPtr[-1];
+		MemPageForAllocater->Data = (uint8*)(new (AlignedAllocaterPtr) T((Args)...));
+		MemPageForAllocater->MemorySize = SizeOfAllocaterInBytes;
+
+		((T*)(MemPageForAllocater->Data))->Init(inSizeInBytesForAllocater, inAllocaterAlignment);
+
+#if _DEBUG || _DEBUG_EDITOR || _EDITOR
+		std::cout << "[Memory Manager] Memory Allocater Allocated, size in bytes: " << inSizeInBytesForAllocater + SizeOfAllocaterInBytes <<
+			", with alignment: " << inAllocaterAlignment << "\n";
+#endif
+
+		return (T**)&MemPageForAllocater->Data;
+	}
+
+	/**
 	* Frees the memory at the pointer passed in
 	*
 	* @param inPtrToMemory - Pointer to the memory to be freed
@@ -185,6 +231,7 @@ public:
 	*/
 	void Shutdown()
 	{
+		bIsActive = false;
 		Flush();
 	}
 
@@ -267,6 +314,11 @@ public:
 
 	inline uint64 GetAllocationsCount() const
 	{
-		return MemoryHeapHandle->GetMemoryAllocationCount() + MemoryPageHeapHandle->GetMemoryAllocationCount();
+		return MemoryHeapHandle->GetMemoryAllocationCount();
+	}
+
+	inline bool GetIsActive() const
+	{
+		return bIsActive;
 	}
 };

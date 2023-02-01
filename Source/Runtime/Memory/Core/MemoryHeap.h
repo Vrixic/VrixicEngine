@@ -101,7 +101,7 @@ public:
 	* @param inAlignment - n-byte alignment
 	* @returns uint8* - aligned pointer
 	*/
-	uint8* AlignPointerAndShift(uint8* inPtrToAlign, uint32 inAlignment)
+	uint8* AlignPointerAndShift(uint8* inPtrToAlign, uint64 inAlignment)
 	{
 		// Align the block, if their isn't alignment, shift it up the full 'align' bytes, so we always 
 		// have room to store the shift 
