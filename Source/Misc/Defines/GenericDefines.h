@@ -17,14 +17,14 @@ typedef unsigned short		uint16;
 typedef unsigned int		uint32;
 
 /**
-* unsigned int 64-bits, byte size: 4
+* unsigned long 32-bits, byte size: 4
 */
-typedef unsigned long		uint64;
+typedef unsigned long		ulong32;
 
 /**
-* unsigned int 128-bits, byte size: 8
+* unsigned long long 64-bits, byte size: 8
 */
-typedef unsigned long long  uint128;
+typedef unsigned long long  uint64;
 
 /**
 * signed int 8-bits, byte size: 1
@@ -42,17 +42,22 @@ typedef signed short		int16;
 typedef signed int			int32;
 
 /**
+* signed int 32-bits, byte size: 4
+*/
+typedef signed long			long32;
+
+/**
 * signed int 64-bits, byte size: 8
 */
 typedef signed long	long	int64;
 
 /**
-* unsigned int pointer 128-bits, byte size: 8
+* unsigned int pointer 64-bits, byte size: 8
 */
-typedef uint128             uintptr;
+typedef uint64             uintptr;
 
 /**
-* signed int pointer 128-bits, byte size: 8
+* signed int pointer 64-bits, byte size: 8
 */
 typedef int64               intptr;
 
