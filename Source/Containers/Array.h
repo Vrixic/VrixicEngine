@@ -1,6 +1,11 @@
 #pragma once
 #include <Runtime/Memory/Core/MemoryManager.h>
 
+enum class EIteratorPointer
+{
+	Begin = 0,
+	End
+};
 
 /**
 * A Generic iterator for all indexed based container types
@@ -13,8 +18,21 @@ private:
 	int32 Index;
 
 public:
-	TGenericIndexedContainerIterator(ContainerType& inContainer)
-		: Container(inContainer), Index(0) { }
+	TGenericIndexedContainerIterator(ContainerType& inContainer, EIteratorPointer inIteratorPointer = EIteratorPointer::Begin)
+		: Container(inContainer)
+	{
+		switch (inIteratorPointer)
+		{
+		case EIteratorPointer::Begin:
+			Index = 0;
+			break;
+		case EIteratorPointer::End:
+			Index = Container.Count();
+			break;
+		default:
+			Index = 0;
+		}
+	}
 
 public:
 	/**
@@ -23,12 +41,15 @@ public:
 	* ----------------------------------------------------------------------------
 	*/
 
-	/** 
+	/**
 	* Moves iterator to the next element in the container
 	* @returns TGenericIndexedContainerIterator& - The next slot of the iterator that contains next element
 	*/
 	TGenericIndexedContainerIterator& operator++()
 	{
+#if _DEBUG || _DEBUG_EDITOR || _EDITOR
+		ASSERT(Index == Container.Count());
+#endif
 		++Index;
 		return *this;
 	}
@@ -39,14 +60,17 @@ public:
 	*/
 	TGenericIndexedContainerIterator& operator--()
 	{
+#if _DEBUG || _DEBUG_EDITOR || _EDITOR
+		ASSERT(Index == 0);
+#endif
 		--Index;
 		return *this;
 	}
 
 	/**
-	* @returns ContainerElementType& - a reference to the current element 
+	* @returns ContainerElementType& - a reference to the current element
 	*/
-	ContainerElementType& operator* () const
+	ContainerElementType& operator*() const
 	{
 		return Container[Index];
 	}
@@ -59,9 +83,27 @@ public:
 		return &Container[Index];
 	}
 
+	/**
+	* Overloaded == for iterator 
+	* @returns bool - true if this iterator's index and container equals inRHS's, false otherwise 
+	*/
+	inline bool operator==(const TGenericIndexedContainerIterator& inRHS)
+	{ 
+		return &Container == &inRHS.Container && Index == inRHS.Index;
+	}
+
+	/**
+	* Overloaded != for iterator
+	* @returns bool - true if this iterator's index and container are not equal inRHS's, false otherwise
+	*/
+	inline bool operator!=(const TGenericIndexedContainerIterator& inRHS) 
+	{ 
+		return &Container != &inRHS.Container || Index != inRHS.Index; 
+	}
+
 public:
 	/**
-	* Resets the iterator to the beggining of the container
+	* Resets the iterator to the beginning of the container
 	*/
 	void Reset()
 	{
@@ -77,7 +119,7 @@ public:
 	}
 
 	/**
-	* @returns ContainerElementType& - the current element iterator is at 
+	* @returns ContainerElementType& - the current element iterator is at
 	*/
 	ContainerElementType& GetCurrentElement() const
 	{
@@ -85,7 +127,7 @@ public:
 	}
 
 	/**
-	* @returns bool - if the iterator is at the end of the container 
+	* @returns bool - if the iterator is at the end of the container
 	*/
 	bool IsFinished()
 	{
@@ -103,9 +145,10 @@ public:
 
 /**
 * Defines a Dynamic Array (std::vector<>)
-* 
+*
 * Can only Grow | Cannot Shrink
-* RAII 
+* RAII
+* Instead if usual 'T' for templates, now making better template names such as ElementType (More descriptive)
 */
 template <typename ElementType>
 class TArray
@@ -149,13 +192,13 @@ public:
 
 public:
 	/**
-	* @param inIndex - the element index to retreive 
+	* @param inIndex - the element index to retreive
 	* @returns const T& - reference to the objects retreived by the index passed in
 	*/
 	const ElementType& operator[](uint32 inIndex) const
 	{
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		ASSERT(inIndex < Capacity && Size > inIndex);
+		ASSERT(inIndex < Capacity&& Size > inIndex);
 #endif
 
 		return (*MemoryHandle) + inIndex;
@@ -165,18 +208,18 @@ public:
 	* @param inIndex - the element index to retreive
 	* @returns T& - reference to the objects retreived by the index passed in
 	*/
-	ElementType& operator[](uint32 inIndex) 
+	ElementType& operator[](uint32 inIndex)
 	{
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		ASSERT(inIndex < Capacity && Size > inIndex);
+		ASSERT(inIndex < Capacity&& Size > inIndex);
 #endif
 
 		return (*MemoryHandle)[inIndex];
 	}
 
 	/**
-	* Adds an object T to the array 
-	* @param inData - the data to add to the back of the array 
+	* Adds an object T to the array
+	* @param inData - the data to add to the back of the array
 	*/
 	void Add(const ElementType& inData)
 	{
@@ -190,13 +233,13 @@ public:
 	}
 
 	/**
-	* Finds the element passed in using Linear Search 
-	* @param inObjectToFind - the object to find in the array 
-	* @param outIndex - the index of the found element 
+	* Finds the element passed in using Linear Search
+	* @param inObjectToFind - the object to find in the array
+	* @param outIndex - the index of the found element
 	* @returns bool - true if object was found in array, false otherwise
 	* @note: 'outIndex' will only be valid if the return value is true
 	*/
-	bool Find(const ElementType& inObjectToFind, int32& outIndex) const 
+	bool Find(const ElementType& inObjectToFind, int32& outIndex) const
 	{
 		outIndex = -1;
 
@@ -213,7 +256,7 @@ public:
 	}
 
 	/**
-	* Finds the element passed in using Linear Search, but begins from the end of the array 
+	* Finds the element passed in using Linear Search, but begins from the end of the array
 	* @param inObjectToFind - the object to find in the array
 	* @param outIndex - the index of the found element
 	* @returns bool - true if object was found in array, false otherwise
@@ -300,21 +343,37 @@ public:
 	}
 
 	/**
-	* Creates a iterator for this TArray
-	* @returns TArrayIterator - The iterator assocaited with this array 
+	* @returns TArrayIterator - iterator starting at the beginning of the array 
 	*/
-	TArrayIterator CreateIterator()
+	TArrayIterator Begin()
 	{
-		return TArrayIterator(*this);
+		return CreateIterator();
+	}
+
+	/**
+	* @returns TArrayIterator - iterator starting at the end of the array
+	*/
+	TArrayIterator End()
+	{
+		return CreateIterator(EIteratorPointer::End);
+	}
+
+	/**
+	* Creates a iterator for this TArray
+	* @returns TArrayIterator - The iterator assocaited with this array
+	*/
+	TArrayIterator CreateIterator(EIteratorPointer inIteratorPointer = EIteratorPointer::Begin)
+	{
+		return TArrayIterator(*this, inIteratorPointer);
 	}
 
 	/**
 	* Creates a const iterator for this TArray
 	* @returns TConstArrayIterator - The const iterator assocaited with this array
 	*/
-	TConstArrayIterator CreateConstIterator()
+	TConstArrayIterator CreateConstIterator(EIteratorPointer inIteratorPointer = EIteratorPointer::Begin) const
 	{
-		return TConstArrayIterator(*this);
+		return TConstArrayIterator(*this, inIteratorPointer);
 	}
 
 public:
@@ -335,9 +394,9 @@ public:
 	}
 
 	/**
-	* @returns T* - pointer to the first element in the array 
+	* @returns T* - pointer to the first element in the array
 	*/
-	inline const ElementType* Data() const 
+	inline const ElementType* Data() const
 	{
 		return (*MemoryHandle);
 	}
