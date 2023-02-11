@@ -19,8 +19,8 @@
 #include <Runtime/Graphics/Vulkan/VulkanPipeline.h>
 #include <Runtime/Memory/Vulkan/VulkanResourceManager.h>
 #include <Runtime/Memory/Core/LinearMemoryAllocater.h>
-#include <Runtime/Memory/Core/StackMemoryAllocater.h>
-#include <Runtime/Memory/Core/DoubleEndedStackMemoryAllocater.h>
+#include <Runtime/Memory/Core/Allocaters/StackMemoryAllocater.h>
+#include <Runtime/Memory/Core/Allocaters/DoubleEndedStackMemoryAllocater.h>
 
 #define RENDER_DOC 1
 
