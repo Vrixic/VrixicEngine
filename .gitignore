@@ -363,3 +363,5 @@ CTestTestfile.cmake
 _deps
 
 Assets/
+Build/
+CMake/VrixicEngineBuild/
