@@ -1,15 +1,119 @@
 #pragma once
 #include <Runtime/Memory/Core/MemoryManager.h>
 
+
+/**
+* A Generic iterator for all indexed based container types
+*/
+template<typename ContainerType, typename ContainerElementType>
+class TGenericIndexedContainerIterator
+{
+private:
+	ContainerType& Container;
+	int32 Index;
+
+public:
+	TGenericIndexedContainerIterator(ContainerType& inContainer)
+		: Container(inContainer), Index(0) { }
+
+public:
+	/**
+	* ----------------------------------------------------------------------------
+	* ---------------------------Operator Overloading-----------------------------
+	* ----------------------------------------------------------------------------
+	*/
+
+	/** 
+	* Moves iterator to the next element in the container
+	* @returns TGenericIndexedContainerIterator& - The next slot of the iterator that contains next element
+	*/
+	TGenericIndexedContainerIterator& operator++()
+	{
+		++Index;
+		return *this;
+	}
+
+	/**
+	* Moves iterator to the previous element in the container
+	* @returns TGenericIndexedContainerIterator& - The next slot of the iterator that contains next element
+	*/
+	TGenericIndexedContainerIterator& operator--()
+	{
+		--Index;
+		return *this;
+	}
+
+	/**
+	* @returns ContainerElementType& - a reference to the current element 
+	*/
+	ContainerElementType& operator* () const
+	{
+		return Container[Index];
+	}
+
+	/**
+	* @returns ContainerElementType* - a pointer to the current element
+	*/
+	ContainerElementType* operator->() const
+	{
+		return &Container[Index];
+	}
+
+public:
+	/**
+	* Resets the iterator to the beggining of the container
+	*/
+	void Reset()
+	{
+		Index = 0;
+	}
+
+	/**
+	* Moves the iterator to the end of the container
+	*/
+	void GoToEnd()
+	{
+		Index = Container.Count();
+	}
+
+	/**
+	* @returns ContainerElementType& - the current element iterator is at 
+	*/
+	ContainerElementType& GetCurrentElement() const
+	{
+		return Container[Index];
+	}
+
+	/**
+	* @returns bool - if the iterator is at the end of the container 
+	*/
+	bool IsFinished()
+	{
+		return Index == Container.Count();
+	}
+
+	/**
+	* @returns int32 - the current index the iterator is at
+	*/
+	int32 GetCurrentIndex() const
+	{
+		return Index;
+	}
+};
+
 /**
 * Defines a Dynamic Array (std::vector<>)
 * 
 * Can only Grow | Cannot Shrink
 * RAII 
 */
-template <typename T>
+template <typename ElementType>
 class TArray
 {
+public:
+	typedef TGenericIndexedContainerIterator<TArray, ElementType> TArrayIterator;
+	typedef TGenericIndexedContainerIterator<const TArray, const ElementType> TConstArrayIterator;
+
 private:
 	/** Amount of elements in the array currently */
 	uint32 Size;
@@ -18,7 +122,7 @@ private:
 	uint32 Capacity;
 
 	/** Handle to the memory of the array */
-	T** MemoryHandle;
+	ElementType** MemoryHandle;
 public:
 	TArray()
 		: Size(0), Capacity(0), MemoryHandle(nullptr) {  }
@@ -28,8 +132,8 @@ public:
 		Size = 0;
 		Capacity = inReserveAmount;
 
-		uint32 SizeInBytes = sizeof(T) * Capacity;
-		MemoryHandle = MemoryManager::Get().MallocAligned<T>(SizeInBytes);
+		uint32 SizeInBytes = sizeof(ElementType) * Capacity;
+		MemoryHandle = MemoryManager::Get().MallocAligned<ElementType>(SizeInBytes);
 	}
 
 	TArray(const TArray& other) = delete;
@@ -48,7 +152,7 @@ public:
 	* @param inIndex - the element index to retreive 
 	* @returns const T& - reference to the objects retreived by the index passed in
 	*/
-	const T& operator[](uint32 inIndex) const
+	const ElementType& operator[](uint32 inIndex) const
 	{
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
 		ASSERT(inIndex < Capacity && Size > inIndex);
@@ -61,7 +165,7 @@ public:
 	* @param inIndex - the element index to retreive
 	* @returns T& - reference to the objects retreived by the index passed in
 	*/
-	T& operator[](uint32 inIndex) 
+	ElementType& operator[](uint32 inIndex) 
 	{
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
 		ASSERT(inIndex < Capacity && Size > inIndex);
@@ -74,7 +178,7 @@ public:
 	* Adds an object T to the array 
 	* @param inData - the data to add to the back of the array 
 	*/
-	void Add(const T& inData)
+	void Add(const ElementType& inData)
 	{
 		if (Size == Capacity)
 		{
@@ -92,7 +196,7 @@ public:
 	* @returns bool - true if object was found in array, false otherwise
 	* @note: 'outIndex' will only be valid if the return value is true
 	*/
-	bool Find(const T& inObjectToFind, int32& outIndex) const 
+	bool Find(const ElementType& inObjectToFind, int32& outIndex) const 
 	{
 		outIndex = -1;
 
@@ -115,7 +219,7 @@ public:
 	* @returns bool - true if object was found in array, false otherwise
 	* @note: 'outIndex' will only be valid if the return value is true
 	*/
-	bool FindReversed(const T& inObjectToFind, int32& outIndex) const
+	bool FindReversed(const ElementType& inObjectToFind, int32& outIndex) const
 	{
 		outIndex = -1;
 
@@ -151,10 +255,10 @@ public:
 		ASSERT(inNewCapacity < Capacity);
 #endif
 		// Calculate new size in bytes for the array 
-		uint32 SizeInBytes = sizeof(T) * Capacity;
+		uint32 SizeInBytes = sizeof(ElementType) * Capacity;
 
 		// allocate the memory 
-		T** NewMemoryHandle = MemoryManager::Get().MallocAligned<T>(SizeInBytes);
+		ElementType** NewMemoryHandle = MemoryManager::Get().MallocAligned<ElementType>(SizeInBytes);
 
 		// Check to see if we had already allocated memory before
 		// if so, copy all of the elements from the old array to new array
@@ -194,11 +298,30 @@ public:
 		Capacity = 0;
 		MemoryManager::Get().Free((void**)MemoryHandle);
 	}
+
+	/**
+	* Creates a iterator for this TArray
+	* @returns TArrayIterator - The iterator assocaited with this array 
+	*/
+	TArrayIterator CreateIterator()
+	{
+		return TArrayIterator(*this);
+	}
+
+	/**
+	* Creates a const iterator for this TArray
+	* @returns TConstArrayIterator - The const iterator assocaited with this array
+	*/
+	TConstArrayIterator CreateConstIterator()
+	{
+		return TConstArrayIterator(*this);
+	}
+
 public:
 	/**
-	* @returns uint32 - number of elements in the array
+	* @returns uint32 - count of elements in the array
 	*/
-	inline uint32 Num() const
+	inline uint32 Count() const
 	{
 		return Size;
 	}
@@ -214,7 +337,7 @@ public:
 	/**
 	* @returns T* - pointer to the first element in the array 
 	*/
-	inline const T* Data() const 
+	inline const ElementType* Data() const 
 	{
 		return (*MemoryHandle);
 	}
