@@ -15,7 +15,7 @@ class TGenericIndexedContainerIterator
 {
 private:
 	ContainerType& Container;
-	int32 Index;
+	uint32 Index;
 
 public:
 	TGenericIndexedContainerIterator(ContainerType& inContainer, EIteratorPointer inIteratorPointer = EIteratorPointer::Begin)
@@ -47,8 +47,9 @@ public:
 	*/
 	TGenericIndexedContainerIterator& operator++()
 	{
+		// Check to see if we reached the end of the array, if so, break as they should not be allowed to go further! (Maybe should add a safe case)
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		ASSERT(Index == Container.Count());
+		ASSERT(Index != Container.Count());
 #endif
 		++Index;
 		return *this;
@@ -60,8 +61,9 @@ public:
 	*/
 	TGenericIndexedContainerIterator& operator--()
 	{
+		// Check to see if the start is reached, if it is, why go further? (Maybe should add a safe case)
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		ASSERT(Index == 0);
+		ASSERT(Index != 0);
 #endif
 		--Index;
 		return *this;
@@ -119,6 +121,22 @@ public:
 	}
 
 	/**
+	* Removes current element from the array
+	* After removal, pointer is pointing to the next element in the array if one exists 
+	* If !IsFinished() then, it'll successfully remove an element, otherwise it will not
+	*/
+	void Remove()
+	{
+		// If the array is at the very end, cannot remove as index is beyond removal stage 
+		if (IsFinished())
+		{
+			return;
+		}
+
+		Container.RemoveAt(Index);
+	}
+
+	/**
 	* @returns ContainerElementType& - the current element iterator is at
 	*/
 	ContainerElementType& GetCurrentElement() const
@@ -146,9 +164,9 @@ public:
 /**
 * Defines a Dynamic Array (std::vector<>)
 *
-* Can only Grow | Cannot Shrink
-* RAII
-* Instead if usual 'T' for templates, now making better template names such as ElementType (More descriptive)
+* RAII implementation (For memory)
+* Array cannot shrink down (Not even when elements are removed from array)
+* Instead of usual 'T' for templates, now making better template names such as ElementType (More descriptive)
 */
 template <typename ElementType>
 class TArray
@@ -197,8 +215,10 @@ public:
 	*/
 	const ElementType& operator[](uint32 inIndex) const
 	{
+		// Check to see if the index passed in is < our max elements we can have and its lower than the amount of 
+		// elements currently stored
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		ASSERT(inIndex < Capacity&& Size > inIndex);
+		ASSERT(inIndex < Capacity && Size > inIndex);
 #endif
 
 		return (*MemoryHandle) + inIndex;
@@ -210,8 +230,10 @@ public:
 	*/
 	ElementType& operator[](uint32 inIndex)
 	{
+		// Check to see if the index passed in is < our max elements we can have and its lower than the amount of 
+		// elements currently stored
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		ASSERT(inIndex < Capacity&& Size > inIndex);
+		ASSERT(inIndex < Capacity && Size > inIndex); 
 #endif
 
 		return (*MemoryHandle)[inIndex];
@@ -230,6 +252,28 @@ public:
 
 		(*MemoryHandle)[Size] = inData;
 		Size++;
+	}
+
+	/**
+	* Removes the element at the specified index | doesn't resize, nor deallocate memory 
+	* @param inIndexToRemove - the index of teh element to be removed 
+	*/
+	void RemoveAt(int32 inIndexToRemove)
+	{
+		// Check to see if the index passed in is < our max elements we can have and its lower than the amount of 
+		// elements currently stored,also not a negative index 
+#if _DEBUG || _DEBUG_EDITOR || _EDITOR
+		ASSERT(inIndexToRemove < Capacity && Size > inIndexToRemove && inIndexToRemove > 0);
+#endif
+
+		// Instead of deallocating the memory, we can just lower the size and shift all of the element from right to left 
+		for (int32 i = inIndexToRemove; i < Size - 1; ++i)
+		{
+			(*MemoryHandle)[i] = (*MemoryHandle)[i + 1];
+		}
+
+		// Decrement
+		Size--;
 	}
 
 	/**
@@ -294,6 +338,7 @@ public:
 			Capacity *= 2;
 		}
 
+		// Check to see if the resize if growing the array not shrinking, as it is not allowed 
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
 		ASSERT(inNewCapacity < Capacity);
 #endif
@@ -333,6 +378,7 @@ public:
 	*/
 	void Flush()
 	{
+		// If it memory is already freed, why free again?
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
 		ASSERT(MemoryHandle != nullptr);
 #endif 
