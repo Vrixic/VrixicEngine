@@ -1,4 +1,5 @@
 D:/dev/repo/VulkanRenderer/Engine/Source/Containers/Array.h
+D:/dev/repo/VulkanRenderer/Engine/Source/Containers/List.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Misc/Defines/GenericDefines.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/EntryPoint/EntryPoint.cpp
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/File/FileHelper.h
