@@ -1,12 +1,6 @@
 #pragma once
 #include <Runtime/Memory/Core/MemoryManager.h>
-
-enum class EIteratorPointer
-{
-	Begin = 0,
-	End
-};
-
+#include "IteratorGenerics.h"
 /**
 * A Generic iterator for all indexed based container types
 */

@@ -22,7 +22,7 @@
 #include <Runtime/Memory/Core/Allocaters/StackMemoryAllocater.h>
 #include <Runtime/Memory/Core/Allocaters/DoubleEndedStackMemoryAllocater.h>
 
-#define RENDER_DOC 1
+#define RENDER_DOC 0
 
 typedef uint32_t uint32;
 
@@ -188,6 +188,7 @@ public:
 
 		delete Surface;
 		delete Device;
+
 		vkDestroyInstance(Instance, nullptr);
 	}
 
@@ -198,12 +199,12 @@ public:
 		// Create Vulkan Instance
 		Result = CreateInstance(instanceLayers, layersCount, instanceExtensions, instanceExtensionCount);
 		if (Result != VK_SUCCESS) {
-			std::cout << "Could not create Vulkan instance!";
+			std::cout << "Could not create Vulkan Instance!";
 			return false;
 		}
 		else
 		{
-			std::cout << "Successfully created an instance..\n";
+			std::cout << "Successfully created an Instance..\n";
 		}
 
 		// Physical Device
@@ -715,7 +716,7 @@ public:
 
 		InstanceExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 
-		// Get extensions supported by the instance and store for later use
+		// Get extensions supported by the Instance and store for later use
 		uint32 ExtensionCount = 0;
 		vkEnumerateInstanceExtensionProperties(nullptr, &ExtensionCount, nullptr);
 		if (ExtensionCount > 0)
@@ -730,7 +731,7 @@ public:
 			}
 		}
 
-		// Get layers supported by the instance and store for later use
+		// Get layers supported by the Instance and store for later use
 		uint32 LayerCount = 0;
 		vkEnumerateInstanceLayerProperties(&LayerCount, nullptr);
 		if (LayerCount > 0)
@@ -753,7 +754,7 @@ public:
 				// Output message if requested extension is not available
 				if (std::find(SupportedInstanceExtensions.begin(), SupportedInstanceExtensions.end(), instanceExtensions[i]) == SupportedInstanceExtensions.end())
 				{
-					std::cerr << "Enabled instance extension \"" << instanceExtensions[i] << "\" is not present at instance level\n";
+					std::cerr << "Enabled Instance extension \"" << instanceExtensions[i] << "\" is not present at Instance level\n";
 				}
 
 				InstanceExtensions.push_back(instanceExtensions[i]);
@@ -768,7 +769,7 @@ public:
 				// Output message if requested extension is not available
 				if (std::find(SupportedInstanceLayers.begin(), SupportedInstanceLayers.end(), instanceLayers[i]) == SupportedInstanceLayers.end())
 				{
-					std::cerr << "Enabled instance layer \"" << instanceLayers[i] << "\" is not present at instance level\n";
+					std::cerr << "Enabled Instance layer \"" << instanceLayers[i] << "\" is not present at Instance level\n";
 				}
 
 				InstanceLayers.push_back(instanceLayers[i]);
@@ -795,10 +796,16 @@ public:
 			InstanceCreateInfo.ppEnabledLayerNames = InstanceLayers.data();
 		}
 
+		// Debug Setup
+		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
+		VulkanUtils::DebugUtils::PopulateDebugMessengerCreateInfo(debugCreateInfo);
+
+		InstanceCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+
 		// The VK_LAYER_KHRONOS_validation contains all current validation functionality.
 		//const char* ValidationLayerName = "VK_LAYER_KHRONOS_validation";
 		//
-		//// Check if this layer is available at instance level
+		//// Check if this layer is available at Instance level
 		//uint32_t InstanceLayerCount;
 		//vkEnumerateInstanceLayerProperties(&InstanceLayerCount, nullptr);
 		//std::vector<VkLayerProperties> InstanceLayerProperties(InstanceLayerCount);
@@ -821,7 +828,6 @@ public:
 
 		return vkCreateInstance(&InstanceCreateInfo, nullptr, &Instance);
 	}
-
 };
 
 std::string GetWindowTitle()
@@ -953,23 +959,21 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 	/* Create Vulkan Stuff */
 	VTemp = new VulkanAPI(WindowWidth, WindowHeight, WindowInstance, Window);
 
-	const uint32 InstanceExtensionCount = 0;
-	/*const char* InstanceExtensions[InstanceExtensionCount]
+	const uint32 InstanceExtensionCount = 1;
+	const char* InstanceExtensions[InstanceExtensionCount]
 	{
-		""
-	};	*/
+		"VK_EXT_debug_utils"
+	};	
 
 	
-#if RENDER_DOC
-	const uint32 InstanceLayerCount = 2;
-#else
 	const uint32 InstanceLayerCount = 1;
-#endif
 	const char* InstanceLayers[InstanceLayerCount]
 	{
-		"VK_LAYER_KHRONOS_validation",
+		
 #if RENDER_DOC
-		"VK_LAYER_RENDERDOC_Capture"
+		"VK_LAYER_RENDERDOC_Capture",
+#else
+		"VK_LAYER_KHRONOS_validation",
 #endif
 	};
 
@@ -987,7 +991,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 	EnabledFeatures.samplerAnisotropy = VK_TRUE; //MSAA
 	EnabledFeatures.multiViewport = VK_TRUE;
 
-	if (!VTemp->InitVulkan(EnabledFeatures, InstanceLayers, InstanceLayerCount, nullptr, InstanceExtensionCount, DeviceExtensions, DeviceExtensionsCount))
+	if (!VTemp->InitVulkan(EnabledFeatures, InstanceLayers, InstanceLayerCount, InstanceExtensions, InstanceExtensionCount, DeviceExtensions, DeviceExtensionsCount))
 	{
 		std::cout << "Vulkan initialization failed...";
 		std::cin.get();
