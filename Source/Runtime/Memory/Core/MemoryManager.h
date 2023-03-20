@@ -62,7 +62,7 @@ public:
 	void StartUp()
 	{
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		ASSERT(!bIsActive);
+		ASSERT(!bIsActive, "Memory manager should not be created again.... MemoryManager::StartUp() SHOULD only be called once!");
 		Shutdown();
 #endif
 		bIsActive = true;
@@ -178,7 +178,7 @@ public:
 	{
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
 		bool IsAllocater = std::is_base_of<MemoryAllocater, T>::value;
-		ASSERT(IsAllocater);
+		ASSERT(IsAllocater, "[MemoryManager]: Trying to allocate an Object that is not a child of MemoryAllocater");
 #endif
 		// Extra bytes for alignment (* 2)
 		ulong32 SizeOfAllocaterInBytes = sizeof(T) * 2;
@@ -243,8 +243,8 @@ private:
 	void PreInit()
 	{
 #if _DEBUG
-		ASSERT(MemoryHeapSize == 0);
-		ASSERT(MemoryPageHeapSize == 0);
+		ASSERT(MemoryHeapSize == 0, "[Memory Manager]: Memory manager cannot initialize with 0 bytes as the size!");
+		ASSERT(MemoryPageHeapSize == 0, "[Memory Manager]: Memory managers page heap size cannot start with 0 bytes!");
 #endif
 		MemoryHeapSize = MEBIBYTES_TO_BYTES(100);
 		MemoryPageHeapSize = MEBIBYTES_TO_BYTES(50);
@@ -277,7 +277,7 @@ private:
 		// (This works for up to 256-byte alignment.)
 		intptr Shift = AlignedPtr - inPtrToAlign;
 #if _DEBUG || _DEBUG_EDITOR
-		ASSERT(Shift > 0 && Shift <= 256);
+		ASSERT(Shift > 0 && Shift <= 256, "[Memory Manager]: invalid amount of bytes are trying to get shifted");
 #endif
 
 		AlignedPtr[-1] = static_cast<uint8>(Shift & 0xff);

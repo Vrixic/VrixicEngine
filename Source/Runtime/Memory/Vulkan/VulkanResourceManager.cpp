@@ -28,7 +28,7 @@ uint32 VulkanResourceManager::CreateShaderResourceFromPath(const VString& inFile
 	shaderc_compile_options_set_generate_debug_info(options);
 #endif
 
-	VK_CHECK_RESULT(LoadShaderModuleFromPath(&inFilePath, inShaderType, compiler, options));
+	VK_CHECK_RESULT(LoadShaderModuleFromPath(&inFilePath, inShaderType, compiler, options), "[VulkanResourceManager]: Failed to load shader module from path!");
 
 	return ShaderModules.size() - 1;
 }
@@ -45,7 +45,7 @@ uint32 VulkanResourceManager::CreateShaderResourceFromString(const VString& inSh
 	shaderc_compile_options_set_generate_debug_info(options);
 #endif
 
-	VK_CHECK_RESULT(LoadShaderModuleFromString(&inShaderCode, inShaderType, compiler, options));
+	VK_CHECK_RESULT(LoadShaderModuleFromString(&inShaderCode, inShaderType, compiler, options), "[VulkanResourceManager]: Failed to load shader module from string!");
 
 	return ShaderModules.size() - 1;
 }
@@ -72,7 +72,7 @@ VkResult VulkanResourceManager::LoadShaderModuleFromPath(const VString* inShader
 	if (!FileHandle.is_open())
 	{
 #if _DEBUG
-		std::cout << "ERROR: Shader Source File \"" << inShaderPath << "\" Not Found!" << std::endl;
+		VE_CORE_LOG_ERROR(FMT_STRING("ERROR: Shader Source File \"{0}\" Not Found!") , inShaderPath->data());
 #endif // DEBUG
 		return VK_ERROR_UNKNOWN;
 	}
@@ -134,7 +134,9 @@ VkResult VulkanResourceManager::LoadShaderModuleFromString(const VString* inShad
 		inCompiler, inShaderCode->c_str(), inShaderCode->length(),
 		ShaderKind, InputFileName.c_str(), EntryPointName.c_str(), inOptions);
 	if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) // errors?
-		std::cout << "Shader Errors: " << shaderc_result_get_error_message(result) << std::endl;
+	{
+		VE_CORE_LOG_ERROR("Shader Errors: {0}", shaderc_result_get_error_message(result));
+	}
 
 	VkShaderModuleCreateInfo ShaderModuleCreateInfo = {};
 	ShaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;

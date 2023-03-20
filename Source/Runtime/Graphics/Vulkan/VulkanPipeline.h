@@ -53,11 +53,11 @@ public:
 		}
 
 #if _DEBUG
-		ASSERT(!HasBeenCreated);
+		ASSERT(!HasBeenCreated, "[VulkanPipelineLayout]: Failed to create another pipeline layout! Can only be created ONCE!");
 		HasBeenCreated = true;
 
 		VK_CHECK_RESULT(vkCreatePipelineLayout(*Device->GetDeviceHandle(), &PipelineLayoutCreateInfo, nullptr,
-			&PipelineLayoutHandle));
+			&PipelineLayoutHandle), "[VulkanPipelineLayout]: Failed to create a pipeline layout!");
 #else
 		vkCreatePipelineLayout(*Device->GetDeviceHandle(), &PipelineLayoutCreateInfo, nullptr,
 			&PipelineLayoutHandle);
@@ -69,11 +69,11 @@ public:
 		VkPipelineLayoutCreateInfo PipelineLayoutCreateInfo = VulkanUtils::Initializers::PipelineLayoutCreateInfo();
 
 #if _DEBUG
-		ASSERT(!HasBeenCreated);
+		ASSERT(!HasBeenCreated, "[VulkanPipelineLayout]: Failed to create another empty pipeline layout! Can only be created ONCE!");
 		HasBeenCreated = true;
 
 		VK_CHECK_RESULT(vkCreatePipelineLayout(*Device->GetDeviceHandle(), &PipelineLayoutCreateInfo, nullptr,
-			&PipelineLayoutHandle));
+			&PipelineLayoutHandle), "[VulkanPipelineLayout]: Failed to create a empty pipeline layout!");
 #else
 		vkCreatePipelineLayout(*Device->GetDeviceHandle(), &PipelineLayoutCreateInfo, nullptr,
 			&PipelineLayoutHandle);

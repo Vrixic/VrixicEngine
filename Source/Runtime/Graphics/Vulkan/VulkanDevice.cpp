@@ -14,7 +14,7 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice& gpu, VkPhysicalDeviceFeatures& enab
 
 	// Queue family properties, used for setting up requested queues upon device creation
 	vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDeviceHandle, &QueueFamilyCount, nullptr);
-	assert(QueueFamilyCount > 0);
+	ASSERT(QueueFamilyCount > 0, "[VulkanDevice]: No queue families found on physical device (GPU)!");
 	QueueFamilyProperties.resize(QueueFamilyCount);
 	vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDeviceHandle, &QueueFamilyCount, QueueFamilyProperties.data());
 
@@ -154,7 +154,7 @@ void VulkanDevice::CreateDevice(VulkanSurface* surface)
 		DeviceCreateInfo.ppEnabledExtensionNames = DeviceExtensions.data();
 	}
 
-	VK_CHECK_RESULT(vkCreateDevice(PhysicalDeviceHandle, &DeviceCreateInfo, nullptr, &LogicalDeviceHandle));
+	VK_CHECK_RESULT(vkCreateDevice(PhysicalDeviceHandle, &DeviceCreateInfo, nullptr, &LogicalDeviceHandle), "[VulkanDevice]: Failed to create a logical device!");
 
 	// Iterate over each queue to learn whether it supports presenting:
 	// Find a queue with present support
@@ -297,7 +297,7 @@ void VulkanQueue::SubmitQueue(VulkanCommandBuffer* commandBuffer, uint32 numSign
 	SubmitInfo.pSignalSemaphores = signalSemaphore;     // Semaphore(s) to be signaled when command buffers have completed
 
 	// Submit to the graphics queue passing a wait fence
-	VK_CHECK_RESULT(vkQueueSubmit(Queue, 1, &SubmitInfo, *commandBuffer->GetWaitFenceHandle()));
+	VK_CHECK_RESULT(vkQueueSubmit(Queue, 1, &SubmitInfo, *commandBuffer->GetWaitFenceHandle()), "[VulkanQueue]: Failed to submit a command buffer to graphics queue!");
 }
 
 void VulkanQueue::SubmitQueue(VulkanCommandBuffer* commandBuffer, VkSemaphore* signalSemaphore)
@@ -319,15 +319,15 @@ VulkanSurface::VulkanSurface(VulkanDevice* device, VkInstance* instance, HINSTAN
 
 	// Init surface
 	VkWin32SurfaceCreateInfoKHR SurfaceCreateInfo = VulkanUtils::Initializers::Win32SurfaceCreateInfoKHR(windowInstance, window);
-	VK_CHECK_RESULT(vkCreateWin32SurfaceKHR(*instance, &SurfaceCreateInfo, nullptr, &SurfaceHandle));
+	VK_CHECK_RESULT(vkCreateWin32SurfaceKHR(*instance, &SurfaceCreateInfo, nullptr, &SurfaceHandle), "[VulkanSurface]: Failed to create a Win32 Surface!!");
 
 	// Get list of supported surface formats
 	uint32_t FormatCount;
-	VK_CHECK_RESULT(fpGetPhysicalDeviceSurfaceFormatsKHR(*device->GetPhysicalDeviceHandle(), SurfaceHandle, &FormatCount, NULL));
-	assert(FormatCount > 0);
+	VK_CHECK_RESULT(fpGetPhysicalDeviceSurfaceFormatsKHR(*device->GetPhysicalDeviceHandle(), SurfaceHandle, &FormatCount, NULL), "[VulkanSurface]: Failed to retreive physical device (GPU) surface formats count!");
+	ASSERT(FormatCount > 0, "[VulkanSurface]: Failed to retreive physical device (GPU) surface formats; Format count < 0");
 
 	std::vector<VkSurfaceFormatKHR> SurfaceFormats(FormatCount);
-	VK_CHECK_RESULT(fpGetPhysicalDeviceSurfaceFormatsKHR(*device->GetPhysicalDeviceHandle(), SurfaceHandle, &FormatCount, SurfaceFormats.data()));
+	VK_CHECK_RESULT(fpGetPhysicalDeviceSurfaceFormatsKHR(*device->GetPhysicalDeviceHandle(), SurfaceHandle, &FormatCount, SurfaceFormats.data()), "[VulkanSurface]: Failed to retreive physical device (GPU) surface formats!");
 
 	// If the surface format list only includes one entry with VK_FORMAT_UNDEFINED,
 		// there is no preferred format, so we assume VK_FORMAT_B8G8R8A8_UNORM
@@ -427,15 +427,15 @@ void VulkanSwapChain::Create(bool vSync, uint32* imageWidth, uint32* imageHeight
 {
 	// Get physical device surface properties and formats
 	VkSurfaceCapabilitiesKHR SurfaceCapabilities;
-	VK_CHECK_RESULT(Surface->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(*Device->GetPhysicalDeviceHandle(), *Surface->GetSurfaceHandle(), &SurfaceCapabilities));
+	VK_CHECK_RESULT(Surface->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(*Device->GetPhysicalDeviceHandle(), *Surface->GetSurfaceHandle(), &SurfaceCapabilities), "[VulkanSwapChain]: Failed to retreive physical device (GPU) surface capabilities!");
 
 	// Get available present modes
 	uint32_t PresentModeCount = -1;
-	VK_CHECK_RESULT(Surface->fpGetPhysicalDeviceSurfacePresentModesKHR(*Device->GetPhysicalDeviceHandle(), *Surface->GetSurfaceHandle(), &PresentModeCount, NULL));
-	assert(PresentModeCount > 0);
+	VK_CHECK_RESULT(Surface->fpGetPhysicalDeviceSurfacePresentModesKHR(*Device->GetPhysicalDeviceHandle(), *Surface->GetSurfaceHandle(), &PresentModeCount, NULL), "[VulkanSwapChain]: Failed to retreive physical device (GPU) surface present modes count!");
+	ASSERT(PresentModeCount > 0, "[VulkanSwapChain]: Failed to retreive physical device (GPU) surface present modes count; Surface Capabilites count equals 0");
 
 	std::vector<VkPresentModeKHR> PresentModes(PresentModeCount);
-	VK_CHECK_RESULT(Surface->fpGetPhysicalDeviceSurfacePresentModesKHR(*Device->GetPhysicalDeviceHandle(), *Surface->GetSurfaceHandle(), &PresentModeCount, PresentModes.data()));
+	VK_CHECK_RESULT(Surface->fpGetPhysicalDeviceSurfacePresentModesKHR(*Device->GetPhysicalDeviceHandle(), *Surface->GetSurfaceHandle(), &PresentModeCount, PresentModes.data()), "[VulkanSwapChain]: Failed to retreive physical device (GPU) surface present modes!");
 
 	VkExtent2D SwapchainExtent = {};
 	// If width (and height) equals the special value 0xFFFFFFFF, the size of the surface will be set by the swapchain
@@ -547,7 +547,10 @@ void VulkanSwapChain::Create(bool vSync, uint32* imageWidth, uint32* imageHeight
 	}
 
 	// Create the swapchain
-	VK_CHECK_RESULT(fpCreateSwapchainKHR(*Device->GetDeviceHandle(), &SwapchainCreateInfo, nullptr, &SwapChainHandle));
+	/**
+	* Can fail unexpectedly due to Renderdoc and Vulkan Validation Layers (Only one can be selected at a time)
+	*/
+	VK_CHECK_RESULT(fpCreateSwapchainKHR(*Device->GetDeviceHandle(), &SwapchainCreateInfo, nullptr, &SwapChainHandle), "[VulkanSwapChain]: Failed to create a swapchain!");
 
 	// If an existing swap chain is re-created, destroy the old swap chain
 	// This also cleans up all the presentable images
@@ -564,11 +567,11 @@ void VulkanSwapChain::Create(bool vSync, uint32* imageWidth, uint32* imageHeight
 	Buffers.clear();
 
 	// Get the swapchain image count
-	VK_CHECK_RESULT(fpGetSwapchainImagesKHR(*Device->GetDeviceHandle(), SwapChainHandle, &ImageCount, NULL));
+	VK_CHECK_RESULT(fpGetSwapchainImagesKHR(*Device->GetDeviceHandle(), SwapChainHandle, &ImageCount, NULL), "[VulkanSwapChain]: Failed to retreive a swapchain images count!");
 
 	// Get the swap chain images
 	Images.resize(ImageCount);
-	VK_CHECK_RESULT(fpGetSwapchainImagesKHR(*Device->GetDeviceHandle(), SwapChainHandle, &ImageCount, Images.data()));
+	VK_CHECK_RESULT(fpGetSwapchainImagesKHR(*Device->GetDeviceHandle(), SwapChainHandle, &ImageCount, Images.data()), "[VulkanSwapChain]: Failed to retreive a swapchain images!");
 
 	// Get the swap chain buffers containing the image and imageview
 	Buffers.resize(ImageCount);
@@ -596,7 +599,7 @@ void VulkanSwapChain::Create(bool vSync, uint32* imageWidth, uint32* imageHeight
 
 		ColorAttachmentView.image = Buffers[i].Image;
 
-		VK_CHECK_RESULT(vkCreateImageView(*Device->GetDeviceHandle(), &ColorAttachmentView, nullptr, &Buffers[i].View));
+		VK_CHECK_RESULT(vkCreateImageView(*Device->GetDeviceHandle(), &ColorAttachmentView, nullptr, &Buffers[i].View), "[VulkanSwapChain]: Failed to create an image view!");
 	}
 }
 

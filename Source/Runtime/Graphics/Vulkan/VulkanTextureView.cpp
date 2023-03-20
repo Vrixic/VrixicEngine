@@ -3,7 +3,7 @@
 VulkanTextureView::VulkanTextureView(VulkanDevice* device, VkImageCreateInfo& imageCreateInfo)
 	: Device(device), ImageHandle(VK_NULL_HANDLE), ViewHandle(VK_NULL_HANDLE)
 {
-	VK_CHECK_RESULT(vkCreateImage(*device->GetDeviceHandle(), &imageCreateInfo, nullptr, &ImageHandle));
+	VK_CHECK_RESULT(vkCreateImage(*device->GetDeviceHandle(), &imageCreateInfo, nullptr, &ImageHandle), "[VulkanTextureView]: Failed to create an image!");
 
 	VkMemoryRequirements MemoryRequirements{};
 	vkGetImageMemoryRequirements(*device->GetDeviceHandle(), ImageHandle, &MemoryRequirements);
@@ -13,8 +13,8 @@ VulkanTextureView::VulkanTextureView(VulkanDevice* device, VkImageCreateInfo& im
 	MemoryAlloc.allocationSize = MemoryRequirements.size;
 	MemoryAlloc.memoryTypeIndex = MemoryTypeIndex;
 
-	VK_CHECK_RESULT(vkAllocateMemory(*device->GetDeviceHandle(), &MemoryAlloc, nullptr, &ImageMemory));
-	VK_CHECK_RESULT(vkBindImageMemory(*device->GetDeviceHandle(), ImageHandle, ImageMemory, 0));
+	VK_CHECK_RESULT(vkAllocateMemory(*device->GetDeviceHandle(), &MemoryAlloc, nullptr, &ImageMemory), "[VulkanTextureView]: Failed to allocate memory for an image!");
+	VK_CHECK_RESULT(vkBindImageMemory(*device->GetDeviceHandle(), ImageHandle, ImageMemory, 0), "[VulkanTextureView]: Failed to bind memory for an image!");
 }
 
 VulkanTextureView::~VulkanTextureView()
@@ -31,7 +31,7 @@ void VulkanTextureView::CreateImageView(VkImageViewType
 {
 	if (ViewHandle != VK_NULL_HANDLE)
 	{
-		std::cout << "Cannot replace a texture view.....";
+		VE_CORE_LOG_WARN("Cannot replace a texture view...");
 		return;
 	}
 
@@ -45,5 +45,5 @@ void VulkanTextureView::CreateImageView(VkImageViewType
 	imageViewCI.subresourceRange.layerCount = layerCount;
 	imageViewCI.subresourceRange.aspectMask = aspectFlags;
 
-	VK_CHECK_RESULT(vkCreateImageView(*Device->GetDeviceHandle(), &imageViewCI, nullptr, &ViewHandle));
+	VK_CHECK_RESULT(vkCreateImageView(*Device->GetDeviceHandle(), &imageViewCI, nullptr, &ViewHandle), "[VulkanTextureView]: Failed to create an image view!");
 }

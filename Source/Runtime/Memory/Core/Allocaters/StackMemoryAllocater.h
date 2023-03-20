@@ -39,7 +39,7 @@ public:
 	T* Alloc(ulong32 inSizeInBytesToAllocate)
 	{
 #if _DEBUG | _DEBUG_EDITOR
-		ASSERT(MemoryUsed + inSizeInBytesToAllocate < (MemorySize + 1));
+		ASSERT(MemoryUsed + inSizeInBytesToAllocate < (MemorySize + 1), "[Stack Memory Allocater]: Trying to allocate more bytes then have on allocater heap!");
 #endif
 		uint8* RawMemoryPtr = ((*MemoryHandle) + MemoryUsed);
 		MemoryUsed += inSizeInBytesToAllocate;
@@ -61,7 +61,7 @@ public:
 	T* AllocConstruct(ulong32 inSizeInBytesToAllocate)
 	{
 #if _DEBUG | _DEBUG_EDITOR
-		ASSERT(MemoryUsed + inSizeInBytesToAllocate < (MemorySize + 1));
+		ASSERT(MemoryUsed + inSizeInBytesToAllocate < (MemorySize + 1), "[Stack Memory Allocater]: Trying to allocate more bytes then have on allocater heap!");
 #endif
 		uint8* RawMemPtr = (*MemoryHandle + MemoryUsed);
 		T* MemHandle = (new (RawMemPtr) T()); // placement-new
@@ -83,7 +83,7 @@ public:
 	virtual void FreeToMarker(Marker inMarker)
 	{
 #if _DEBUG | _DEBUG_EDITOR
-		ASSERT(MemoryUsed != 0 && inMarker < (MemoryUsed + 1));
+		ASSERT(MemoryUsed != 0 && inMarker < (MemoryUsed + 1), "[Stack Memory Allocater]: Invalid marker being freed");
 #endif
 		MemoryUsed = inMarker;
 	}

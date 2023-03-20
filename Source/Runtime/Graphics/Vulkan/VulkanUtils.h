@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Misc/Assert.h>
+
 #include <cassert>
 #include <stdexcept>
 #include <vector>
@@ -7,17 +9,16 @@
 #include "vulkan/vulkan.h"
 #include <vulkan/vulkan_win32.h>
 #include <iostream>
-#include <Misc/Defines/GenericDefines.h>
 
 /* The # macro will turn the expression f into a string literal */
-#define VK_CHECK_RESULT(f)																				\
-{																										\
-	VkResult res = (f);																					\
-	if (res != VK_SUCCESS)																				\
-	{																									\
-		std::cout << "Fatal : \"" << #f << "\" in " << __FILE__ << " at line " << __LINE__ << "\n"; \
-		ASSERT(false);																		\
-	}																									\
+#define VK_CHECK_RESULT(f, messageIfFailure)																				\
+{																															\
+	VkResult res = (f);																										\
+	if (res != VK_SUCCESS)																									\
+	{																														\
+		std::cout << "Fatal : \"" << #f << "\" in " << __FILE__ << " at line " << __LINE__ << "\n";							\
+		ASSERT(false, messageIfFailure);																					\
+	}																														\
 }
 
 namespace VulkanUtils
@@ -301,7 +302,36 @@ namespace VulkanUtils
 			const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 			void* pUserData) {
 
-			std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+			/**
+			* ------------------------------------------------------------------------------------------
+			* ------------------------------------------------------------------------------------------
+			* CHANGE FORM USING STD::STRING WHICH IS INEFFICIENT (TEMPORARY USAGE FOR LOGGER ADAPTING)
+			* ------------------------------------------------------------------------------------------
+			* ------------------------------------------------------------------------------------------
+			*/
+
+			std::string Message("[Validation Layer] ");
+			Message.append(pCallbackData->pMessage);
+
+			switch (messageSeverity)
+			{
+			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+				VE_CORE_LOG_DISPLAY(Message.data());
+				break;
+			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+				VE_CORE_LOG_INFO(Message.data());
+				break;
+			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+				VE_CORE_LOG_WARN(Message.data());
+				break;
+			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+				VE_CORE_LOG_ERROR(Message.data());
+				break;
+			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
+				VE_CORE_LOG_FATAL(Message.data());
+				break;
+			}
+			//std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
 			return VK_FALSE;
 		}

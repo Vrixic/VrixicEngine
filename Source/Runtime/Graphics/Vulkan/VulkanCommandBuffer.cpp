@@ -11,7 +11,7 @@ VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice* device, VulkanCommandPool
 	// Fence (Used to check draw command buffer completion)
 	// Create in signaled state so we don't wait on first render of each command buffer
 	VkFenceCreateInfo FenceCreateInfo = VulkanUtils::Initializers::FenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT, nullptr);
-	VK_CHECK_RESULT(vkCreateFence(*Device->GetDeviceHandle(), &FenceCreateInfo, nullptr, &WaitFence));
+	VK_CHECK_RESULT(vkCreateFence(*Device->GetDeviceHandle(), &FenceCreateInfo, nullptr, &WaitFence), "[VulkanCommandBuffer]: Failed to create a fence that is used to check draw command buffer completion!");
 }
 
 VulkanCommandBuffer::~VulkanCommandBuffer()
@@ -31,7 +31,7 @@ void VulkanCommandBuffer::AllocateCommandBuffer()
 	CommandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	CommandBufferAllocateInfo.commandBufferCount = 1;
 
-	VK_CHECK_RESULT(vkAllocateCommandBuffers(*Device->GetDeviceHandle(), &CommandBufferAllocateInfo, &CommandBufferHandle));
+	VK_CHECK_RESULT(vkAllocateCommandBuffers(*Device->GetDeviceHandle(), &CommandBufferAllocateInfo, &CommandBufferHandle), "[VulkanCommandBuffer]: Failed to create a command buffer!");
 }
 
 void VulkanCommandBuffer::FreeCommandBuffer()
@@ -42,12 +42,12 @@ void VulkanCommandBuffer::FreeCommandBuffer()
 void VulkanCommandBuffer::BeginCommandBuffer()
 {
 	VkCommandBufferBeginInfo CommandBufferBeginInfo = VulkanUtils::Initializers::CommandBufferBeginInfo(nullptr);
-	VK_CHECK_RESULT(vkBeginCommandBuffer(CommandBufferHandle, &CommandBufferBeginInfo));
+	VK_CHECK_RESULT(vkBeginCommandBuffer(CommandBufferHandle, &CommandBufferBeginInfo), "[VulkanCommandBuffer]: Failed to begin a command buffer!");
 }
 
 void VulkanCommandBuffer::EndCommandBuffer()
 {
-	VK_CHECK_RESULT(vkEndCommandBuffer(CommandBufferHandle));
+	VK_CHECK_RESULT(vkEndCommandBuffer(CommandBufferHandle), "[VulkanCommandBuffer]: Failed to end a command buffer!");
 }
 
 void VulkanCommandBuffer::BeginRenderPass(const VulkanRenderPass* renderPass, VulkanFrameBuffer* frameBuffer)
@@ -79,12 +79,12 @@ void VulkanCommandBuffer::AddWaitSemaphore(VkSemaphore* semaphore)
 
 void VulkanCommandBuffer::SetWaitFence() const
 {
-	VK_CHECK_RESULT(vkWaitForFences(*Device->GetDeviceHandle(), 1, &WaitFence, VK_TRUE, UINT64_MAX));
+	VK_CHECK_RESULT(vkWaitForFences(*Device->GetDeviceHandle(), 1, &WaitFence, VK_TRUE, UINT64_MAX), "[VulkanCommandBuffer]: Failed to set a fence to wait!");
 }
 
 void VulkanCommandBuffer::ResetWaitFence() const
 {
-	VK_CHECK_RESULT(vkResetFences(*Device->GetDeviceHandle(), 1, &WaitFence));
+	VK_CHECK_RESULT(vkResetFences(*Device->GetDeviceHandle(), 1, &WaitFence), "[VulkanCommandBuffer]: Failed to reset a fence!");
 }
 
 /* ------------------------------------------------------------------------------- */
@@ -115,7 +115,7 @@ void VulkanCommandPool::CreateCommandPool(uint32 queueFamilyIndex)
 	VkCommandPoolCreateInfo CommandPoolInfo = VulkanUtils::Initializers::CommandPoolCreateInfo(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
 		queueFamilyIndex, nullptr);
 
-	VK_CHECK_RESULT(vkCreateCommandPool(*Device->GetDeviceHandle(), &CommandPoolInfo, nullptr, &CommandPoolHandle));
+	VK_CHECK_RESULT(vkCreateCommandPool(*Device->GetDeviceHandle(), &CommandPoolInfo, nullptr, &CommandPoolHandle), "[VulkanCommandPool]: Failed to create a command pool!");
 }
 
 void VulkanCommandPool::DestroyBuffers()

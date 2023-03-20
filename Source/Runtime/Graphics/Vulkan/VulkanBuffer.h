@@ -67,7 +67,7 @@ public:
 	void* Map(VkDeviceSize inSize, VkDeviceSize inOffset)
 	{
 #if _DEBUG | _DEBUG_EDITOR
-		VK_CHECK_RESULT(vkMapMemory(*Device->GetDeviceHandle(), MemoryHandle, inOffset, inSize, 0, &MappedDataPtr));
+		VK_CHECK_RESULT(vkMapMemory(*Device->GetDeviceHandle(), MemoryHandle, inOffset, inSize, 0, &MappedDataPtr), "[VulkanBuffer]: Failed trying to map buffer memory");
 #else
 		vkMapMemory(*Device->GetDeviceHandle(), MemoryHandle, inOffset, inSize, 0, &MappedDataPtr);
 #endif		
@@ -214,7 +214,7 @@ public:
 	{
 		VkDeviceMemory MemoryHandle = VK_NULL_HANDLE;
 #if _DEBUG | _DEBUG_EDITOR
-		VK_CHECK_RESULT(vkAllocateMemory(*Device->GetDeviceHandle(), &inMemoryAllocateInfo, nullptr, &MemoryHandle));
+		VK_CHECK_RESULT(vkAllocateMemory(*Device->GetDeviceHandle(), &inMemoryAllocateInfo, nullptr, &MemoryHandle), "[VulkanBuffer]: Failed trying to allocate buffer memory");
 #else
 		vkAllocateMemory(*Device->GetDeviceHandle(), &inMemoryAllocateInfo, nullptr, &MemoryHandle);
 #endif // _DEBUG
@@ -363,7 +363,7 @@ private:
 
 		Size = inBufferCreateInfo.DeviceSize;
 #if _DEBUG
-		VK_CHECK_RESULT(vkCreateBuffer(*Device->GetDeviceHandle(), &BufferCreateInfo, nullptr, &BufferHandle));
+		VK_CHECK_RESULT(vkCreateBuffer(*Device->GetDeviceHandle(), &BufferCreateInfo, nullptr, &BufferHandle), "[VulkanBuffer]: Failed trying to create buffer");
 #else
 		vkCreateBuffer(*Device->GetDeviceHandle(), &BufferCreateInfo, nullptr, &BufferHandle);
 #endif
@@ -381,7 +381,7 @@ private:
 #if _DEBUG
 		VkResult Result;
 		Result = vkBindBufferMemory(*Device->GetDeviceHandle(), BufferHandle, *DeviceMemory->GetMemoryHandle(), Offset + inOffset);
-		VK_CHECK_RESULT(Result);
+		VK_CHECK_RESULT(Result, "[VulkanBuffer]: Failed buffer bind/linkage");
 
 		return Result == VK_SUCCESS;
 #else

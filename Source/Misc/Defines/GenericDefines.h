@@ -72,38 +72,5 @@ typedef int64               intptr;
 // In editor 
 #define _EDITOR !NDEBUG
 
-/* Assertion */
-#if _DEBUG
-#define ASSERTIONS_ENABLED 1
-#endif
-
-#if ASSERTIONS_ENABLED
-// define some inline assembly that causes a break
-// into the debugger -- this will be different on each
-// target CPU
-#define debugBreak() __debugbreak()
-// check the expression and fail if it is false 
-#define ASSERT(expr)							 \
-  if(expr) { }									\
-  else											\
- {												\
-	debugBreak();								\
- }
-#else
-#define ASSERT(expr) // evaluates to nothing
-#endif
-
-/* Compile time assertion, checks if were using cpp11 if so use assert def*/
-#ifdef __cplusplus
-#if __cplusplus >= 201103L
-#define STATIC_ASSERT(expr) \
-   static_assert(expr, \
-     "static assert failed:" \
-     #expr)
-#else
-#define STATIC_ASSERT(expr)
-#endif
-#endif
-
 typedef std::string VString;
 

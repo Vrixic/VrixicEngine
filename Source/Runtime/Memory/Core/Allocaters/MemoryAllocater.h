@@ -73,8 +73,8 @@ protected:
 	void Init(ulong32 inSizeInBytes, ulong32 inAlignment = 4)
 	{
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		ASSERT(MemoryHandle == nullptr);
-		ASSERT(inAlignment > 0);
+		ASSERT(MemoryHandle == nullptr, "[MemoryAllocater]: MemoryHandle is nullptr, was MemoryManger deactivated???");
+		ASSERT(inAlignment > 0, "[MemoryAllocater]: Memory alignment has be an unsigned integer");
 #endif
 		MemoryHandle = MemoryManager::Get().MallocAligned<uint8>(inSizeInBytes, inAlignment);
 		MemorySize = inSizeInBytes;

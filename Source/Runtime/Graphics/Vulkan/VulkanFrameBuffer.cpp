@@ -22,7 +22,7 @@ void VulkanFrameBuffer::AllocateBuffer(uint32 numAttachments, const VkImageView*
 	FrameBufferCreateInfo.height = extent->height;
 	FrameBufferCreateInfo.layers = 1;
 
-	VK_CHECK_RESULT(vkCreateFramebuffer(*Device->GetDeviceHandle(), &FrameBufferCreateInfo, nullptr, &FrameBufferHandle));
+	VK_CHECK_RESULT(vkCreateFramebuffer(*Device->GetDeviceHandle(), &FrameBufferCreateInfo, nullptr, &FrameBufferHandle), "[VulkanFrameBuffer]: Failed to create a frame buffer!");
 }
 
 void VulkanFrameBuffer::DestroyBuffer()

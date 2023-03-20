@@ -115,7 +115,7 @@ public:
 		// (This works for up to 256-byte alignment.)
 		intptr Shift = AlignedPtr - inPtrToAlign;
 #if _DEBUG || _DEBUG_EDITOR
-		ASSERT(Shift > 0 && Shift <= 256);
+		ASSERT(Shift > 0 && Shift <= 256, "[MemoryHeap]: Invalid shift amount for memory address alignment!");
 #endif
 
 		AlignedPtr[-1] = static_cast<uint8>(Shift & 0xff);
@@ -138,7 +138,7 @@ public:
 
 		// Check if we can allocate enough memory
 #if _DEBUG | _DEBUG_EDITOR
-		ASSERT((HeapUsed + SizeInBytes) < HeapSize);
+		ASSERT((HeapUsed + SizeInBytes) < HeapSize, "[MemoryHeap]: Out of memory; Memory OverFlow!");
 #endif
 
 		uint8* PointerToMemory = MemoryUsedPtr;
@@ -166,7 +166,7 @@ public:
 		inSizeInBytes += inAlignment;
 
 #if _DEBUG | _DEBUG_EDITOR
-		ASSERT(HeapSize > LastHeapSize);
+		ASSERT(HeapSize > LastHeapSize, "[MemoryHeap]: Cannot shrink a memory heap; Memory heaps can only grow!");
 #endif // _DEBUG | _EDITOR
 
 		// Shift alignment to get the start of heap 

@@ -50,7 +50,7 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, VulkanRenderLayout& ren
 	RenderPassInfo.dependencyCount = 2;
 	RenderPassInfo.pDependencies = Dependencies;
 
-	VK_CHECK_RESULT(vkCreateRenderPass(*Device->GetDeviceHandle(), &RenderPassInfo, nullptr, &RenderPassHandle));
+	VK_CHECK_RESULT(vkCreateRenderPass(*Device->GetDeviceHandle(), &RenderPassInfo, nullptr, &RenderPassHandle), "[VulkanRenderPass]: Failed to create a render pass!");
 }
 
 VulkanRenderPass::~VulkanRenderPass()

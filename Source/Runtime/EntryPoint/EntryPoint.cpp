@@ -1,8 +1,4 @@
 #pragma once
-#include <Windows.h>
-#include <string>
-#include <iostream>
-#include <cassert>
 
 #include "Runtime/Graphics/Vulkan/VulkanDevice.h"
 #include "Runtime/Graphics/Vulkan/VulkanCommandBuffer.h"
@@ -12,8 +8,6 @@
 #include "Runtime/Graphics/Vulkan/VulkanBuffer.h"
 
 #define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
 #include <Runtime/Graphics/Vulkan/VulkanBuffer.h>
 #include <Runtime/Graphics/Vulkan/VulkanShader.h>
 #include <Runtime/Graphics/Vulkan/VulkanPipeline.h>
@@ -21,6 +15,17 @@
 #include <Runtime/Memory/Core/LinearMemoryAllocater.h>
 #include <Runtime/Memory/Core/Allocaters/StackMemoryAllocater.h>
 #include <Runtime/Memory/Core/Allocaters/DoubleEndedStackMemoryAllocater.h>
+
+#include <Windows.h>
+#include <string>
+#include <iostream>
+#include <cassert>
+
+#include <stdlib.h>
+#include <crtdbg.h>
+
+#include <Optick/optick.h>
+
 
 #define RENDER_DOC 0
 
@@ -199,22 +204,22 @@ public:
 		// Create Vulkan Instance
 		Result = CreateInstance(instanceLayers, layersCount, instanceExtensions, instanceExtensionCount);
 		if (Result != VK_SUCCESS) {
-			std::cout << "Could not create Vulkan Instance!";
+			VE_CORE_LOG_FATAL("Could not create Vulkan Instance!");
 			return false;
 		}
 		else
 		{
-			std::cout << "Successfully created an Instance..\n";
+			VE_CORE_LOG_INFO("Successfully created an Instance..");
 		}
 
 		// Physical Device
 		uint32 PhysicalDevicesCount = 0;
 
 		// Get Number of available physical devices
-		VK_CHECK_RESULT(vkEnumeratePhysicalDevices(Instance, &PhysicalDevicesCount, nullptr));
+		VK_CHECK_RESULT(vkEnumeratePhysicalDevices(Instance, &PhysicalDevicesCount, nullptr), "[EntryPoint]: No physical devices (GPU) found!");
 		if (PhysicalDevicesCount == 0)
 		{
-			std::cout << "No device with Vulkan support found";
+			VE_CORE_LOG_ERROR("No device with Vulkan support found");
 			return false;
 		}
 
@@ -223,7 +228,7 @@ public:
 		Result = (vkEnumeratePhysicalDevices(Instance, &PhysicalDevicesCount, PhysicalDevices.data()));
 		if (Result != VK_SUCCESS)
 		{
-			std::cout << "Could not enumerate physical devices";
+			VE_CORE_LOG_ERROR("Could not enumerate physical devices");
 			return false;
 		}
 
@@ -253,7 +258,7 @@ public:
 				CommandBuffer->AllocateCommandBuffer();
 			}
 
-			std::cout << "successfully created draw command buffers...\n";
+			VE_CORE_LOG_INFO("Successfully created draw command buffers...");
 		}
 
 		// Create synchronization objects (Semaphores)
@@ -263,7 +268,7 @@ public:
 
 			// Create a semaphore used to synchronize image presentation
 			// Ensures that the image is displayed before we start submitting new commands to the queue
-			VK_CHECK_RESULT(vkCreateSemaphore(*Device->GetDeviceHandle(), &SemaphoreCreateInfo, nullptr, &PresentationComplete));
+			VK_CHECK_RESULT(vkCreateSemaphore(*Device->GetDeviceHandle(), &SemaphoreCreateInfo, nullptr, &PresentationComplete), "[EntryPoint]: Failed to create a semaphore for image presentation!");
 
 			for (uint32 i = 0; i < Swapchain->GetImageCount(); ++i)
 			{
@@ -272,7 +277,7 @@ public:
 
 			// Create a semaphore used to synchronize command submission
 			// Ensures that the image is not presented until all commands have been submitted and executed
-			VK_CHECK_RESULT(vkCreateSemaphore(*Device->GetDeviceHandle(), &SemaphoreCreateInfo, nullptr, &RenderComplete));
+			VK_CHECK_RESULT(vkCreateSemaphore(*Device->GetDeviceHandle(), &SemaphoreCreateInfo, nullptr, &RenderComplete), "[EntryPoint]: Failed to create a semaphore for render synchronization!");
 		}
 
 		// Setting up depth and stencil buffers
@@ -296,7 +301,7 @@ public:
 			}
 
 			DepthStencilView->CreateImageView(VK_IMAGE_VIEW_TYPE_2D, DepthFormat, 0, 1, 0, 1, AspectFlags);
-			std::cout << "successfully created depth stencil buffers...\n";
+			VE_CORE_LOG_INFO("Successfully created depth stencil buffers...");
 		}
 
 		// Setting up render pass
@@ -345,15 +350,15 @@ public:
 			RenderPassLayout->SetClearValues(ClearValues);
 
 			RenderPass = new VulkanRenderPass(Device, *RenderPassLayout);
-			std::cout << "successfully created renderpass...\n";
+			VE_CORE_LOG_INFO("Successfully created renderpass...");
 		}
 
 		// Create Pipeline cache
 		{
 			VkPipelineCacheCreateInfo PipelineCacheCreateInfo = {};
 			PipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-			VK_CHECK_RESULT(vkCreatePipelineCache(*Device->GetDeviceHandle(), &PipelineCacheCreateInfo, nullptr, &PipelineCache));
-			std::cout << "successfully created pipeline cache...\n";
+			VK_CHECK_RESULT(vkCreatePipelineCache(*Device->GetDeviceHandle(), &PipelineCacheCreateInfo, nullptr, &PipelineCache), "[EntryPoint]: Failed to create a pipeline cache!");
+			VE_CORE_LOG_INFO("Successfully created pipeline cache...");
 		}
 
 		// Create Frame buffers
@@ -373,7 +378,7 @@ public:
 				FrameBuffers[i]->AllocateBuffer(2, Attachments, &Extent);
 			}
 
-			std::cout << "successfully created framebuffers...\n";
+			VE_CORE_LOG_INFO("Successfully created framebuffers...");
 		}
 
 		PrepareVulkanPipeline();
@@ -625,11 +630,6 @@ public:
 		Width = DestWidth;
 		Height = DestHeight;
 
-		if (Width == 0 || Height == 0)
-		{
-			std::cout << std::endl;
-		}
-
 		Swapchain->Recreate(false, &Width, &Height);
 
 		{
@@ -872,6 +872,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, int nCmdShow)
 {
+
 	WindowInstance = hInstance;
 	{
 		_CrtDumpMemoryLeaks();
@@ -903,6 +904,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 
 		if (!RegisterClassEx(&WindowClass))
 		{
+
 			std::cout << "Could not register window class!\n";
 			fflush(stdout);
 			exit(1);
@@ -984,6 +986,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 		"VK_KHR_multiview"
 	};
 
+	// Init The logger 
+	Log::Init();
+	VE_CORE_LOG(ELogSeverity::Info, "Initialized Logger");
+	VE_CLIENT_LOG(ELogSeverity::Info, "Initialized Logger");
+
 	VkPhysicalDeviceFeatures EnabledFeatures = { };
 	EnabledFeatures.tessellationShader = VK_TRUE;
 	EnabledFeatures.geometryShader = VK_TRUE;
@@ -993,7 +1000,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 
 	if (!VTemp->InitVulkan(EnabledFeatures, InstanceLayers, InstanceLayerCount, InstanceExtensions, InstanceExtensionCount, DeviceExtensions, DeviceExtensionsCount))
 	{
-		std::cout << "Vulkan initialization failed...";
+		VE_CORE_LOG_FATAL("Vulkan initialization failed...");
 		std::cin.get();
 		return 0;
 	}
@@ -1007,6 +1014,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 	MSG Message;
 	while (true)
 	{
+		OPTICK_FRAME("MainThread");
+
 		if (PeekMessage(&Message, Window, 0, 0, PM_NOREMOVE))
 		{
 			GetMessage(&Message, NULL, 0, 0);
@@ -1016,7 +1025,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 
 		if (Message.message == WM_QUIT)
 		{
-			std::cout << "Quit Message Posted\n\n";
+			VE_CORE_LOG_INFO("Quit Message Posted");
 			break;
 		}
 
@@ -1034,7 +1043,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 			// Get next image in the swap chain (back/front buffer)
 			VkResult Acquire = VTemp->Swapchain->AcquireNextImage(LastCommandBuffer, &VTemp->CurrentBuffer);// VTemp->AcquireNextImage(VTemp->PresentationComplete, &VTemp->CurrentBuffer);
 			if (!((Acquire == VK_SUCCESS) || (Acquire == VK_SUBOPTIMAL_KHR))) {
-				VK_CHECK_RESULT(Acquire);
+				VK_CHECK_RESULT(Acquire, "[EntryPoint]: Could not aquire next swapchain image!");
 			}
 
 			VulkanCommandBuffer* CurrentCommandBuffer = VTemp->CommandPool->GetCommandBuffer(VTemp->CurrentBuffer);
@@ -1050,7 +1059,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 			// This ensures that the image is not presented to the windowing system until all commands have been submitted
 			VkResult present = VTemp->Swapchain->QueuePresent(VTemp->Device->GetPresentQueue(), &VTemp->RenderComplete, VTemp->CurrentBuffer);// VTemp->QueuePresent(VTemp->Device->GetPresentQueue()->GetQueueHandle(), VTemp->CurrentBuffer, VTemp->RenderComplete);
 			if (!((present == VK_SUCCESS) || (present == VK_SUBOPTIMAL_KHR))) {
-				VK_CHECK_RESULT(present);
+				VK_CHECK_RESULT(present, "[EntryPoint]: Failed to present an image!");
 			}
 		}
 
@@ -1058,14 +1067,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 
 	delete VTemp;
 
+	OPTICK_SHUTDOWN();
+
 	if (MemoryManager::Get().GetMemoryUsed() > 0)
 	{
-		std::cout << "\nMemoryUsed: " << MemoryManager::Get().GetMemoryUsed() << " bytes" << std::endl;
+		VE_CORE_LOG_INFO("MemoryUsed: {0:d} bytes", MemoryManager::Get().GetMemoryUsed());
 	}
-
 	MemoryManager::Get().Shutdown();
 
-	std::cout << "\nPress Enter to exit....\n\n";
+	VE_CORE_LOG_DISPLAY("Press Enter to exit....");
 	std::cin.get();
 
 	return 0;
