@@ -1,5 +1,5 @@
 @echo on
 
-cmake -S ./ -B ./VrixicEngineBuild
+cmake -S ./ -B ../Build/VrixicEngineBuild
 
 exit
