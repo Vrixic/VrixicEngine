@@ -1,4 +1,5 @@
 #pragma once
+#include <Misc/Profiling/Profiler.h>
 #include <Runtime/Memory/Core/MemoryManager.h>
 
 /**
@@ -17,7 +18,7 @@
 *
 *	This should be extended but NOT USED
 */
-class MemoryAllocater
+class VRIXIC_API MemoryAllocater
 {
 protected:
 	/** The size of the memory available to be used by this allocater */
@@ -43,7 +44,11 @@ public:
 		: MemoryHandle(inMemoryHandle), MemorySize(inMemorySize), MemoryUsed(0) { }
 
 	virtual ~MemoryAllocater() 
-	{ 
+	{
+#if VE_PROFILE_MEMORY_ALLOCATERS
+		VE_PROFILE_FUNCTION();
+#endif // VE_PROFILE_MEMORY_ALLOCATERS
+
 		if (MemoryHandle != nullptr && MemoryManager::Get().GetIsActive())
 		{
 			MemoryManager::Get().Free((void**)MemoryHandle);
@@ -72,6 +77,10 @@ protected:
 	*/
 	void Init(ulong32 inSizeInBytes, ulong32 inAlignment = 4)
 	{
+#if VE_PROFILE_MEMORY_ALLOCATERS
+		VE_PROFILE_FUNCTION();
+#endif // VE_PROFILE_MEMORY_ALLOCATERS
+
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
 		ASSERT(MemoryHandle == nullptr, "[MemoryAllocater]: MemoryHandle is nullptr, was MemoryManger deactivated???");
 		ASSERT(inAlignment > 0, "[MemoryAllocater]: Memory alignment has be an unsigned integer");

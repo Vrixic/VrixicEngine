@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-
+#include <memory>
 /*
 * unsigned int 8-bits, byte size: 1
 */
@@ -73,4 +73,17 @@ typedef int64               intptr;
 #define _EDITOR !NDEBUG
 
 typedef std::string VString;
+
+template<typename T>
+using TUniquePtr = std::unique_ptr<T>;
+
+template<typename T, typename ... Args>
+constexpr TUniquePtr<T> CreateUniquePointer(Args&& ... inArgs)
+{
+	return std::make_unique<T>(std::forward<Args>(inArgs)...);
+}
+
+#define BIT_SHIFT_LEFT(x) (1 << x)
+
+#define VE_BIND_EVENT_FUNC(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 

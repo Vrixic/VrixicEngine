@@ -45,7 +45,7 @@ endif()
 
 if (WIN32)	
 	# add windows define  
-	add_compile_definitions(PLATFORM_WINDOWS)
+	add_compile_definitions(PLATFORM_WINDOWS VE_BUILD_DLL)
 	
 	# shaderc_combined.lib in Vulkan requires this for debug & release (runtime shader compiling)
 	# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MD")
@@ -65,15 +65,34 @@ if (WIN32)
 	set (LibraryDirectories 
 		$ENV{VULKAN_SDK}/Lib/)
 	
+	set(PROJECT_SOLUTION_DIR ${CMAKE_SOURCE_DIR}/../Build/VrixicEngineBuild)
+	set(RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOLUTION_DIR}/bin/$(Configuration)-$(Platform)/$(ProjectName)/)
+	set(LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOLUTION_DIR}/lib/$(Configuration)-$(Platform)/$(ProjectName)/)
+	set(CFG_INTDIR ${PROJECT_SOLUTION_DIR}/bin-int/$(Configuration)-$(Platform)/$(ProjectName)/)
+	
+	#message(STATUS ${RUNTIME_OUTPUT_DIRECTORY})
+	
 	# make the executable 
-	add_executable (${PROJECT_NAME} WIN32 ${SOURCE_FILES})
+	set(CMAKE_CFG_INTDIR  ${CFG_INTDIR})
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${RUNTIME_OUTPUT_DIRECTORY})
+	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_DIRECTORY})
+	
+	#add_executable (${PROJECT_NAME} WIN32 ${SOURCE_FILES})
+	#target_include_directories(${PROJECT_NAME} PUBLIC ${IncludeDirectories})
+	#target_link_directories(${PROJECT_NAME} PUBLIC ${LibraryDirectories} spdlog::spdlog)
+	
+	add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES_ABSOLUTE_PATHS})
 	target_include_directories(${PROJECT_NAME} PUBLIC ${IncludeDirectories})
 	target_link_directories(${PROJECT_NAME} PUBLIC ${LibraryDirectories} spdlog::spdlog)
 
 	target_compile_definitions(${PROJECT_NAME} PUBLIC SPDLOG_COMPILED_LIB)
+	#target_compile_definitions(${PROJECT_NAME} PUBLIC SPDLOG_COMPILED_LIB)
 	
 	set_property(TARGET ${PROJECT_NAME} PROPERTY
              MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+			 
+	#set_property(TARGET ${PROJECT_NAME} PROPERTY
+	#		 MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 
 	#message(STATUS $ENV{VULKAN_SDK}/Lib/)
 	

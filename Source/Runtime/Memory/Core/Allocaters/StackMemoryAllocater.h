@@ -7,7 +7,7 @@
 *	- Can be rolled back to a Marker 
 *	- Insanely fast and efficient 
 */
-class StackAllocater : public MemoryAllocater
+class VRIXIC_API StackAllocater : public MemoryAllocater
 {
 public:
 	typedef ulong32 Marker;
@@ -26,6 +26,10 @@ public:
 	*/
 	void Init(ulong32 inSizeInBytes, ulong32 inAlignment = 16)
 	{
+#if VE_PROFILE_MEMORY_ALLOCATERS
+		VE_PROFILE_FUNCTION();
+#endif // VE_PROFILE_MEMORY_ALLOCATERS
+
 		MemoryAllocater::Init(inSizeInBytes, inAlignment);
 	}
 
@@ -38,6 +42,10 @@ public:
 	template<typename T>
 	T* Alloc(ulong32 inSizeInBytesToAllocate)
 	{
+#if VE_PROFILE_MEMORY_ALLOCATERS
+		VE_PROFILE_FUNCTION();
+#endif // VE_PROFILE_MEMORY_ALLOCATERS
+
 #if _DEBUG | _DEBUG_EDITOR
 		ASSERT(MemoryUsed + inSizeInBytesToAllocate < (MemorySize + 1), "[Stack Memory Allocater]: Trying to allocate more bytes then have on allocater heap!");
 #endif
@@ -60,6 +68,10 @@ public:
 	template<class T>
 	T* AllocConstruct(ulong32 inSizeInBytesToAllocate)
 	{
+#if VE_PROFILE_MEMORY_ALLOCATERS
+		VE_PROFILE_FUNCTION();
+#endif // VE_PROFILE_MEMORY_ALLOCATERS
+
 #if _DEBUG | _DEBUG_EDITOR
 		ASSERT(MemoryUsed + inSizeInBytesToAllocate < (MemorySize + 1), "[Stack Memory Allocater]: Trying to allocate more bytes then have on allocater heap!");
 #endif
@@ -82,6 +94,10 @@ public:
 	*/
 	virtual void FreeToMarker(Marker inMarker)
 	{
+#if VE_PROFILE_MEMORY_ALLOCATERS
+		VE_PROFILE_FUNCTION();
+#endif // VE_PROFILE_MEMORY_ALLOCATERS
+
 #if _DEBUG | _DEBUG_EDITOR
 		ASSERT(MemoryUsed != 0 && inMarker < (MemoryUsed + 1), "[Stack Memory Allocater]: Invalid marker being freed");
 #endif
@@ -94,16 +110,20 @@ public:
 	*/
 	virtual void Flush() override
 	{
+#if VE_PROFILE_MEMORY_ALLOCATERS
+		VE_PROFILE_FUNCTION();
+#endif // VE_PROFILE_MEMORY_ALLOCATERS
+
 		MemoryAllocater::Flush();
 	}
 
 	/**
-	* Called when allocater release memory
+	* Called when allocater releases memory
 	*/
-	virtual void Dispose()
-	{
-
-	}
+	//virtual void Dispose()
+	//{
+	//
+	//}
 
 public:
 	/** 

@@ -15,6 +15,7 @@
 #include <Runtime/Memory/Core/LinearMemoryAllocater.h>
 #include <Runtime/Memory/Core/Allocaters/StackMemoryAllocater.h>
 #include <Runtime/Memory/Core/Allocaters/DoubleEndedStackMemoryAllocater.h>
+#include <Misc/Profiling/Profiler.h>
 
 #include <Windows.h>
 #include <string>
@@ -23,9 +24,6 @@
 
 #include <stdlib.h>
 #include <crtdbg.h>
-
-#include <Optick/optick.h>
-
 
 #define RENDER_DOC 0
 
@@ -553,6 +551,8 @@ public:
 
 	void BuildCommandBuffers()
 	{
+		VE_PROFILE_FUNCTION("Build Command Buffers");
+
 		for (uint32 i = 0; i < Swapchain->GetImageCount(); ++i)
 		{
 			// Set target frame buffer
@@ -870,96 +870,96 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return (DefWindowProc(hWnd, uMsg, wParam, lParam));
 }
 
-int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, int nCmdShow)
+//int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, int nCmdShow)
+int OldEntryPointFunction()
 {
+	//WindowInstance = hInstance;
+	//{
+	//	_CrtDumpMemoryLeaks();
+	//	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	//	_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG);
 
-	WindowInstance = hInstance;
-	{
-		_CrtDumpMemoryLeaks();
-		_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-		_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG);
+	//	/* Allocate a console */
+	//	AllocConsole();
+	//	AttachConsole(GetCurrentProcessId());
+	//	FILE* Stream;
+	//	freopen_s(&Stream, "CONIN$", "r", stdin);
+	//	freopen_s(&Stream, "CONOUT$", "w+", stdout);
+	//	freopen_s(&Stream, "CONOUT$", "w+", stderr);
 
-		/* Allocate a console */
-		AllocConsole();
-		AttachConsole(GetCurrentProcessId());
-		FILE* Stream;
-		freopen_s(&Stream, "CONIN$", "r", stdin);
-		freopen_s(&Stream, "CONOUT$", "w+", stdout);
-		freopen_s(&Stream, "CONOUT$", "w+", stderr);
+	//	WNDCLASSEX WindowClass;
+	//	WindowClass.cbSize = sizeof(WNDCLASSEX);
+	//	WindowClass.style = CS_HREDRAW | CS_VREDRAW;
+	//	WindowClass.lpfnWndProc = WndProc;
+	//	WindowClass.cbClsExtra = 0;
+	//	WindowClass.cbWndExtra = 0;
+	//	WindowClass.hInstance = hInstance;
+	//	WindowClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	//	WindowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	//	WindowClass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	//	WindowClass.lpszMenuName = NULL;
+	//	std::wstring W(Name.begin(), Name.end());
+	//	WindowClass.lpszClassName = W.c_str();
+	//	WindowClass.hIconSm = LoadIcon(NULL, IDI_WINLOGO);
 
-		WNDCLASSEX WindowClass;
-		WindowClass.cbSize = sizeof(WNDCLASSEX);
-		WindowClass.style = CS_HREDRAW | CS_VREDRAW;
-		WindowClass.lpfnWndProc = WndProc;
-		WindowClass.cbClsExtra = 0;
-		WindowClass.cbWndExtra = 0;
-		WindowClass.hInstance = hInstance;
-		WindowClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-		WindowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
-		WindowClass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-		WindowClass.lpszMenuName = NULL;
-		std::wstring W(Name.begin(), Name.end());
-		WindowClass.lpszClassName = W.c_str();
-		WindowClass.hIconSm = LoadIcon(NULL, IDI_WINLOGO);
+	//	if (!RegisterClassEx(&WindowClass))
+	//	{
 
-		if (!RegisterClassEx(&WindowClass))
-		{
+	//		std::cout << "Could not register window class!\n";
+	//		fflush(stdout);
+	//		exit(1);
+	//	}
 
-			std::cout << "Could not register window class!\n";
-			fflush(stdout);
-			exit(1);
-		}
+	//	int ScreenWidth = GetSystemMetrics(SM_CXSCREEN);
+	//	int ScreenHeight = GetSystemMetrics(SM_CYSCREEN);
+	//	int WindowX = ScreenWidth / 2 - WindowWidth / 2;
+	//	int WindowY = ScreenHeight / 2 - WindowHeight / 2;
 
-		int ScreenWidth = GetSystemMetrics(SM_CXSCREEN);
-		int ScreenHeight = GetSystemMetrics(SM_CYSCREEN);
-		int WindowX = ScreenWidth / 2 - WindowWidth / 2;
-		int WindowY = ScreenHeight / 2 - WindowHeight / 2;
+	//	DWORD DwExStyle;
+	//	DWORD DwStyle;
 
-		DWORD DwExStyle;
-		DWORD DwStyle;
+	//	/* Make the style a popup and u have a border less wwindow*/
 
-		/* Make the style a popup and u have a border less wwindow*/
+	//	DwExStyle = WS_EX_APPWINDOW | WS_EX_WINDOWEDGE; //WS_POPUP
+	//	DwStyle = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN; //WS_POPUP
 
-		DwExStyle = WS_EX_APPWINDOW | WS_EX_WINDOWEDGE; //WS_POPUP
-		DwStyle = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN; //WS_POPUP
+	//	RECT WindowRect;
+	//	WindowRect.left = 0L;
+	//	WindowRect.top = 0L;
+	//	WindowRect.right = (long)WindowWidth;
+	//	WindowRect.bottom = (long)WindowHeight;
 
-		RECT WindowRect;
-		WindowRect.left = 0L;
-		WindowRect.top = 0L;
-		WindowRect.right = (long)WindowWidth;
-		WindowRect.bottom = (long)WindowHeight;
+	//	AdjustWindowRectEx(&WindowRect, DwStyle, FALSE, DwExStyle);
 
-		AdjustWindowRectEx(&WindowRect, DwStyle, FALSE, DwExStyle);
+	//	std::string WindowTitle = GetWindowTitle();
+	//	std::wstring WWinTitle(WindowTitle.begin(), WindowTitle.end());
+	//	Window = CreateWindowEx(0,
+	//		W.c_str(),
+	//		WWinTitle.c_str(),
+	//		DwStyle | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
+	//		WindowX,
+	//		WindowY,
+	//		WindowRect.right - WindowRect.left,
+	//		WindowRect.bottom - WindowRect.top,
+	//		NULL,
+	//		NULL,
+	//		hInstance,
+	//		NULL);
 
-		std::string WindowTitle = GetWindowTitle();
-		std::wstring WWinTitle(WindowTitle.begin(), WindowTitle.end());
-		Window = CreateWindowEx(0,
-			W.c_str(),
-			WWinTitle.c_str(),
-			DwStyle | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
-			WindowX,
-			WindowY,
-			WindowRect.right - WindowRect.left,
-			WindowRect.bottom - WindowRect.top,
-			NULL,
-			NULL,
-			hInstance,
-			NULL);
+	//	if (!Window)
+	//	{
+	//		printf("Could not create window!\n");
+	//		fflush(stdout);
+	//		return 0;
+	//	}
 
-		if (!Window)
-		{
-			printf("Could not create window!\n");
-			fflush(stdout);
-			return 0;
-		}
+	//	ShowWindow(Window, SW_SHOW);
+	//	SetForegroundWindow(Window);
+	//	SetFocus(Window);
+	//}
 
-		ShowWindow(Window, SW_SHOW);
-		SetForegroundWindow(Window);
-		SetFocus(Window);
-	}
-
-	/* Create Vulkan Stuff */
-	VTemp = new VulkanAPI(WindowWidth, WindowHeight, WindowInstance, Window);
+	///* Create Vulkan Stuff */
+	//VTemp = new VulkanAPI(WindowWidth, WindowHeight, WindowInstance, Window);
 
 	const uint32 InstanceExtensionCount = 1;
 	const char* InstanceExtensions[InstanceExtensionCount]
@@ -1014,7 +1014,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 	MSG Message;
 	while (true)
 	{
-		OPTICK_FRAME("MainThread");
+		VE_PROFILE_BEGIN_SESSION("Main Thread");
 
 		if (PeekMessage(&Message, Window, 0, 0, PM_NOREMOVE))
 		{
@@ -1065,9 +1065,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 
 	}
 
-	delete VTemp;
+	VE_PROFILE_END_SESSION();
 
-	OPTICK_SHUTDOWN();
+	delete VTemp;
 
 	if (MemoryManager::Get().GetMemoryUsed() > 0)
 	{

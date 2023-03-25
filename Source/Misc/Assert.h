@@ -44,3 +44,7 @@
 #define STATIC_ASSERT(expr)
 #endif
 #endif
+
+// Engine defined asserts 
+#define VE_ASSERT(expr, message) ASSERT(expr, message)
+#define VE_STATIC_ASSERT(expr, message) STATIC_ASSERT(expr)

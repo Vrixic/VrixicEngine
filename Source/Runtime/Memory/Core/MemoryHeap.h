@@ -1,6 +1,7 @@
 #pragma once
 
-#include <Misc/Defines/GenericDefines.h>
+#include <Core/Core.h>
+#include <Misc/Defines/MemoryProfilerDefines.h>
 
 /**
 * @TODO: Offer heap alignment 
@@ -9,7 +10,7 @@
 /**
 * Information on how the memory block is spliced
 */
-struct MemoryPage
+struct VRIXIC_API MemoryPage
 {
 	/** The size of the memory, used as offset to the end of memory */
 	ulong32 MemorySize;
@@ -26,7 +27,7 @@ struct MemoryPage
 * Does not defragment by itself
 */
 template<typename T>
-class TMemoryHeap
+class VRIXIC_API TMemoryHeap
 {
 	/** Pointer/Handle to the memory */
 	uint8* MemoryHandle;
@@ -59,6 +60,11 @@ public:
 
 	~TMemoryHeap()
 	{
+#if VE_PROFILE_MEMORY_HEAP
+		VE_PROFILE_FUNCTION();
+#endif // VE_PROFILE_MEMORY_HEAP
+
+
 		Flush();
 	}
 
@@ -71,6 +77,10 @@ public:
 	*/
 	void AllocateByCount(ulong32 inCount, uint64 inAlignment = sizeof(T))
 	{
+#if VE_PROFILE_MEMORY_HEAP
+		VE_PROFILE_FUNCTION();
+#endif // VE_PROFILE_MEMORY_HEAP
+
 		uint64 SizeInBytes = sizeof(T) * inCount;
 		AllocateByBytes(SizeInBytes);
 	}
@@ -84,6 +94,10 @@ public:
 	*/
 	void AllocateByBytes(uint64 inSizeInBytes, uint64 inAlignment = sizeof(T))
 	{
+#if VE_PROFILE_MEMORY_HEAP
+		VE_PROFILE_FUNCTION();
+#endif // VE_PROFILE_MEMORY_HEAP
+
 		HeapSize = inSizeInBytes;
 
 		inSizeInBytes += inAlignment;
@@ -103,6 +117,10 @@ public:
 	*/
 	uint8* AlignPointerAndShift(uint8* inPtrToAlign, uint64 inAlignment)
 	{
+#if VE_PROFILE_MEMORY_HEAP
+		VE_PROFILE_FUNCTION();
+#endif // VE_PROFILE_MEMORY_HEAP
+
 		// Align the block, if their isn't alignment, shift it up the full 'align' bytes, so we always 
 		// have room to store the shift 
 		uint8* AlignedPtr = MemoryUtils::AlignPointer<uint8>(inPtrToAlign, inAlignment);
@@ -134,6 +152,10 @@ public:
 	*/
 	T* Malloc(ulong32 inCountToAllocate)
 	{
+#if VE_PROFILE_MEMORY_HEAP
+		VE_PROFILE_FUNCTION();
+#endif // VE_PROFILE_MEMORY_HEAP
+
 		uint64 SizeInBytes = sizeof(T) * inCountToAllocate;
 
 		// Check if we can allocate enough memory
@@ -160,6 +182,10 @@ public:
 	*/
 	T* ResizeAndFlushByBytes(uint64 inSizeInBytes, uint64 inAlignment = sizeof(T))
 	{
+#if VE_PROFILE_MEMORY_HEAP
+		VE_PROFILE_FUNCTION();
+#endif // VE_PROFILE_MEMORY_HEAP
+
 		uint64 LastHeapSize = HeapSize;
 		HeapSize = inSizeInBytes;
 
@@ -190,6 +216,10 @@ public:
 	*/
 	void Free(ulong32 inSize)
 	{
+#if VE_PROFILE_MEMORY_HEAP
+		VE_PROFILE_FUNCTION();
+#endif // VE_PROFILE_MEMORY_HEAP
+
 		MemoryUsed -= inSize;
 	}
 
@@ -198,6 +228,10 @@ public:
 	*/
 	void FlushNoDelete()
 	{
+#if VE_PROFILE_MEMORY_HEAP
+		VE_PROFILE_FUNCTION();
+#endif // VE_PROFILE_MEMORY_HEAP
+
 		MemoryUsed = 0;
 		HeapUsed = 0;
 
@@ -209,6 +243,10 @@ public:
 	*/
 	void Flush()
 	{
+#if VE_PROFILE_MEMORY_HEAP
+		VE_PROFILE_FUNCTION();
+#endif // VE_PROFILE_MEMORY_HEAP
+
 		if (MemoryHandle != nullptr)
 		{
 			// Shift alignment to get the start of heap 
