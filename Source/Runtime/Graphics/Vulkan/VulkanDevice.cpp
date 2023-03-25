@@ -1,4 +1,5 @@
 #include "VulkanCommandBuffer.h"
+#include <Misc/Defines/VulkanProfilerDefines.h>
 
 /* ------------------------------------------------------------------------------- */
 /* -----------------------             Device             ------------------------ */
@@ -7,6 +8,8 @@
 VulkanDevice::VulkanDevice(VkPhysicalDevice& gpu, VkPhysicalDeviceFeatures& enabledFeatures, uint32 deviceExtensionCount, const char** deviceExtensions)
 	: PhysicalDeviceHandle(gpu), LogicalDeviceHandle(VK_NULL_HANDLE), GraphicsQueue(nullptr), ComputeQueue(nullptr), TransferQueue(nullptr)
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	// Store Physical Device properties 
 	vkGetPhysicalDeviceProperties(gpu, &PhysicalDeviceProperties);
 	vkGetPhysicalDeviceFeatures(gpu, &PhysicalDeviceFeatures);
@@ -28,6 +31,8 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice& gpu, VkPhysicalDeviceFeatures& enab
 
 VulkanDevice::~VulkanDevice()
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	if (LogicalDeviceHandle != VK_NULL_HANDLE)
 	{
 		delete TransferQueue;
@@ -42,6 +47,8 @@ VulkanDevice::~VulkanDevice()
 /* Creates the logical device */
 void VulkanDevice::CreateDevice(VulkanSurface* surface)
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	// supported device extensions
 	uint32 DeviceExtensionCount = 0;
 	std::vector<std::string> SupportedDeviceExtensions;
@@ -236,11 +243,15 @@ void VulkanDevice::CreateDevice(VulkanSurface* surface)
 /* For Destorying vulkan */
 void VulkanDevice::WaitUntilIdle() const
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	vkDeviceWaitIdle(LogicalDeviceHandle);
 }
 
 uint32_t VulkanDevice::GetMemoryTypeIndex(uint32_t inTypeBits, VkMemoryPropertyFlags inProperties, VkBool32* outMemTypeFound) const
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	for (uint32_t i = 0; i < PhysicalDeviceMemProperties.memoryTypeCount; i++)
 	{
 		if ((inTypeBits & 1) == 1)
@@ -275,6 +286,8 @@ uint32_t VulkanDevice::GetMemoryTypeIndex(uint32_t inTypeBits, VkMemoryPropertyF
 VulkanQueue::VulkanQueue(VulkanDevice* device, uint32 queueFamilyIndex, uint32 queueIndex)
 	: Device(device), FamilyIndex(queueFamilyIndex), QueueIndex(queueIndex)
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	vkGetDeviceQueue(*device->GetDeviceHandle(), queueFamilyIndex, queueIndex, &Queue);
 }
 
@@ -282,6 +295,8 @@ VulkanQueue::~VulkanQueue() { }
 
 void VulkanQueue::SubmitQueue(VulkanCommandBuffer* commandBuffer, uint32 numSignalSemaphores, VkSemaphore* signalSemaphore)
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	// Pipeline stage at which the queue submission will wait (via pWaitSemaphores)
 	VkPipelineStageFlags WaitStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	// The submit info structure specifies a command buffer queue submission batch
@@ -302,6 +317,8 @@ void VulkanQueue::SubmitQueue(VulkanCommandBuffer* commandBuffer, uint32 numSign
 
 void VulkanQueue::SubmitQueue(VulkanCommandBuffer* commandBuffer, VkSemaphore* signalSemaphore)
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	SubmitQueue(commandBuffer, 1, signalSemaphore);
 }
 
@@ -311,6 +328,8 @@ void VulkanQueue::SubmitQueue(VulkanCommandBuffer* commandBuffer, VkSemaphore* s
 VulkanSurface::VulkanSurface(VulkanDevice* device, VkInstance* instance, HINSTANCE* windowInstance, HWND* window)
 	: Device(device), InstanceHandle(instance), ColorFormat(VK_FORMAT_UNDEFINED), ColorSpace((VkColorSpaceKHR)0)
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	/* Get all required function pointers */
 	fpGetPhysicalDeviceSurfaceSupportKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceSurfaceSupportKHR>(vkGetInstanceProcAddr(*instance, "vkGetPhysicalDeviceSurfaceSupportKHR"));
 	fpGetPhysicalDeviceSurfaceCapabilitiesKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR>(vkGetInstanceProcAddr(*instance, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR"));
@@ -364,6 +383,8 @@ VulkanSurface::VulkanSurface(VulkanDevice* device, VkInstance* instance, HINSTAN
 
 VulkanSurface::~VulkanSurface()
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	Device->WaitUntilIdle();
 
 	vkDestroySurfaceKHR(*InstanceHandle, SurfaceHandle, nullptr);
@@ -376,6 +397,8 @@ VulkanSurface::~VulkanSurface()
 VulkanSwapChain::VulkanSwapChain(VulkanDevice* device, VulkanSurface* surface, uint32 requestImageWidth, uint32 requestImageHeight)
 	: Device(device), Surface(surface), ImageWidth(requestImageWidth), ImageHeight(requestImageHeight), SwapChainHandle(VK_NULL_HANDLE)
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	/* Get the function pointers */
 	fpCreateSwapchainKHR = reinterpret_cast<PFN_vkCreateSwapchainKHR>(vkGetDeviceProcAddr(*Device->GetDeviceHandle(), "vkCreateSwapchainKHR"));
 	fpDestroySwapchainKHR = reinterpret_cast<PFN_vkDestroySwapchainKHR>(vkGetDeviceProcAddr(*Device->GetDeviceHandle(), "vkDestroySwapchainKHR"));
@@ -388,6 +411,8 @@ VulkanSwapChain::VulkanSwapChain(VulkanDevice* device, VulkanSurface* surface, u
 
 VulkanSwapChain::~VulkanSwapChain()
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	Device->WaitUntilIdle();
 
 	/* No Need to destroy the swap chain images ourselfs as the when deleting the swap chain the images gets deleted as well*/
@@ -401,6 +426,8 @@ VulkanSwapChain::~VulkanSwapChain()
 
 VkResult VulkanSwapChain::AcquireNextImage(VulkanCommandBuffer* lastCommandBuffer, uint32_t* imageIndex)
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	// By setting timeout to UINT64_MAX we will always wait until the next image has been acquired or an actual error is thrown
 	// With that we don't have to handle VK_NOT_READY		
 	return fpAcquireNextImageKHR(*Device->GetDeviceHandle(), SwapChainHandle, UINT64_MAX, *lastCommandBuffer->GetWaitSemaphores(), (VkFence)nullptr, imageIndex);
@@ -408,6 +435,8 @@ VkResult VulkanSwapChain::AcquireNextImage(VulkanCommandBuffer* lastCommandBuffe
 
 VkResult VulkanSwapChain::QueuePresent(VulkanQueue* queue, VkSemaphore* waitSemaphore, uint32_t imageIndex)
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	VkPresentInfoKHR PresentInfo = VulkanUtils::Initializers::PresentInfoKHR();
 	PresentInfo.pNext = NULL;
 	PresentInfo.swapchainCount = 1;
@@ -425,6 +454,8 @@ VkResult VulkanSwapChain::QueuePresent(VulkanQueue* queue, VkSemaphore* waitSema
 
 void VulkanSwapChain::Create(bool vSync, uint32* imageWidth, uint32* imageHeight, VkSwapchainKHR oldSwapChain)
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	// Get physical device surface properties and formats
 	VkSurfaceCapabilitiesKHR SurfaceCapabilities;
 	VK_CHECK_RESULT(Surface->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(*Device->GetPhysicalDeviceHandle(), *Surface->GetSurfaceHandle(), &SurfaceCapabilities), "[VulkanSwapChain]: Failed to retreive physical device (GPU) surface capabilities!");
@@ -605,6 +636,8 @@ void VulkanSwapChain::Create(bool vSync, uint32* imageWidth, uint32* imageHeight
 
 void VulkanSwapChain::Recreate(bool vSync, uint32* imageWidth, uint32* imageHeight)
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	// Use the current swap chain as the old one 
 	Create(vSync, imageWidth, imageHeight, SwapChainHandle);
 }

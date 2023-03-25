@@ -1,4 +1,5 @@
 #include "VulkanRenderPass.h"
+#include <Misc/Defines/VulkanProfilerDefines.h>
 
 //VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, uint32 numAttachments, VkAttachmentDescription* attachments,
 //	uint32 numColorAttachment, VkAttachmentReference* colorReference, VkAttachmentDescription* depthReference,
@@ -12,6 +13,8 @@
 VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, VulkanRenderLayout& renderLayout)
 	: Device(device), RenderLayout(renderLayout)
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	VkSubpassDescription SubpassDescription = { };
 	SubpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	SubpassDescription.colorAttachmentCount = renderLayout.GetNumColorAttachments();
@@ -55,6 +58,8 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, VulkanRenderLayout& ren
 
 VulkanRenderPass::~VulkanRenderPass()
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	vkDestroyRenderPass(*Device->GetDeviceHandle(), RenderPassHandle, nullptr);
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Misc/Assert.h>
+#include <Misc/Defines/VulkanProfilerDefines.h>
 
 #include <cassert>
 #include <stdexcept>
@@ -178,6 +179,8 @@ namespace VulkanUtils
 		/* Aka. GetBestGPU() */
 		inline VkResult GetBestPhysicalDevice(const VkPhysicalDevice* inPhysicalDevices, unsigned int inPhysicalDevicesCount, VkPhysicalDevice& outBestPhysicalDevice)
 		{
+			VE_PROFILE_VULKAN_FUNCTION();
+
 			VkResult Result = VK_SUCCESS;
 
 			VkPhysicalDeviceProperties PhysicalDeviceProp = {};
@@ -221,6 +224,8 @@ namespace VulkanUtils
 
 		inline uint32 GetQueueFamilyIndex(std::vector<VkQueueFamilyProperties>& inQueueFamilyProperties, VkQueueFlags inQueueFlags)
 		{
+			VE_PROFILE_VULKAN_FUNCTION();
+
 			// Dedicated queue for Compute
 			// Try to find a queue family index that supports Compute but not Graphics
 			if ((inQueueFlags & VK_QUEUE_COMPUTE_BIT) == inQueueFlags)
@@ -266,6 +271,8 @@ namespace VulkanUtils
 
 		inline VkBool32 GetSupportedDepthFormat(VkPhysicalDevice inPhysicalDevice, VkFormat* outDepthFormat)
 		{
+			VE_PROFILE_VULKAN_FUNCTION();
+
 			// Since all depth formats may be optional, we need to find a suitable depth format to use
 			// Start with the highest precision packed format
 			std::vector<VkFormat> DepthFormats = {
@@ -337,6 +344,9 @@ namespace VulkanUtils
 		}
 
 		static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
+
+			VE_PROFILE_VULKAN_FUNCTION();
+
 			auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 			if (func != nullptr) {
 				return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
@@ -347,6 +357,9 @@ namespace VulkanUtils
 		}
 
 		static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
+
+			VE_PROFILE_VULKAN_FUNCTION();
+
 			auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
 			if (func != nullptr) {
 				func(instance, debugMessenger, pAllocator);

@@ -1,5 +1,6 @@
 #include "VulkanDevice.h"
 #include "VulkanShader.h"
+#include <Misc/Defines/VulkanProfilerDefines.h>
 
 /* ------------------------------------------------------------------------------- */
 /* -----------------------          VulkanShader         ------------------------- */
@@ -7,6 +8,8 @@
 
 VulkanShader::VulkanShader(VulkanDevice* inDevice, VkShaderStageFlagBits inShaderStageBits)
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	ShaderKey = UINT32_MAX;
 	Device = inDevice;
 	ShaderStageBits = inShaderStageBits;
@@ -35,6 +38,8 @@ VulkanShaderFactory::~VulkanShaderFactory() { }
 
 VulkanVertexShader* VulkanShaderFactory::CreateVertexShaderFromPath(VulkanDevice* inDevice, const char* inShaderPath)
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	VulkanVertexShader* VertexShader = new VulkanVertexShader(inDevice);
 	VertexShader->ShaderKey = ResourceManagerHandle->CreateShaderResourceFromPath(inShaderPath, (uint32)EShaderType::Vertex);
 
@@ -43,6 +48,8 @@ VulkanVertexShader* VulkanShaderFactory::CreateVertexShaderFromPath(VulkanDevice
 
 VulkanVertexShader* VulkanShaderFactory::CreateVertexShaderFromString(VulkanDevice* inDevice, const char* inShaderStr)
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	VulkanVertexShader* VertexShader = new VulkanVertexShader(inDevice);
 	VertexShader->ShaderKey = ResourceManagerHandle->CreateShaderResourceFromString(inShaderStr, (uint32)EShaderType::Vertex);
 
@@ -51,6 +58,8 @@ VulkanVertexShader* VulkanShaderFactory::CreateVertexShaderFromString(VulkanDevi
 
 VulkanFragmentShader* VulkanShaderFactory::CreateFragmentShaderFromString(VulkanDevice* inDevice, const char* inShaderStr)
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	VulkanFragmentShader* VertexShader = new VulkanFragmentShader(inDevice);
 	VertexShader->ShaderKey = ResourceManagerHandle->CreateShaderResourceFromString(inShaderStr, (uint32)EShaderType::Fragment);
 

@@ -28,6 +28,8 @@ public:
 
 	~VulkanPipelineLayout()
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		Device->WaitUntilIdle();
 
 		vkDestroyPipelineLayout(*Device->GetDeviceHandle(), PipelineLayoutHandle, nullptr);
@@ -42,6 +44,8 @@ public:
 	*/
 	void Create(VulkanDescriptorSetsLayout* inDescriptorSetsLayout, std::vector<VkPushConstantRange>* inPushConstants)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		VkPipelineLayoutCreateInfo PipelineLayoutCreateInfo = VulkanUtils::Initializers::PipelineLayoutCreateInfo();
 		PipelineLayoutCreateInfo.pSetLayouts = inDescriptorSetsLayout->DescriptorSetLayoutHandles.data();
 		PipelineLayoutCreateInfo.setLayoutCount = inDescriptorSetsLayout->DescriptorSetLayoutHandles.size();
@@ -66,6 +70,8 @@ public:
 
 	void CreateEmpty()
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		VkPipelineLayoutCreateInfo PipelineLayoutCreateInfo = VulkanUtils::Initializers::PipelineLayoutCreateInfo();
 
 #if _DEBUG
@@ -104,6 +110,8 @@ protected:
 public:
 	~VulkanPipeline()
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		Device->WaitUntilIdle();
 		if (PipelineHandle != VK_NULL_HANDLE)
 		{
@@ -138,6 +146,8 @@ public:
 	*/
 	void Create(VkGraphicsPipelineCreateInfo& inCreateInfo)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		vkCreateGraphicsPipelines(*Device->GetDeviceHandle(), VK_NULL_HANDLE, 1, &inCreateInfo, nullptr, &PipelineHandle);
 	}
 };

@@ -1,5 +1,6 @@
 #pragma once
 #include "VulkanDevice.h"
+#include <Misc/Defines/VulkanProfilerDefines.h>
 #include <Runtime/Memory/Core/MemoryManager.h>
 
 /**
@@ -40,6 +41,8 @@ public:
 	*/
 	~VulkanDeviceMemory()
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		if (MappedDataPtr != nullptr)
 		{
 			Unmap();
@@ -66,6 +69,8 @@ public:
 	*/
 	void* Map(VkDeviceSize inSize, VkDeviceSize inOffset)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 #if _DEBUG | _DEBUG_EDITOR
 		VK_CHECK_RESULT(vkMapMemory(*Device->GetDeviceHandle(), MemoryHandle, inOffset, inSize, 0, &MappedDataPtr), "[VulkanBuffer]: Failed trying to map buffer memory");
 #else
@@ -81,6 +86,8 @@ public:
 	*/
 	void Unmap()
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		if (MappedDataPtr)
 		{
 			vkUnmapMemory(*Device->GetDeviceHandle(), MemoryHandle);
@@ -100,6 +107,8 @@ public:
 	*/
 	bool FlushMappedMemory(VkDeviceSize inSize, VkDeviceSize inOffset)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		VkMappedMemoryRange MappedMemoryRange = { };
 		MappedMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		MappedMemoryRange.memory = MemoryHandle;
@@ -121,6 +130,8 @@ public:
 	*/
 	bool Invalidate(VkDeviceSize inSize, VkDeviceSize inOffset)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		VkMappedMemoryRange MappedMemoryRange = { };
 		MappedMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		MappedMemoryRange.memory = MemoryHandle;
@@ -170,6 +181,8 @@ public:
 	*/
 	~VulkanDeviceMemoryAllocater()
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		Device->WaitUntilIdle();
 		for (uint32 i = 0; i < MemoryAllocations.size(); ++i)
 		{
@@ -194,6 +207,8 @@ public:
 	*/
 	uint32 AllocateMemory(VkDeviceSize inAllocationSize, uint32 inMemoryTypeIndex)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		VkMemoryAllocateInfo MemoryAllocateInfo = VulkanUtils::Initializers::MemoryAllocateInfo();
 		MemoryAllocateInfo.allocationSize = inAllocationSize;
 		MemoryAllocateInfo.memoryTypeIndex = inMemoryTypeIndex;
@@ -212,6 +227,8 @@ public:
 	*/
 	uint32 AllocateMemory(const VkMemoryAllocateInfo& inMemoryAllocateInfo)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		VkDeviceMemory MemoryHandle = VK_NULL_HANDLE;
 #if _DEBUG | _DEBUG_EDITOR
 		VK_CHECK_RESULT(vkAllocateMemory(*Device->GetDeviceHandle(), &inMemoryAllocateInfo, nullptr, &MemoryHandle), "[VulkanBuffer]: Failed trying to allocate buffer memory");
@@ -236,6 +253,8 @@ public:
 	*/
 	void FreeMemory(uint32 inId)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		delete MemoryAllocations[inId];
 		MemoryAllocations[inId] = nullptr;
 	}
@@ -285,6 +304,8 @@ public:
 	*/
 	~VulkanBuffer()
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		if (BufferHandle != VK_NULL_HANDLE)
 		{
 			Device->WaitUntilIdle();
@@ -306,6 +327,8 @@ public:
 	*/
 	bool AllocateBuffer(VulkanDeviceMemoryAllocater* const inAllocater, VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		// Create the Buffer Handle 
 		AllocateBuffer(inBufferCreateInfo);
 
@@ -337,6 +360,8 @@ public:
 	*/
 	bool FlushMappedMemory(VkDeviceSize inSize, VkDeviceSize inOffset)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		return DeviceMemory->FlushMappedMemory(inSize, Offset + inOffset);
 	}
 
@@ -346,6 +371,8 @@ public:
 	*/
 	bool Invalidate(VkDeviceSize inSize, VkDeviceSize inOffset)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		return DeviceMemory->Invalidate(inSize, Offset + inOffset);
 	}
 private:
@@ -356,6 +383,8 @@ private:
 	*/
 	void AllocateBuffer(VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		// Create the buffer handle
 		VkBufferCreateInfo BufferCreateInfo = VulkanUtils::Initializers::BufferCreateInfo();
 		BufferCreateInfo.usage = inBufferCreateInfo.BufferUsageFlags;
@@ -378,6 +407,8 @@ private:
 	*/
 	bool Bind(VkDeviceSize inOffset)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 #if _DEBUG
 		VkResult Result;
 		Result = vkBindBufferMemory(*Device->GetDeviceHandle(), BufferHandle, *DeviceMemory->GetMemoryHandle(), Offset + inOffset);
@@ -467,6 +498,8 @@ public:
 	VulkanMemoryHeap(VulkanDevice* inDevice, uint32 inHeapSizeInMebibytes)
 		: Device(inDevice), HeapSizeInMebibytes(inHeapSizeInMebibytes)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		DeviceMemoryAllocater = new VulkanDeviceMemoryAllocater(inDevice);
 		
 		uint64 HeapSize = MEBIBYTES_TO_BYTES(inHeapSizeInMebibytes);
@@ -487,6 +520,8 @@ public:
 
 	~VulkanMemoryHeap()
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		delete Buffer;
 		delete DeviceMemoryAllocater;
 
@@ -513,6 +548,8 @@ public:
 	*/
 	VulkanBuffer* AllocateBuffer(EBufferType inBufferType, VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		VulkanBuffer* Buffer = nullptr;
 
 		switch (inBufferType)
@@ -571,6 +608,8 @@ private:
 	*/
 	VulkanBuffer* AllocateBuffer(VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		VulkanBuffer* AllocBuffer = new VulkanBuffer(Device, -1, MemoryUsed);
 		AllocBuffer->AllocateBuffer(inBufferCreateInfo);
 		AllocBuffer->DeviceMemory = DeviceMemoryAllocater->GetDeviceMemory(MemoryID);

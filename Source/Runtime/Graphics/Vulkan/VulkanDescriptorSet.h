@@ -18,6 +18,8 @@ public:
 
 	~VulkanDescriptorSetsLayout()
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		Device->WaitUntilIdle();
 
 		for (uint32 i = 0; i < DescriptorSetLayoutHandles.size(); ++i)
@@ -40,6 +42,8 @@ public:
 	*/
 	uint32 CreateDescriptorSetLayout(VulkanUtils::Descriptions::DescriptorSetLayoutBinding& inLayoutBinding, VulkanUtils::Descriptions::DescriptorSetLayoutCreateInfo& inDescriptorSetLayoutCreateInfo)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		VkDescriptorSetLayoutBinding DescriptorSetLayoutBinding;
 		DescriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
@@ -96,11 +100,15 @@ public:
 		DescriptorSetsLayout((const VulkanDescriptorSetsLayout*)&inSetsLayout),
 		DescriptorPoolHandle(VK_NULL_HANDLE)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		CreateDescriptorPool(inPoolSizes);
 	}
 
 	~VulkanDescriptorPool()
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		Device->WaitUntilIdle();
 		vkDestroyDescriptorPool(*Device->GetDeviceHandle(), DescriptorPoolHandle, nullptr);
 	}
@@ -116,6 +124,8 @@ public:
 	*/
 	bool AllocateDescriptorSets(uint32 inDescriptorSetCount, VkDescriptorSet* outDescriptorSet, uint32 inLayoutId) const
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo = VulkanUtils::Initializers::DescriptorSetAllocateInfo();
 		DescriptorSetAllocateInfo.descriptorPool = DescriptorPoolHandle;
 		DescriptorSetAllocateInfo.descriptorSetCount = inDescriptorSetCount;
@@ -139,6 +149,8 @@ public:
 	*/
 	void BindDescriptorSetToBuffer(const VulkanBuffer* inBuffer, const VulkanUtils::Descriptions::WriteDescriptorSet& inWriteDescriptorSet)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		VkDescriptorBufferInfo DescriptorBufferInfo = { };
 		DescriptorBufferInfo.buffer = *inBuffer->GetBufferHandle();
 		DescriptorBufferInfo.offset = 0;
@@ -155,6 +167,8 @@ public:
 private:
 	void CreateDescriptorPool(std::vector<VkDescriptorPoolSize>& inPoolSizes)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		VkDescriptorPoolCreateInfo DescriptorPoolCreateInfo = VulkanUtils::Initializers::DescriptorPoolCreateInfo();
 		DescriptorPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT;
 		DescriptorPoolCreateInfo.maxSets = MaxDescriptorSets;

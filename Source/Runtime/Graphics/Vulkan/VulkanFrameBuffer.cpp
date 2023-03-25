@@ -1,10 +1,13 @@
 #include "VulkanFrameBuffer.h"
+#include <Misc/Defines/VulkanProfilerDefines.h>
 
 VulkanFrameBuffer::VulkanFrameBuffer(VulkanDevice* device, VulkanRenderPass* renderPass)
 	: Device(device), RenderPass(renderPass), FrameBufferHandle(VK_NULL_HANDLE) { }
 
 VulkanFrameBuffer::~VulkanFrameBuffer()
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	if (FrameBufferHandle != VK_NULL_HANDLE)
 	{
 		DestroyBuffer();
@@ -13,6 +16,8 @@ VulkanFrameBuffer::~VulkanFrameBuffer()
 
 void VulkanFrameBuffer::AllocateBuffer(uint32 numAttachments, const VkImageView* attachments, const VkExtent2D* extent)
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	VkFramebufferCreateInfo FrameBufferCreateInfo = VulkanUtils::Initializers::FrameBufferCreateInfo();
 	FrameBufferCreateInfo.pNext = NULL;
 	FrameBufferCreateInfo.renderPass = *RenderPass->GetRenderPassHandle();
@@ -27,6 +32,8 @@ void VulkanFrameBuffer::AllocateBuffer(uint32 numAttachments, const VkImageView*
 
 void VulkanFrameBuffer::DestroyBuffer()
 {
+	VE_PROFILE_VULKAN_FUNCTION();
+
 	Device->WaitUntilIdle();
 	vkDestroyFramebuffer(*Device->GetDeviceHandle(), FrameBufferHandle, nullptr);
 }
