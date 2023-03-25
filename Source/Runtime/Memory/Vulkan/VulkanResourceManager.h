@@ -10,7 +10,7 @@
 #include "../ResourceManagerImp.h"
 #include "Runtime/Graphics/Vulkan/VulkanDevice.h"
 
-class VulkanResourceManager : public IResourceManager
+class VRIXIC_API VulkanResourceManager : public IResourceManager
 {
 private:
 	VulkanDevice* Device;

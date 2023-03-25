@@ -1,5 +1,7 @@
 #pragma once
+#include <Core/Core.h>
 #include <Misc/Defines/GenericDefines.h>
+
 #include <string>
 #include <fstream>
 
@@ -27,7 +29,7 @@ enum class EFileReadResult
 /**
 * Represents a file, which can be opened, read, writted to, and  closed...
 */
-class FileReader
+class VRIXIC_API FileReader
 {
 private:
 	std::string Path;

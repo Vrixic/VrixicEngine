@@ -4,7 +4,7 @@
 /**
 * Vulkan render layout used for RenderPass creation 
 */
-class VulkanRenderLayout
+class VRIXIC_API VulkanRenderLayout
 {
 private:
 	VulkanDevice* Device;

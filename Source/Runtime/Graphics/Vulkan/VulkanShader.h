@@ -1,8 +1,8 @@
 #pragma once
-#include "VulkanDevice.h"
 #include "Runtime/Memory/ResourceManager.h"
+#include "VulkanDevice.h"
 
-enum class EShaderType
+enum class EShaderType : uint16
 {
 	Vertex,
 	Fragment
@@ -12,7 +12,7 @@ enum class EShaderType
 * Representation of a Shader in Vulkan
 * Do not manually create these.. Use VulkanShaderFactory!
 */
-class VulkanShader
+class VRIXIC_API VulkanShader
 {
 protected:
 	/* A Key to the shader module location into the array of shader modules */
@@ -65,7 +65,7 @@ typedef TVulkanShader<VK_SHADER_STAGE_FRAGMENT_BIT> VulkanFragmentShader;
 * Factory for creating all types of shaders, use this to create shaders
 * A ResourceManager is associated with a VulkanShaderFactory, 1:1 correlation
 */
-class VulkanShaderFactory
+class VRIXIC_API VulkanShaderFactory
 {
 private:
 	/* Handle to the resource manager that will be used to create all shaders within this factory */

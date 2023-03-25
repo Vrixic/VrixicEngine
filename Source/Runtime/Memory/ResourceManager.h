@@ -4,7 +4,7 @@
 /**
 * Base Resource manager class which different types of resource manager can inherit from
 */
-class ResourceManager
+class VRIXIC_API ResourceManager
 {
 protected: 
 	/* Implementation of the resource manager */

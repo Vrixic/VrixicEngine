@@ -4,7 +4,7 @@
 /**
 * A wrapper for VkImage and VkImage view, mainly used for depth and stenciling
 */
-class VulkanTextureView
+class VRIXIC_API VulkanTextureView
 {
 private:
 	VulkanDevice* Device;

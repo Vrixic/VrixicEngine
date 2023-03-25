@@ -60,7 +60,7 @@ void Application::OnEvent(WindowEvent& inEvent)
 {
 	VE_PROFILE_FUNCTION();
 
-	VE_CORE_LOG_DISPLAY("Application::OnEvent: {0}", inEvent.ToString());
+	VE_CORE_LOG_DISPLAY("App::OnEvent: {0}", inEvent.ToString());
 
 	if (inEvent.GetEventType() == EWindowEventType::WindowClose)
 	{

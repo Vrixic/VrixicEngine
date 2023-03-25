@@ -1,6 +1,8 @@
 #pragma once
 
+#include <Core/Core.h>
 #include <Misc/Defines/GenericDefines.h>
+
 #include <memory.h>
 #include <spdlog/spdlog.h>
 
@@ -13,7 +15,7 @@ enum class ELogSeverity
 	Fatal
 };
 
-class Log
+class VRIXIC_API Log
 {
 private:
 	static std::shared_ptr<spdlog::logger> CoreLogger;

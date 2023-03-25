@@ -7,7 +7,7 @@
 #include <vector>
 #include <Windows.h>
 #include "vulkan/vulkan.h"
-#include <vulkan/vulkan_win32.h>
+#include <vulkan/vulkan_win32.h> // neeed tobe included after window.h
 #include <iostream>
 
 /* The # macro will turn the expression f into a string literal */
@@ -26,7 +26,7 @@ namespace VulkanUtils
 	/* Descriptions for vulkan pipeline, and create infos... */
 	namespace Descriptions
 	{
-		struct VertexAttribute
+		struct VRIXIC_API VertexAttribute
 		{
 			uint32 Location;
 			uint32 Binding;
@@ -42,7 +42,7 @@ namespace VulkanUtils
 			}
 		};
 
-		struct VertexBinding
+		struct VRIXIC_API VertexBinding
 		{
 			uint32 Binding;
 			uint32 Stride;
@@ -56,7 +56,7 @@ namespace VulkanUtils
 			}
 		};
 
-		struct Rasterizer
+		struct VRIXIC_API Rasterizer
 		{
 			uint32 RasterizerDiscardEnable;
 			uint32 PolygonMode;
@@ -84,7 +84,7 @@ namespace VulkanUtils
 			}
 		};
 
-		struct AttachmentReference
+		struct VRIXIC_API AttachmentReference
 		{
 			uint32 Attachement;
 			uint32 Layout;
@@ -96,7 +96,7 @@ namespace VulkanUtils
 			}
 		};
 
-		struct AttachmentDescription
+		struct VRIXIC_API AttachmentDescription
 		{
 			uint32 Format;
 			uint32 Samples;
@@ -120,7 +120,7 @@ namespace VulkanUtils
 			}
 		};
 
-		struct DescriptorSetLayoutBinding
+		struct VRIXIC_API DescriptorSetLayoutBinding
 		{
 			uint32 Binding;
 			uint32 DescriptorType;
@@ -136,7 +136,7 @@ namespace VulkanUtils
 			}
 		};
 
-		struct WriteDescriptorSet
+		struct VRIXIC_API WriteDescriptorSet
 		{
 			uint32 DstBinding;
 			VkDescriptorSet DstSet;
@@ -154,7 +154,7 @@ namespace VulkanUtils
 			}
 		};
 
-		struct DescriptorSetLayoutCreateInfo
+		struct VRIXIC_API DescriptorSetLayoutCreateInfo
 		{
 			VkDescriptorSetLayoutCreateFlags Flags;
 
@@ -164,7 +164,7 @@ namespace VulkanUtils
 			}
 		};
 
-		struct VulkanBufferCreateInfo
+		struct VRIXIC_API VulkanBufferCreateInfo
 		{
 			VkBufferUsageFlags BufferUsageFlags;
 			VkMemoryPropertyFlags MemoryPropertyFlags;

@@ -1,11 +1,12 @@
 #pragma once
 #include "FileReader.h"
+
 #include <string>
 
 /**
 * Singleton class for containing file informations
 */
-class FileManager
+class VRIXIC_API FileManager
 {
 private:
 	static std::string ProjectPath;

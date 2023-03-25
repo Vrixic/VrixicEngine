@@ -4,7 +4,7 @@
 /**
 * Representation of a VkDescriptorSetLayout, except it can hold multiple layouts
 */
-class VulkanDescriptorSetsLayout
+class VRIXIC_API VulkanDescriptorSetsLayout
 {
 private:
 	friend class VulkanPipelineLayout;
@@ -80,7 +80,7 @@ public:
 * Can be used to allocate descriptor sets
 * Sets can be shared out to any user as they do not need to be kept track of...
 */
-class VulkanDescriptorPool
+class VRIXIC_API VulkanDescriptorPool
 {
 private:
 	VulkanDevice* Device;

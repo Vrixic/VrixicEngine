@@ -10,7 +10,7 @@
 /**
 * Defines pipeline creation information, also includes a descriptor set layouts and push constant ranges
 */
-class VulkanPipelineLayout
+class VRIXIC_API VulkanPipelineLayout
 {
 private:
 	VulkanDevice* Device;
@@ -91,7 +91,7 @@ public:
 * Wrapper for vulkan pipeline 
 *	Do not create this object, use VulkanGraphicsPipeline..
 */
-class VulkanPipeline
+class VRIXIC_API VulkanPipeline
 {
 protected:
 	VulkanDevice* Device;
@@ -124,7 +124,7 @@ public:
 /**
 * Represents a graphics vulkan pipeline 
 */
-class VulkanGraphicsPipeline : public VulkanPipeline
+class VRIXIC_API VulkanGraphicsPipeline : public VulkanPipeline
 {	
 public:
 	VulkanGraphicsPipeline(VulkanDevice* inDevice)

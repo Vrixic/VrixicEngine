@@ -1,11 +1,11 @@
 #pragma once
-#include <Runtime/Memory/Core/MemoryManager.h>
 #include "IteratorGenerics.h"
+#include <Runtime/Memory/Core/MemoryManager.h>
 /**
 * A Generic iterator for all indexed based container types
 */
 template<typename ContainerType, typename ContainerElementType>
-class TGenericIndexedContainerIterator
+class VRIXIC_API TGenericIndexedContainerIterator
 {
 private:
 	ContainerType& Container;
@@ -163,7 +163,7 @@ public:
 * Instead of usual 'T' for templates, now making better template names such as ElementType (More descriptive)
 */
 template <typename ElementType>
-class TArray
+class VRIXIC_API TArray
 {
 public:
 	typedef TGenericIndexedContainerIterator<TArray, ElementType> TArrayIterator;

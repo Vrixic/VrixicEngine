@@ -1,4 +1,5 @@
 #pragma once
+#include <Core/Core.h>
 #include "VulkanFrameBuffer.h"
 
 class VulkanCommandPool;
@@ -10,7 +11,7 @@ class VulkanCommandPool;
 /**
 * Representation of vulkan Command Buffer
 */
-class VulkanCommandBuffer
+class VRIXIC_API VulkanCommandBuffer
 {
 private:
 	VulkanDevice* Device;
@@ -121,7 +122,7 @@ public:
 /**
 * Representation of vulkan Command Pool
 */
-class VulkanCommandPool
+class VRIXIC_API VulkanCommandPool
 {
 private:
 	VulkanDevice* Device;

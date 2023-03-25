@@ -1,11 +1,12 @@
 #pragma once
-#include <string>
 #include "FileManager.h"
+
+#include <string>
 
 /**
 * Static class which has helper functions for reading files 
 */
-class FileHelper
+class VRIXIC_API FileHelper
 {
 	// Loads a text file into a string 
 	static bool LoadFileToString(std::string& outResult, std::string& inFilePath)

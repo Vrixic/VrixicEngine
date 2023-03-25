@@ -17,7 +17,7 @@
 * Representation of a vulkan device memory
 * Allocates device memory for use, DO NOT CREATE THIS OBJECT YOURSELF
 */
-class VulkanDeviceMemory
+class VRIXIC_API VulkanDeviceMemory
 {
 private:
 	friend class VulkanDeviceMemoryAllocater;
@@ -152,7 +152,7 @@ public:
 *	Keeps device memory leaks from happening, will be used by VulkanMemoryHeap ONLY, DO NOT CREATE
 *	THIS OBJECT YOURSELF
 */
-class VulkanDeviceMemoryAllocater
+class VRIXIC_API VulkanDeviceMemoryAllocater
 {
 private:
 	friend class VulkanMemoryHeap;
@@ -256,7 +256,7 @@ private:
 * Representation of a vulkan buffer (VkBuffer)
 * Memory visible to GPU, A view into the memory
 */
-class VulkanBuffer
+class VRIXIC_API VulkanBuffer
 {
 private:
 	friend class VulkanMemoryHeap;
@@ -422,7 +422,7 @@ private:
 * The type of buffer, used for creating/allocating memory of use for a certain type of buffer,
 * each type of buffer will have it own offset into the memory heap
 */
-enum class EBufferType
+enum class EBufferType : uint32
 {
 	Index = 0,
 	Vertex,
@@ -435,7 +435,7 @@ enum class EBufferType
 * Allocates a bunch of memory up front, Memory is split into buffer -> types: Index, Vertex, Storage
 * For any kind of buffer creation, clients have to use the heap interface
 */
-class VulkanMemoryHeap
+class VRIXIC_API VulkanMemoryHeap
 {
 private:
 	friend class VulkanBuffer;

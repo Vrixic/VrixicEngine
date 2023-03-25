@@ -4,7 +4,7 @@
 /**
 * Representation of vulkan render pass 
 */
-class VulkanRenderPass
+class VRIXIC_API VulkanRenderPass
 {
 private:
 	VulkanDevice* Device;

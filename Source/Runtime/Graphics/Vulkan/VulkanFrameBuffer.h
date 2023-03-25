@@ -4,7 +4,7 @@
 /**
 * Representation of vulkan frame buffer
 */
-class VulkanFrameBuffer
+class VRIXIC_API VulkanFrameBuffer
 {
 private:
 	VulkanDevice* Device;

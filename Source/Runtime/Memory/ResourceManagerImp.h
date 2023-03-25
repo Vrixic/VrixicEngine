@@ -1,9 +1,10 @@
 #pragma once
+#include <Core/Core.h>
 #include "Misc/Defines/GenericDefines.h"
 #include "Runtime/Graphics/Vulkan/VulkanDevice.h"
 
 /* An interface of a resource manager */
-class IResourceManager
+class VRIXIC_API IResourceManager
 {
 public:
 	virtual ~IResourceManager() { };

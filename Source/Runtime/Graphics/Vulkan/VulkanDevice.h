@@ -1,14 +1,14 @@
 #pragma once
-#include <vector>
-#include <string>
 #define VK_USE_PLATFORM_WIN32_KHR
-//#include <Windows.h>
 #include "vulkan/vulkan.h"
-//#include <vulkan/vulkan_win32.h>
 #pragma comment(lib, "vulkan-1.lib")
 
+#include <Core/Core.h>
 #include "VulkanUtils.h"
 #include "Misc/Defines/GenericDefines.h"
+
+#include <vector>
+#include <string>
 
 class VulkanShaderFactory;
 class VulkanSurface;
@@ -19,7 +19,7 @@ class VulkanCommandBuffer;
 /**
 * Representation of vulkan device
 */
-class VulkanDevice
+class VRIXIC_API VulkanDevice
 {
 private:
 	/* Representation of GPU */
@@ -147,7 +147,7 @@ public:
 	uint32_t GetMemoryTypeIndex(uint32_t inTypeBits, VkMemoryPropertyFlags inProperties, VkBool32* outMemTypeFound) const;
 };
 
-class VulkanQueue
+class VRIXIC_API VulkanQueue
 {
 private:
 	/* The Device this queue belongs to */
@@ -202,7 +202,7 @@ public:
 /**
 * Representation of vulkan surface 
 */
-class VulkanSurface
+class VRIXIC_API VulkanSurface
 {
 private:
 	VkInstance* InstanceHandle;
@@ -260,7 +260,7 @@ public:
 	//}
 };
 
-class VulkanSwapChain
+class VRIXIC_API VulkanSwapChain
 {
 private:
 	VulkanDevice* Device;

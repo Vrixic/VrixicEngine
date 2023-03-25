@@ -6,7 +6,7 @@
 *	Does not support operator-- (Going reverse on a list), can only traverse forward 
 */
 template<typename ListType, typename ListNode, typename ListNodeType>
-class TGenericNonIntrusiveSingleListIterator
+class VRIXIC_API TGenericNonIntrusiveSingleListIterator
 {
 private:
 	ListType&  List;
@@ -140,7 +140,7 @@ public:
 * Non-Intusive linked list implementation
 */
 template<class NodeType>
-class TLinkedList
+class VRIXIC_API TLinkedList
 {
 public:
 	template<typename ListType, typename ListNode, typename ListNodeType>
