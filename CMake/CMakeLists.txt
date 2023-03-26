@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.6)
 
 set(PROJECT_NAME VrixicEngine)
 
@@ -95,6 +95,14 @@ if (WIN32)
 	#		 MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 
 	#message(STATUS $ENV{VULKAN_SDK}/Lib/)
+	
+	#add sandbox project
+	INCLUDE_EXTERNAL_MSPROJECT(Sandbox ${CMAKE_SOURCE_DIR}/../Sandbox/Sandbox.vcxproj)
+	
+	# add custom post build event/command to copy the dll made form vrixic engine to sandbox
+	add_custom_command(TARGET VrixicEngine POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:VrixicEngine> ${PROJECT_SOLUTION_DIR}/bin/Debug-x64/Sandbox/
+	COMMENT "Copying VrixicEngine dll to Sandbox build directory")
 	
 	include_directories(${PROJECT_SOURCE_CODE_DIR})
 endif(WIN32)
