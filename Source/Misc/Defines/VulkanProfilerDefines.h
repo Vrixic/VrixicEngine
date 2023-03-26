@@ -2,7 +2,7 @@
 #include <Misc/Defines/GenericDefines.h>
 #include <Misc/Profiling/Profiler.h>
 
-#define VE_PROFILE_VULKAN 1
+#define VE_PROFILE_VULKAN _DEBUG
 
 #ifdef VE_PROFILE_VULKAN
 
