@@ -4,7 +4,7 @@ Build / Launching Steps
 
 *** Windows Platform ***
 
-Step 1). Clone the repo / download main branch
+Step 1). Clone the repo / download main branch 
 Step 2). Double click MakeProjectBuild.bat
 Step 3). Open Build/VrixicEngineBuild/VrixicEngine.sln 
 Step 4). In solution explorer, go to SandBox solution, right click, and Set as StartUp Project
