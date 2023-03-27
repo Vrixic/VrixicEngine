@@ -1,6 +1,7 @@
 D:/dev/repo/VulkanRenderer/Engine/Source/Containers/Array.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Containers/IteratorGenerics.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Containers/List.h
+D:/dev/repo/VulkanRenderer/Engine/Source/Containers/Map.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Core/Editor/GameEditor.cpp
 D:/dev/repo/VulkanRenderer/Engine/Source/Core/Editor/GameEditor.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Core/Events/ApplicationEvents.h
@@ -149,11 +150,13 @@ D:/dev/repo/VulkanRenderer/Engine/Source/External/spdlog/src/spdlog.cpp
 D:/dev/repo/VulkanRenderer/Engine/Source/External/spdlog/src/stdout_sinks.cpp
 D:/dev/repo/VulkanRenderer/Engine/Source/Misc/Defines/GenericDefines.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Misc/Defines/MemoryProfilerDefines.h
+D:/dev/repo/VulkanRenderer/Engine/Source/Misc/Defines/StringDefines.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Misc/Defines/VulkanProfilerDefines.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Misc/Logging/Log.cpp
 D:/dev/repo/VulkanRenderer/Engine/Source/Misc/Logging/Log.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Misc/Profiling/Profiler.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Misc/Assert.h
+D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Core/Algorithms/Hashing/CRC32.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Core/Math/Frustum.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Core/Math/LookAtMatrix4D.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Core/Math/Matrix4D.h
@@ -169,6 +172,8 @@ D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Core/Math/VrixicMath.cpp
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Core/Math/VrixicMath.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Core/Math/VrixicMathDirectX.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Core/Math/VrixicMathHelper.h
+D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Core/Strings/StringHash.cpp
+D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Core/Strings/StringHash.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Engine/GameEngine.cpp
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Engine/GameEngine.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Engine/GameWorld.h

@@ -104,6 +104,9 @@ if (WIN32)
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:VrixicEngine> ${PROJECT_SOLUTION_DIR}/bin/Debug-x64/Sandbox/
 	COMMENT "Copying VrixicEngine dll to Sandbox build directory")
 	
+	# make sand box the start up project
+	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Sandbox)
+	
 	include_directories(${PROJECT_SOURCE_CODE_DIR})
 endif(WIN32)
 

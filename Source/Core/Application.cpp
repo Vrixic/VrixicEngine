@@ -1,6 +1,7 @@
 #include "Application.h"
 
 #include <Misc/Assert.h>
+#include <Misc/Defines/StringDefines.h>
 #include <Misc/Profiling/Profiler.h>
 #include <Runtime/Memory/Core/MemoryManager.h>
 
@@ -60,7 +61,7 @@ void Application::OnEvent(WindowEvent& inEvent)
 {
 	VE_PROFILE_FUNCTION();
 
-	VE_CORE_LOG_DISPLAY("App::OnEvent: {0}", inEvent.ToString());
+	VE_CORE_LOG_DISPLAY(VE_TEXT("App::OnEvent: {0}"), inEvent.ToString());
 
 	if (inEvent.GetEventType() == EWindowEventType::WindowClose)
 	{
