@@ -26,7 +26,7 @@ public:
 	}
 
 	WINDOW_EVENT_CLASS_TYPE(EWindowEventType::MouseMoved)
-	WINDOW_EVENT_CLASS_CATEGORY(EventCatergoryMouse | EventCatergoryInput)
+	WINDOW_EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
 };
 
 /**
@@ -53,7 +53,7 @@ public:
 	}
 
 	WINDOW_EVENT_CLASS_TYPE(EWindowEventType::MouseScrolled)
-	WINDOW_EVENT_CLASS_CATEGORY(EventCatergoryMouse | EventCatergoryInput)
+	WINDOW_EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
 };
 
 /**
@@ -74,7 +74,7 @@ public:
 	inline uint16 GetMouseX() const { return MouseX; };
 	inline uint16 GetMouseY() const { return MouseY; };
 
-	WINDOW_EVENT_CLASS_CATEGORY(EventCatergoryMouse | EventCatergoryInput)
+	WINDOW_EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
 };
 
 /**

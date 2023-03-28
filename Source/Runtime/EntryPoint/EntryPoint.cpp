@@ -414,8 +414,8 @@ public:
 		GraphicsResourceManager = new ResourceManager(MainVulkanResourceManager);
 		ShaderFactory = new VulkanShaderFactory(GraphicsResourceManager);
 
-		VertShader = ShaderFactory->CreateVertexShaderFromString(VTemp->Device, VertexShaderStr);
-		PixelShader = ShaderFactory->CreateFragmentShaderFromString(VTemp->Device, PixelShaderStr);
+		VertShader = ShaderFactory->CreateVertexShaderFromString(VTemp->Device, VertexShaderStr, true);
+		PixelShader = ShaderFactory->CreateFragmentShaderFromString(VTemp->Device, PixelShaderStr, true);
 
 		{
 			VkPipelineShaderStageCreateInfo VertexStageCreateInfo = VulkanUtils::Initializers::PipelineShaderStageCreateInfo();

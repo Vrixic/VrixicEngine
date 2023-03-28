@@ -24,9 +24,9 @@ public:
 	/**
 	* @TODO: Create Better Functions to not restrict how shaders should be set up
 	*/
-	virtual uint32 CreateShaderResourceFromPath(const VString& inFilePath, uint32 inShaderType) override;
+	virtual uint32 CreateShaderResourceFromPath(const VString& inFilePath, uint32 inShaderType, bool inInvertY) override;
 
-	virtual uint32 CreateShaderResourceFromString(const VString& inShaderCode, uint32 inShaderType) override;
+	virtual uint32 CreateShaderResourceFromString(const VString& inShaderCode, uint32 inShaderType, bool inInvertY) override;
 
 	virtual const void* GetShaderModule(uint32 inShaderKey) const override;
 

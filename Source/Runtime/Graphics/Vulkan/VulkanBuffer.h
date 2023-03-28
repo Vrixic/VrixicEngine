@@ -274,6 +274,8 @@ private:
 /**
 * Representation of a vulkan buffer (VkBuffer)
 * Memory visible to GPU, A view into the memory
+* 
+* -- Memory is already mapped to meaning Pointer to Memory in CPU side already exits, make sure to 64 byte align memory ranges when flushing 
 */
 class VRIXIC_API VulkanBuffer
 {
@@ -354,17 +356,6 @@ public:
 		return true;
 	}
 
-	/**
-	* Flushes a mapped memory range to make it visible to the device,
-	* refer to VulkanDeviceMemory::FlushMappedMemory() for in depth overview
-	*/
-	bool FlushMappedMemory(VkDeviceSize inSize, VkDeviceSize inOffset)
-	{
-		VE_PROFILE_VULKAN_FUNCTION();
-
-		return DeviceMemory->FlushMappedMemory(inSize, Offset + inOffset);
-	}
-
 	/*
 	* Invalidate a memory range to make it visible to the host CPU
 	* refer to VulkanDeviceMemory::Invalidate() for in depth overview
@@ -375,6 +366,56 @@ public:
 
 		return DeviceMemory->Invalidate(inSize, Offset + inOffset);
 	}
+
+	/**
+	* Map a memory range of this buffer. If successful, mapped points to the specified buffer range.
+	*
+	* @param inSize - The size of the memory range to map.Pass VK_WHOLE_SIZE to complete buffer range.
+	* @param inOffset - Byte offset from beginning
+	*
+	* @return void* returns the pointer to the mapped memory location
+	*/
+	void* Map(VkDeviceSize inSize, VkDeviceSize inOffset)
+	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
+		inOffset += Offset;
+		if (inSize == VK_WHOLE_SIZE)
+		{
+			inSize = Size;
+		}
+
+		return DeviceMemory->Map(inSize, inOffset);
+	}
+
+	/**
+	* Unmap a mapped memory range
+	*
+	* @remarks Does not return a result as vkUnmapMemory can't fail
+	*/
+	void Unmap()
+	{
+		VE_PROFILE_VULKAN_FUNCTION();
+		DeviceMemory->Unmap();
+	}
+
+	/**
+	* Flushes a mapped memory range to make it visible to the device,
+	* refer to VulkanDeviceMemory::FlushMappedMemory() for in depth overview
+	*/
+	bool FlushMappedMemory(VkDeviceSize inSize, VkDeviceSize inOffset)
+	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
+		inOffset += Offset;
+		if (inSize == VK_WHOLE_SIZE)
+		{
+			inSize = Size;
+		}
+
+		return DeviceMemory->FlushMappedMemory(inSize, inOffset);
+	}
+
 private:
 	/**
 	* Creates a buffer handle using the create info
@@ -436,11 +477,19 @@ public:
 	*/
 	void* GetMappedPointer() const
 	{
-		char* PointerOffseter = (char*)DeviceMemory->GetMappedPointer();
-		PointerOffseter += Offset;
+		uint8* PointerOffseted = static_cast<uint8*>(DeviceMemory->GetMappedPointer());
+		PointerOffseted += Offset;
 
-		return PointerOffseter;
+		return PointerOffseted;
 	}
+
+	///*
+	//* @return VulkanDeviceMemory* the handle to the device memory occupied by the buffer 
+	//*/
+	//VulkanDeviceMemory* GetDeviceMemoryHandle() const
+	//{
+	//	return DeviceMemory;
+	//}
 
 private:
 	uint32 GetDeviceMemoryID() const
@@ -566,6 +615,7 @@ public:
 		case EBufferType::Uniform:
 			break;
 		case EBufferType::Staging:
+			Buffer = AllocateStagingBuffer(inBufferCreateInfo);
 			break;
 		default:
 			break;
@@ -595,6 +645,14 @@ private:
 	* Allocated a storage buffer
 	*/
 	VulkanBuffer* AllocateStorageBuffer(VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
+	{
+		return AllocateBuffer(inBufferCreateInfo);
+	}
+	
+	/**
+	* Allocated a storage buffer
+	*/
+	VulkanBuffer* AllocateStagingBuffer(VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
 	{
 		return AllocateBuffer(inBufferCreateInfo);
 	}

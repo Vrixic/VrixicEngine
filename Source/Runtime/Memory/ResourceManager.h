@@ -24,7 +24,7 @@ public:
 	* 
 	* @return uint32 - the key to where the shader handle is located
 	*/
-	uint32 CreateShaderResourceFromPath(const VString& inFilePath, uint32 inShaderType);
+	uint32 CreateShaderResourceFromPath(const VString& inFilePath, uint32 inShaderType, bool inInvertY);
 
 	/**
 	* Creates a shader resource from specified shader code
@@ -34,7 +34,7 @@ public:
 	*
 	* @return uint32 - the key to where the shader handle is located
 	*/
-	uint32 CreateShaderResourceFromString(const VString& inShaderStr, uint32 inShaderType);
+	uint32 CreateShaderResourceFromString(const VString& inShaderStr, uint32 inShaderType, bool inInvertY);
 
 	/**
 	* Gets the shader module

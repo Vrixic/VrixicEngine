@@ -87,19 +87,26 @@ public:
 	* 
 	* @return VulkanVertexShader* - handle to the vertex shader created
 	*/
-	VulkanVertexShader* CreateVertexShaderFromPath(VulkanDevice* inDevice, const char* inShaderPath);
+	VulkanVertexShader* CreateVertexShaderFromPath(VulkanDevice* inDevice, const char* inShaderPath, bool inInvertY);
 
 	/**
-	* @param inShaderStr - shader code 
+	* @param inShaderPath - the path to where the shader is located
+	*
+	* @return VulkanFragmentShader* - handle to the fragment shader created
+	*/
+	VulkanFragmentShader* CreateFragmentShaderFromPath(VulkanDevice* inDevice, const char* inShaderPath, bool inInvertY);
+
+	/**
+	* @param inShaderStr - shader code
 	*
 	* @return VulkanVertexShader* - handle to the vertex shader created
 	*/
-	VulkanVertexShader* CreateVertexShaderFromString(VulkanDevice* inDevice, const char* inShaderStr);
+	VulkanVertexShader* CreateVertexShaderFromString(VulkanDevice* inDevice, const char* inShaderStr, bool inInvertY);
 
 	/**
 	* @param inShaderStr - shader code
 	*
 	* @return VulkanFragmentShader* - handle to the fragment shader created
 	*/
-	VulkanFragmentShader* CreateFragmentShaderFromString(VulkanDevice* inDevice, const char* inShaderStr);
+	VulkanFragmentShader* CreateFragmentShaderFromString(VulkanDevice* inDevice, const char* inShaderStr, bool inInvertY);
 };

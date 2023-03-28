@@ -16,14 +16,14 @@ VulkanResourceManager::~VulkanResourceManager()
 	}
 }
 
-uint32 VulkanResourceManager::CreateShaderResourceFromPath(const VString& inFilePath, uint32 inShaderType)
+uint32 VulkanResourceManager::CreateShaderResourceFromPath(const VString& inFilePath, uint32 inShaderType, bool inInvertY)
 {
 	// Intialize runtime shader compiler HLSL -> SPIRV
 	shaderc_compiler_t compiler = shaderc_compiler_initialize();
 	shaderc_compile_options_t options = shaderc_compile_options_initialize();
 	shaderc_compile_options_set_source_language(options, shaderc_source_language_hlsl);
 	// TODO: Part 3C
-	shaderc_compile_options_set_invert_y(options, true);
+	shaderc_compile_options_set_invert_y(options, inInvertY);
 #ifndef NDEBUG
 	shaderc_compile_options_set_generate_debug_info(options);
 #endif
@@ -33,14 +33,14 @@ uint32 VulkanResourceManager::CreateShaderResourceFromPath(const VString& inFile
 	return ShaderModules.size() - 1;
 }
 
-uint32 VulkanResourceManager::CreateShaderResourceFromString(const VString& inShaderCode, uint32 inShaderType)
+uint32 VulkanResourceManager::CreateShaderResourceFromString(const VString& inShaderCode, uint32 inShaderType, bool inInvertY)
 {
 	// Intialize runtime shader compiler HLSL -> SPIRV
 	shaderc_compiler_t compiler = shaderc_compiler_initialize();
 	shaderc_compile_options_t options = shaderc_compile_options_initialize();
 	shaderc_compile_options_set_source_language(options, shaderc_source_language_hlsl);
 	// TODO: Part 3C
-	shaderc_compile_options_set_invert_y(options, true);
+	shaderc_compile_options_set_invert_y(options, inInvertY);
 #ifndef NDEBUG
 	shaderc_compile_options_set_generate_debug_info(options);
 #endif

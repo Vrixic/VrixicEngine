@@ -17,7 +17,7 @@ protected:
 public:
 	inline uint32 GetKeyCode() const { return KeyCode; }
 
-	WINDOW_EVENT_CLASS_CATEGORY(EventCatergoryKeyboard | EventCatergoryInput)
+	WINDOW_EVENT_CLASS_CATEGORY(EventCategoryKeyboard | EventCategoryInput)
 };
 
 /**

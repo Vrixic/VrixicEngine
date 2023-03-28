@@ -137,6 +137,20 @@ namespace VulkanUtils
 			}
 		};
 
+		struct VRIXIC_API DescriptorImageInfo
+		{
+			VkSampler Sampler;
+			VkImageView ImageView;
+			VkImageLayout ImageLayout;
+
+			void WriteTo(VkDescriptorImageInfo& outDescriptorImageInfo) const
+			{
+				outDescriptorImageInfo.sampler = Sampler;
+				outDescriptorImageInfo.imageView = ImageView;
+				outDescriptorImageInfo.imageLayout = ImageLayout;
+			}
+		};
+
 		struct VRIXIC_API WriteDescriptorSet
 		{
 			uint32 DstBinding;

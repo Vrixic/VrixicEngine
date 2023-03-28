@@ -7,6 +7,15 @@
 #include <Misc/Logging/Log.h>
 #include <Misc/Profiling/Profiler.h>
 
+#define IMGUI
+#ifdef IMGUI
+#include <External/imgui/Includes/imgui_impl_win32.h>
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+#define LRESULT_IGNORE_VAL 0xfffffff0
+#endif
+
 #include <iostream>
 #include <chrono>
 
@@ -159,13 +168,26 @@ void WindowsWindow::Init(const FWindowConfig& inWindowConfig)
 		NULL,
 		NULL,
 		WindowClass::Get().GetInstance(),
-		this);
+		this); 
 
 	if (!WindowHandle)
 	{
 		VE_ASSERT(false, "Could not create window!\n");
 		fflush(stdout);
 	}
+
+	/* IMGUI STUFF */
+
+#ifdef IMGUI
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+
+	ImGui_ImplWin32_Init(WindowHandle);
+
+#endif // IMGUI
+
+	/* IMGUI STUFF */
 
 	ShowWindow(WindowHandle, SW_SHOW);
 	SetForegroundWindow(WindowHandle);
@@ -217,15 +239,23 @@ LRESULT WINAPI WindowsWindow::WindowsMessageHandler(HWND hWnd, UINT uMsg, WPARAM
 
 LRESULT WindowsWindow::HandleWindowsMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+#ifdef IMGUI
+	if (ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam))
+	{
+		return LRESULT_IGNORE_VAL;
+	}
+#endif
+
 	switch (uMsg)
 	{
-		/* Dont want window to close before we dont clean up out memory usage */
+		/* Dont want window to close before we dont clean up out memory usage -- */
 	case WM_CLOSE:
 	{
 		PostQuitMessage(0);
 		WindowCloseEvent Event;
 		OnInputEvent(Event);
-		break;
+
+		return LRESULT_IGNORE_VAL; // dont let windows destory the window for us, rather we do it ourselves 
 	}
 
 	case WM_SIZE:

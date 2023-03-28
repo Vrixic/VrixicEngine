@@ -36,32 +36,42 @@ VulkanShaderFactory::VulkanShaderFactory(ResourceManager* inResourceManagerHandl
 
 VulkanShaderFactory::~VulkanShaderFactory() { }
 
-VulkanVertexShader* VulkanShaderFactory::CreateVertexShaderFromPath(VulkanDevice* inDevice, const char* inShaderPath)
+VulkanVertexShader* VulkanShaderFactory::CreateVertexShaderFromPath(VulkanDevice* inDevice, const char* inShaderPath, bool inInvertY)
 {
 	VE_PROFILE_VULKAN_FUNCTION();
 
 	VulkanVertexShader* VertexShader = new VulkanVertexShader(inDevice);
-	VertexShader->ShaderKey = ResourceManagerHandle->CreateShaderResourceFromPath(inShaderPath, (uint32)EShaderType::Vertex);
+	VertexShader->ShaderKey = ResourceManagerHandle->CreateShaderResourceFromPath(inShaderPath, (uint32)EShaderType::Vertex, inInvertY);
 
 	return VertexShader;
 }
 
-VulkanVertexShader* VulkanShaderFactory::CreateVertexShaderFromString(VulkanDevice* inDevice, const char* inShaderStr)
+VulkanFragmentShader* VulkanShaderFactory::CreateFragmentShaderFromPath(VulkanDevice* inDevice, const char* inShaderPath, bool inInvertY)
+{
+	VE_PROFILE_VULKAN_FUNCTION();
+
+	VulkanFragmentShader* FragmentShader = new VulkanFragmentShader(inDevice);
+	FragmentShader->ShaderKey = ResourceManagerHandle->CreateShaderResourceFromPath(inShaderPath, (uint32)EShaderType::Fragment, inInvertY);
+
+	return FragmentShader;
+}
+
+VulkanVertexShader* VulkanShaderFactory::CreateVertexShaderFromString(VulkanDevice* inDevice, const char* inShaderStr, bool inInvertY)
 {
 	VE_PROFILE_VULKAN_FUNCTION();
 
 	VulkanVertexShader* VertexShader = new VulkanVertexShader(inDevice);
-	VertexShader->ShaderKey = ResourceManagerHandle->CreateShaderResourceFromString(inShaderStr, (uint32)EShaderType::Vertex);
+	VertexShader->ShaderKey = ResourceManagerHandle->CreateShaderResourceFromString(inShaderStr, (uint32)EShaderType::Vertex, inInvertY);
 
 	return VertexShader;
 }
 
-VulkanFragmentShader* VulkanShaderFactory::CreateFragmentShaderFromString(VulkanDevice* inDevice, const char* inShaderStr)
+VulkanFragmentShader* VulkanShaderFactory::CreateFragmentShaderFromString(VulkanDevice* inDevice, const char* inShaderStr, bool inInvertY)
 {
 	VE_PROFILE_VULKAN_FUNCTION();
 
-	VulkanFragmentShader* VertexShader = new VulkanFragmentShader(inDevice);
-	VertexShader->ShaderKey = ResourceManagerHandle->CreateShaderResourceFromString(inShaderStr, (uint32)EShaderType::Fragment);
+	VulkanFragmentShader* FragmentShader = new VulkanFragmentShader(inDevice);
+	FragmentShader->ShaderKey = ResourceManagerHandle->CreateShaderResourceFromString(inShaderStr, (uint32)EShaderType::Fragment, inInvertY);
 
-	return VertexShader;
+	return FragmentShader;
 }

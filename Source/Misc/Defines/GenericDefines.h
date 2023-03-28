@@ -83,7 +83,54 @@ constexpr TUniquePtr<T> CreateUniquePointer(Args&& ... inArgs)
 	return std::make_unique<T>(std::forward<Args>(inArgs)...);
 }
 
+template<typename T>
+using TSharedPtr = std::shared_ptr<T>;
+
+template<typename T, typename ... Args>
+constexpr TSharedPtr<T> CreateSharedPointer(Args&& ... inArgs)
+{
+	return std::make_shared<T>(std::forward<Args>(inArgs)...);
+}
+
 #define BIT_SHIFT_LEFT(x) (1 << x)
 
 #define VE_BIND_EVENT_FUNC(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 
+
+/**
+* A basic pointer that encapsulates pointers returned by memory manager for easy use 
+* 
+* @TODO: Create a IDisposable interface when then this will call onto 
+*/
+template<typename T>
+class TPointer
+{
+private:
+	T** Pointer;
+
+public:
+	TPointer() : Pointer(nullptr) { }
+	TPointer(T** inPointer) : Pointer(inPointer) { }
+
+	static TPointer CreatePointer(T** inPointer) { return TPointer(inPointer); }
+
+	T* Get() const
+	{
+		return *Pointer;
+	}
+
+	T** GetRaw() const
+	{
+		return Pointer;
+	}
+
+	bool IsValid() const
+	{
+		return Pointer != nullptr;
+	}
+
+	void Free()
+	{
+		Pointer = nullptr;
+	}
+};

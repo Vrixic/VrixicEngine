@@ -29,11 +29,11 @@ enum class EWindowEventType
 enum EWindowEventCategory
 {
 	None = 0,
-	EventCatergoryApplication		= BIT_SHIFT_LEFT(0),
-	EventCatergoryInput				= BIT_SHIFT_LEFT(1),
-	EventCatergoryKeyboard			= BIT_SHIFT_LEFT(2),
-	EventCatergoryMouse				= BIT_SHIFT_LEFT(3),
-	EventCatergoryMouseButton		= BIT_SHIFT_LEFT(4)
+	EventCategoryApplication		= BIT_SHIFT_LEFT(0),
+	EventCategoryInput				= BIT_SHIFT_LEFT(1),
+	EventCategoryKeyboard			= BIT_SHIFT_LEFT(2),
+	EventCategoryMouse				= BIT_SHIFT_LEFT(3),
+	EventCategoryMouseButton		= BIT_SHIFT_LEFT(4)
 };
 
 #define WINDOW_EVENT_CLASS_TYPE(type) \
@@ -48,7 +48,7 @@ virtual const char* GetName() const override { return #type; }
 */
 class VRIXIC_API WindowEvent
 {
-protected:
+public:
 	bool bIsHandled = false; // indicates if the event was handled if so will not be passed down in the hierarcy anymore Ex: UI button click, if clicked, should not go to game world 
 
 public:

@@ -27,7 +27,7 @@ public:
 	}
 
 	WINDOW_EVENT_CLASS_TYPE(EWindowEventType::WindowResize)
-	WINDOW_EVENT_CLASS_CATEGORY(EventCatergoryApplication)
+	WINDOW_EVENT_CLASS_CATEGORY(EventCategoryApplication)
 };
 
 /**
@@ -39,5 +39,5 @@ public:
 	WindowCloseEvent() { }
 
 	WINDOW_EVENT_CLASS_TYPE(EWindowEventType::WindowClose)
-	WINDOW_EVENT_CLASS_CATEGORY(EventCatergoryApplication)
+	WINDOW_EVENT_CLASS_CATEGORY(EventCategoryApplication)
 };

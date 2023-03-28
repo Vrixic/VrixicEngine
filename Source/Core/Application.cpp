@@ -47,13 +47,31 @@ Application::Application()
 	WindowPtr->SetEventCallback(VE_BIND_EVENT_FUNC(Application::OnEvent));
 
 	bIsRunning = true;
+
+	// Create the game engine and initialize it 
+	GameEngine = CreateSharedPointer<VGameEngine>();
+	GameEngine->Init();
+
+	// if in editor mode create the editor for the engine 
+#ifdef _EDITOR
+	GameEditor = CreateUniquePointer<VGameEditor>();
+	GameEditor->Init(GameEngine);
+#endif // _EDITOR
+
 }
 
 Application::~Application()
 {
 	VE_PROFILE_FUNCTION();
 
-	// Startup the Memory Manager
+#if _EDITOR
+	GameEditor->Shutdown();
+#endif
+
+	// Shutdown Game Engine
+	GameEngine->Shutdown();
+
+	// Shutdown the Memory Manager
 	MemoryManager::Get().Shutdown();
 }
 
@@ -61,12 +79,16 @@ void Application::OnEvent(WindowEvent& inEvent)
 {
 	VE_PROFILE_FUNCTION();
 
-	VE_CORE_LOG_DISPLAY(VE_TEXT("App::OnEvent: {0}"), inEvent.ToString());
+	//VE_CORE_LOG_DISPLAY(VE_TEXT("App::OnEvent: {0}"), inEvent.ToString());
 
 	if (inEvent.GetEventType() == EWindowEventType::WindowClose)
 	{
 		bIsRunning = false;
 	}
+
+#if _EDITOR
+	GameEditor->OnEvent(inEvent);
+#endif
 }
 
 void Application::Run()
@@ -78,6 +100,13 @@ void Application::Run()
 		VE_PROFILE_BEGIN_SESSION("Main Loop");
 
 		WindowPtr->OnUpdate();
+
+#if _EDITOR
+		GameEditor->Tick();
+#else	
+		GameEngine->Tick();
+#endif // _EDITOR
+
 	}
 
 	VE_PROFILE_END_SESSION();

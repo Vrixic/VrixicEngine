@@ -151,14 +151,35 @@ public:
 	{
 		VE_PROFILE_VULKAN_FUNCTION();
 
-		VkDescriptorBufferInfo DescriptorBufferInfo = { };
+		VkDescriptorBufferInfo DescriptorBufferInfo = { 0 };
 		DescriptorBufferInfo.buffer = *inBuffer->GetBufferHandle();
 		DescriptorBufferInfo.offset = 0;
 		DescriptorBufferInfo.range = inBuffer->GetBufferSize();
 
-		VkWriteDescriptorSet WriteDescriptorSet = { };
+		VkWriteDescriptorSet WriteDescriptorSet = VulkanUtils::Initializers::WriteDescriptorSet();
 		inWriteDescriptorSet.WriteTo(WriteDescriptorSet);
 		WriteDescriptorSet.pBufferInfo = &DescriptorBufferInfo;
+
+		// Link 
+		vkUpdateDescriptorSets(*Device->GetDeviceHandle(), 1, &WriteDescriptorSet, 0, nullptr);
+	}
+
+	/**
+	* Bind/Link a descriptor set to a vulkan texture view - image 
+	*
+	* @param inDescriptorImageInfo - Information about the image binding 
+	* @param inWriteDescriptorSet Information about where/what to bind
+	*/
+	void BindDescriptorSetToTexture(const VulkanUtils::Descriptions::DescriptorImageInfo& inDescriptorImageInfo, const VulkanUtils::Descriptions::WriteDescriptorSet& inWriteDescriptorSet)
+	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
+		VkDescriptorImageInfo DescriptorImageInfo = { 0 };
+		inDescriptorImageInfo.WriteTo(DescriptorImageInfo);
+
+		VkWriteDescriptorSet WriteDescriptorSet = VulkanUtils::Initializers::WriteDescriptorSet();
+		inWriteDescriptorSet.WriteTo(WriteDescriptorSet);
+		WriteDescriptorSet.pImageInfo = &DescriptorImageInfo;
 
 		// Link 
 		vkUpdateDescriptorSets(*Device->GetDeviceHandle(), 1, &WriteDescriptorSet, 0, nullptr);

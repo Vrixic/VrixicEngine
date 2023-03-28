@@ -122,7 +122,7 @@ public:
 
 	virtual uint32 GetHeight() const override { return WindowsData.Height; };
 
-	virtual void* GetNativeWindowHandle() const override { return WindowHandle; };
+	virtual void* GetNativeWindowHandle() const override { return static_cast<void*>(&(HWND)WindowHandle); };
 
 	virtual void* GetNativeWindowInstanceHandle() const override { return WindowClass::Get().GetInstance(); };
 };

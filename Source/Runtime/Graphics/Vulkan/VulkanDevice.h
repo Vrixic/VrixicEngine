@@ -191,6 +191,14 @@ public:
 	*/
 	void SubmitQueue(VulkanCommandBuffer* inCommandBuffer, VkSemaphore* inSignalSemaphore);
 
+	/**
+	* Submits a submit info to the queue
+	*
+	* @param commandBuffer The command buffer to be submitted to this queue, the waitSemaphores of the command buffer will be used
+	* @param inSubmitInfo - the queue submission info
+	*/
+	void SubmitQueue(VulkanCommandBuffer* inCommandBuffer, const VkSubmitInfo& inSubmitInfo) const;
+
 public:
 	inline VkQueue GetQueueHandle() const { return Queue; }
 

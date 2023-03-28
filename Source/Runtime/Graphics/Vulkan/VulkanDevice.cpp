@@ -322,6 +322,14 @@ void VulkanQueue::SubmitQueue(VulkanCommandBuffer* commandBuffer, VkSemaphore* s
 	SubmitQueue(commandBuffer, 1, signalSemaphore);
 }
 
+void VulkanQueue::SubmitQueue(VulkanCommandBuffer* commandBuffer, const VkSubmitInfo& inSubmitInfo) const
+{
+	VE_PROFILE_VULKAN_FUNCTION();
+
+	// Submit to the graphics queue passing a wait fence
+	VK_CHECK_RESULT(vkQueueSubmit(Queue, 1, &inSubmitInfo, *commandBuffer->GetWaitFenceHandle()), "[VulkanQueue]: Failed to submit a command buffer to graphics queue!");
+}
+
 /* ------------------------------------------------------------------------------- */
 /* -----------------------             Surface           ------------------------- */
 /* ------------------------------------------------------------------------------- */
