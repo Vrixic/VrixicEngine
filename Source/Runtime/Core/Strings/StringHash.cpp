@@ -1,3 +1,8 @@
+/**
+* This file is part of the "Vrixic Engine" project (Copyright (c) 2022-2023 by Vrij Patel) 
+* See "LICENSE.txt" for license information.
+*/
+
 #include "StringHash.h"
 
 TMap<uint32, const char*> StringHash::StringMap = TMap<uint32, const char*>();

@@ -1,6 +1,8 @@
+﻿extensions: designer.cs generated.cs
+extensions: .cs .cpp .h
+// Copyright (c) 2011 rubicon IT GmbH
+extensions:  .h .cpp 
 /**
 * This file is part of the "Vrixic Engine" project (Copyright (c) 2022-2023 by Vrij Patel) 
 * See "LICENSE.txt" for license information.
 */
-
-#include "VulkanDescriptorSet.h"

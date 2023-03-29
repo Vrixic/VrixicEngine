@@ -1,3 +1,8 @@
+/**
+* This file is part of the "Vrixic Engine" project (Copyright (c) 2022-2023 by Vrij Patel) 
+* See "LICENSE.txt" for license information.
+*/
+
 #pragma once
 #define VK_USE_PLATFORM_WIN32_KHR
 #include "vulkan/vulkan.h"

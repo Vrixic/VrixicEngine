@@ -1,3 +1,8 @@
+/**
+* This file is part of the "Vrixic Engine" project (Copyright (c) 2022-2023 by Vrij Patel) 
+* See "LICENSE.txt" for license information.
+*/
+
 #include "GameEditor.h"
 #include <Core/Application.h>
 #include <Misc/Profiling/Profiler.h>

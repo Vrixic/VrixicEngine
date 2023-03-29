@@ -1,3 +1,8 @@
+/**
+* This file is part of the "Vrixic Engine" project (Copyright (c) 2022-2023 by Vrij Patel) 
+* See "LICENSE.txt" for license information.
+*/
+
 #include "GameEngine.h"
 #include <Runtime/Graphics/Vulkan/VulkanRenderer.h>
 #include <Runtime/Memory/Core/MemoryManager.h>

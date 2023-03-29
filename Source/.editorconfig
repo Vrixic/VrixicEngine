@@ -1,0 +1,24 @@
+# Remove the line below if you want to inherit .editorconfig settings from higher directories
+root = true
+
+#[*.{cpp,hpp,h}]
+
+# Ignore paths
+[Containers/**]
+[Core/**]
+[Misc/**]
+[Runtime/**]
+
+#### Core EditorConfig Options ####
+
+file_header_template =  This file is part of the "Vrixic Engine" project (Copyright (c) 2022-2023 by Vrij Patel) \New See "LICENSE.txt" for license information.
+
+# Indentation and spacing
+indent_size = 4
+indent_style = space
+tab_width = 4
+
+# New line preferences
+end_of_line = crlf
+insert_final_newline = false
+
