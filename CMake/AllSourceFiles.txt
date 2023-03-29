@@ -8,6 +8,8 @@ D:/dev/repo/VulkanRenderer/Engine/Source/Core/Events/ApplicationEvents.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Core/Events/KeyEvent.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Core/Events/MouseEvents.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Core/Events/WindowEvent.h
+D:/dev/repo/VulkanRenderer/Engine/Source/Core/Platform/Windows/GLFWWindowsWindow.cpp
+D:/dev/repo/VulkanRenderer/Engine/Source/Core/Platform/Windows/GLFWWindowsWindow.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Core/Platform/Windows/WindowsWindow.cpp
 D:/dev/repo/VulkanRenderer/Engine/Source/Core/Platform/Windows/WindowsWindow.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Core/Windows/Window.cpp
@@ -18,11 +20,15 @@ D:/dev/repo/VulkanRenderer/Engine/Source/Core/Core.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Core/KeyCodes.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Core/MouseCodes.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Core/VrixicEngine.h
+D:/dev/repo/VulkanRenderer/Engine/Source/External/glfw/Includes/GLFW/glfw3.h
+D:/dev/repo/VulkanRenderer/Engine/Source/External/glfw/Includes/GLFW/glfw3native.h
 D:/dev/repo/VulkanRenderer/Engine/Source/External/imgui/Includes/imconfig.h
 D:/dev/repo/VulkanRenderer/Engine/Source/External/imgui/Includes/imgui.cpp
 D:/dev/repo/VulkanRenderer/Engine/Source/External/imgui/Includes/imgui.h
 D:/dev/repo/VulkanRenderer/Engine/Source/External/imgui/Includes/imgui_demo.cpp
 D:/dev/repo/VulkanRenderer/Engine/Source/External/imgui/Includes/imgui_draw.cpp
+D:/dev/repo/VulkanRenderer/Engine/Source/External/imgui/Includes/imgui_impl_glfw.cpp
+D:/dev/repo/VulkanRenderer/Engine/Source/External/imgui/Includes/imgui_impl_glfw.h
 D:/dev/repo/VulkanRenderer/Engine/Source/External/imgui/Includes/imgui_impl_vulkan.cpp
 D:/dev/repo/VulkanRenderer/Engine/Source/External/imgui/Includes/imgui_impl_vulkan.h
 D:/dev/repo/VulkanRenderer/Engine/Source/External/imgui/Includes/imgui_impl_win32.cpp
@@ -209,6 +215,8 @@ D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Graphics/Vulkan/VulkanFrameBuff
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Graphics/Vulkan/VulkanFrameBuffer.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Graphics/Vulkan/VulkanPipeline.cpp
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Graphics/Vulkan/VulkanPipeline.h
+D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Graphics/Vulkan/VulkanRenderer.cpp
+D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Graphics/Vulkan/VulkanRenderer.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Graphics/Vulkan/VulkanRenderLayout.cpp
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Graphics/Vulkan/VulkanRenderLayout.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Graphics/Vulkan/VulkanRenderPass.cpp

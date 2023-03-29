@@ -41,7 +41,7 @@ Application::Application()
 	MemoryManager::Get().Resize(1024);
 
 	// Create the window 
-	WindowPtr = Window::Create();
+	WindowPtr = IWindow::Create();
 	VE_ASSERT(WindowPtr != nullptr, "Could not create a window!");
 
 	WindowPtr->SetEventCallback(VE_BIND_EVENT_FUNC(Application::OnEvent));
@@ -79,7 +79,7 @@ void Application::OnEvent(WindowEvent& inEvent)
 {
 	VE_PROFILE_FUNCTION();
 
-	//VE_CORE_LOG_DISPLAY(VE_TEXT("App::OnEvent: {0}"), inEvent.ToString());
+	VE_CORE_LOG_DISPLAY(VE_TEXT("App::OnEvent: {0}"), inEvent.ToString());
 
 	if (inEvent.GetEventType() == EWindowEventType::WindowClose)
 	{

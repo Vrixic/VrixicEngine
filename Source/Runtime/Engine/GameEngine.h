@@ -9,7 +9,7 @@ class VGameEngine
 {
 private:
 	GameWorld* World; // The Current world the engine is updating and rendering 
-	TPointer<RenderInterface> Renderer; // renderer used to render things 
+	TPointer<IRenderSystem> Renderer; // renderer used to render things 
 	 
 public:
 	VGameEngine();
@@ -37,5 +37,5 @@ public:
 	void Shutdown();
 
 public:
-	TPointer<RenderInterface>& GetRenderer() const { return (TPointer<RenderInterface>&)Renderer; }
+	TPointer<IRenderSystem>& GetRenderer() const { return (TPointer<IRenderSystem>&)Renderer; }
 };

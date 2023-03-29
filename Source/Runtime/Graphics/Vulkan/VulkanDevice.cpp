@@ -375,6 +375,7 @@ VulkanSurface::VulkanSurface(VulkanDevice* device, VkInstance* instance, HINSTAN
 				ColorFormat = surfaceFormat.format;
 				ColorSpace = surfaceFormat.colorSpace;
 				Found_B8G8R8A8_UNORM = true;
+
 				break;
 			}
 		}
@@ -387,6 +388,68 @@ VulkanSurface::VulkanSurface(VulkanDevice* device, VkInstance* instance, HINSTAN
 			ColorSpace = SurfaceFormats[0].colorSpace;
 		}
 	}
+
+	SurfaceFormat.colorSpace = ColorSpace;
+	SurfaceFormat.format = ColorFormat;
+}
+
+VulkanSurface::VulkanSurface(VulkanDevice* inDevice, VkInstance* inInstance, VkSurfaceKHR inSurfaceHandle)
+{
+	VE_PROFILE_VULKAN_FUNCTION();
+
+	Device = inDevice;
+	InstanceHandle = inInstance;
+	SurfaceHandle = inSurfaceHandle;
+
+	/* Get all required function pointers */
+	fpGetPhysicalDeviceSurfaceSupportKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceSurfaceSupportKHR>(vkGetInstanceProcAddr(*inInstance, "vkGetPhysicalDeviceSurfaceSupportKHR"));
+	fpGetPhysicalDeviceSurfaceCapabilitiesKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR>(vkGetInstanceProcAddr(*inInstance, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR"));
+	fpGetPhysicalDeviceSurfaceFormatsKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceSurfaceFormatsKHR>(vkGetInstanceProcAddr(*inInstance, "vkGetPhysicalDeviceSurfaceFormatsKHR"));
+	fpGetPhysicalDeviceSurfacePresentModesKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceSurfacePresentModesKHR>(vkGetInstanceProcAddr(*inInstance, "vkGetPhysicalDeviceSurfacePresentModesKHR"));
+
+	// Get list of supported surface formats
+	uint32_t FormatCount;
+	VK_CHECK_RESULT(fpGetPhysicalDeviceSurfaceFormatsKHR(*Device->GetPhysicalDeviceHandle(), SurfaceHandle, &FormatCount, NULL), "[VulkanSurface]: Failed to retreive physical device (GPU) surface formats count!");
+	ASSERT(FormatCount > 0, "[VulkanSurface]: Failed to retreive physical device (GPU) surface formats; Format count < 0");
+
+	std::vector<VkSurfaceFormatKHR> SurfaceFormats(FormatCount);
+	VK_CHECK_RESULT(fpGetPhysicalDeviceSurfaceFormatsKHR(*Device->GetPhysicalDeviceHandle(), SurfaceHandle, &FormatCount, SurfaceFormats.data()), "[VulkanSurface]: Failed to retreive physical device (GPU) surface formats!");
+
+	// If the surface format list only includes one entry with VK_FORMAT_UNDEFINED,
+		// there is no preferred format, so we assume VK_FORMAT_B8G8R8A8_UNORM
+	if ((FormatCount == 1) && (SurfaceFormats[0].format == VK_FORMAT_UNDEFINED))
+	{
+		ColorFormat = VK_FORMAT_B8G8R8A8_UNORM;
+		ColorSpace = SurfaceFormats[0].colorSpace;
+	}
+	else
+	{
+		// iterate over the list of available surface format and
+		// check for the presence of VK_FORMAT_B8G8R8A8_UNORM
+		bool Found_B8G8R8A8_UNORM = false;
+		for (auto&& surfaceFormat : SurfaceFormats)
+		{
+			if (surfaceFormat.format == VK_FORMAT_B8G8R8A8_UNORM)
+			{
+				ColorFormat = surfaceFormat.format;
+				ColorSpace = surfaceFormat.colorSpace;
+				Found_B8G8R8A8_UNORM = true;
+
+				break;
+			}
+		}
+
+		// in case VK_FORMAT_B8G8R8A8_UNORM is not available
+		// select the first available color format
+		if (!Found_B8G8R8A8_UNORM)
+		{
+			ColorFormat = SurfaceFormats[0].format;
+			ColorSpace = SurfaceFormats[0].colorSpace;
+		}
+	}
+
+	SurfaceFormat.colorSpace = ColorSpace;
+	SurfaceFormat.format = ColorFormat;
 }
 
 VulkanSurface::~VulkanSurface()
@@ -522,6 +585,7 @@ void VulkanSwapChain::Create(bool vSync, uint32* imageWidth, uint32* imageHeight
 	}
 
 	// Determine the number of images
+	MinImageCount = SurfaceCapabilities.minImageCount;
 	uint32_t DesiredNumberOfSwapchainImages = SurfaceCapabilities.minImageCount + 1;
 	if ((SurfaceCapabilities.maxImageCount > 0) && (DesiredNumberOfSwapchainImages > SurfaceCapabilities.maxImageCount))
 	{

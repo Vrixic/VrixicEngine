@@ -1,8 +1,9 @@
 #pragma once
 
-#include <Misc/Defines/GenericDefines.h>
-#include <Core/Core.h>
+#include <Core/Core.h> 
 #include <Core/Events/WindowEvent.h>
+#include <Core/Misc/Interface.h> 
+#include <Misc/Defines/GenericDefines.h>
 
 #include <functional>
 
@@ -23,20 +24,20 @@ struct VRIXIC_API FWindowConfig
 /**
 * A window interface 
 */
-class VRIXIC_API Window
+class VRIXIC_API IWindow : public Interface
 {
 public:
 	using EventCallbackFunc = std::function<void(WindowEvent&)>;
-	Window();
+	IWindow();
 
-	virtual ~Window();
+	virtual ~IWindow();
 
 	/**
 	* Creates a platform specific window
 	* @param inWindowConfig - The window configuration 
 	* @returns TUniquePtr<Window> - a unique pointer to the created window 
 	*/
-	static TUniquePtr<Window> Create(const FWindowConfig& inWindowConfig = FWindowConfig());
+	static TUniquePtr<IWindow> Create(const FWindowConfig& inWindowConfig = FWindowConfig());
 
 	/**
 	* Called every frame to update the window 
@@ -56,9 +57,11 @@ public:
 	virtual uint32 GetHeight() const = 0;
 
 	/* @returns void* - native window handle */
-	virtual void* GetNativeWindowHandle() const = 0;
+	virtual void* GetNativeWindowHandle() = 0;
 
 	/* @returns void* - native window instance handle */
 	virtual void* GetNativeWindowInstanceHandle() const = 0;
 
+	/* @returns void* - native window instance handle for glfw window, only valid if glfw was used to create the window */
+	virtual void* GetGLFWNativeHandle() const = 0;;
 };

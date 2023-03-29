@@ -72,6 +72,10 @@ typedef int64               intptr;
 // In editor 
 #define _EDITOR !NDEBUG
 
+// Are we using glfw?
+#define VULKAN_GLFW 
+//#define VULKAN_STANDALONE 
+
 typedef std::string VString;
 
 template<typename T>

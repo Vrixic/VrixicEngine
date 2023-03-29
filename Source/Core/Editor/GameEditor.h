@@ -1,14 +1,33 @@
 #pragma once
-#include <Runtime/Engine/GameEngine.h>
 #include <Core/Events/ApplicationEvents.h>
+#include <Runtime/Engine/GameEngine.h>
+
+#include <vector>
+
+class VulkanDescriptorPool;
+class VulkanDescriptorSetsLayout;
+class VulkanFrameBuffer;
+class VulkanRenderLayout;
+class VulkanRenderPass;
 
 /**
 * A Game editor, consists of tools for use in a game engine, attaches itself to the engine 
 */
-class VGameEditor
+class VRIXIC_API VGameEditor
 {
 private:
 	TSharedPtr<VGameEngine> GameEngine;
+
+	/** Create Imgui specific render pass which enables imgui to draw into our command buffer */
+	VulkanRenderLayout* ImguiRenderLayout;
+	VulkanRenderPass* ImguiRenderPassHandle;
+
+	/** Since the renderpass is different for imgui, also create unqiue frame buffers for it as well */
+	std::vector<VulkanFrameBuffer*> ImguiFrameBuffers;
+
+	/** Descriptor layout and pool for imgui */
+	VulkanDescriptorSetsLayout* ImguiDescriptorSetsLayout;
+	VulkanDescriptorPool* ImguiDescriptorPool;
 
 public:
 	VGameEditor();

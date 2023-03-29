@@ -59,11 +59,16 @@ if (WIN32)
 		${VulkanIncludeDir}
 		${PROJECT_EXTERNAL_DIR}/Optick/Includes/
 		${PROJECT_EXTERNAL_DIR}/spdlog/Includes/
+		${PROJECT_EXTERNAL_DIR}/imgui/Includes/
+		${PROJECT_EXTERNAL_DIR}/glfw/Includes/
 		)
 
 	# set and add all libraries 
 	set (LibraryDirectories 
 		$ENV{VULKAN_SDK}/Lib/)
+
+	set (LinkLibraries
+		${PROJECT_EXTERNAL_DIR}/glfw/lib/glfw3.lib)
 	
 	set(PROJECT_SOLUTION_DIR ${CMAKE_SOURCE_DIR}/../Build/VrixicEngineBuild)
 	set(RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOLUTION_DIR}/bin/$(Configuration)-$(Platform)/$(ProjectName)/)
@@ -84,6 +89,7 @@ if (WIN32)
 	add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES_ABSOLUTE_PATHS})
 	target_include_directories(${PROJECT_NAME} PUBLIC ${IncludeDirectories})
 	target_link_directories(${PROJECT_NAME} PUBLIC ${LibraryDirectories} spdlog::spdlog)
+	target_link_libraries(${PROJECT_NAME} PUBLIC ${LinkLibraries})
 
 	target_compile_definitions(${PROJECT_NAME} PUBLIC SPDLOG_COMPILED_LIB)
 	#target_compile_definitions(${PROJECT_NAME} PUBLIC SPDLOG_COMPILED_LIB)

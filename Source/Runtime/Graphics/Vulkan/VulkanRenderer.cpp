@@ -5,7 +5,11 @@
 #include <Runtime/Core/Math/Vector2D.h>
 #include <Runtime/Core/Math/VrixicMathHelper.h>
 
+#include <External/glfw/Includes/GLFW/glfw3.h>
+
 #define RENDER_DOC 0
+
+VulkanRenderer* VulkanRenderer::InstanceHandle = nullptr;
 
 // UI params are set via push constants
 struct PushConstBlock {
@@ -20,14 +24,19 @@ VulkanRenderer::VulkanRenderer()
 	PipelineLayout(nullptr), GraphicsPipeline(nullptr), MainVulkanResourceManager(nullptr), GraphicsResourceManager(nullptr),
 	ShaderFactory(nullptr),
 
+#ifdef VULKAN_STANDALONE
 	ImguiFontTextureView(nullptr), ImguiSampler(VK_NULL_HANDLE), ImguiDescriptorPool(nullptr), ImguiDescriptorSetsLayout(nullptr),
 	ImguiDescriptorSet(VK_NULL_HANDLE), ImguiPipelineCache(VK_NULL_HANDLE), ImguiPipelineLayout(nullptr),
 	ImguiVertexShader(nullptr), ImguiPixelShader(nullptr), ImguiPipeline(nullptr), ImguiVertexCount(0), ImguiIndexCount(0),
 	ImguiVertexBuffer(nullptr), ImguiIndexBuffer(nullptr),
+#endif // #ifdef VULKAN_STANDALONE
 
 	VertShader(nullptr), PixelShader(nullptr)
 {
 	ViewportSize = { 0, 0 };
+
+	VE_ASSERT(InstanceHandle == nullptr, "Only one Vulkan renderer can exists at a time!");
+	InstanceHandle = this;
 }
 
 VulkanRenderer::~VulkanRenderer()
@@ -36,6 +45,313 @@ VulkanRenderer::~VulkanRenderer()
 }
 
 bool VulkanRenderer::Init(const RendererInitializerList& inRenderInitializerList)
+{
+#ifdef VULKAN_GLFW
+	InitVulkanGLFW(inRenderInitializerList);
+#else
+	InitVulkanStandalone(inRenderInitializerList);
+#endif // GLFW_VULKAN_WINDOW
+
+	return true;
+}
+
+void VulkanRenderer::BeginRenderFrame()
+{
+	// Firstly complete that last command buffer draw commands 
+	VulkanCommandBuffer* LastCommandBuffer = CommandPool->GetCommandBuffer(CurrentBuffer);
+
+	// Use a fence to wait until the command buffer has finished execution before using it again
+	// Start of frame we would want to wait until last frame has finished 
+	LastCommandBuffer->SetWaitFence();
+
+	// SRS - on other platforms use original bare code with local semaphores/fences for illustrative purposes
+	// Get next image in the swap chain (back/front buffer)
+	VkResult Acquire = Swapchain->AcquireNextImage(LastCommandBuffer, &CurrentBuffer);// VTemp->AcquireNextImage(VTemp->PresentationComplete, &VTemp->CurrentBuffer);
+	if (!((Acquire == VK_SUCCESS) || (Acquire == VK_SUBOPTIMAL_KHR))) {
+		VK_CHECK_RESULT(Acquire, "[EntryPoint]: Could not aquire next swapchain image!");
+	}
+
+	//// Get the new command buffer 
+	//VulkanCommandBuffer* CurrentCommandBuffer = CommandPool->GetCommandBuffer(CurrentBuffer);
+	//
+	//// Begin the buffer to start queuing in draw command/requests
+	//CurrentCommandBuffer->BeginCommandBuffer();
+	//
+	//// Start the first sub pass specified in our default render pass setup by the base class
+	//// This will clear the color and depth attachment
+	//CurrentCommandBuffer->BeginRenderPass(RenderPass, FrameBuffers[CurrentBuffer]);
+}
+
+void VulkanRenderer::BeginRecordingDrawCommands(int32 inCommandBufferIndex)
+{
+}
+
+void VulkanRenderer::BeginCommandBuffer()
+{
+	VulkanCommandBuffer* CurrentCommandBuffer = CommandPool->GetCommandBuffer(CurrentBuffer);
+
+	// Begin the buffer to start queuing in draw command/requests
+	CurrentCommandBuffer->BeginCommandBuffer();
+}
+
+void VulkanRenderer::BeginRenderPass(VulkanRenderPass* inRenderPass)
+{
+	VulkanCommandBuffer* CurrentCommandBuffer = CommandPool->GetCommandBuffer(CurrentBuffer);
+
+	// Start the first sub pass specified in our default render pass setup by the base class
+	// This will clear the color and depth attachment
+	CurrentCommandBuffer->BeginRenderPass(RenderPass, FrameBuffers[CurrentBuffer]);
+}
+
+void VulkanRenderer::BeginRenderPass(VkRenderPassBeginInfo& inInfo)
+{
+	VulkanCommandBuffer* CurrentCommandBuffer = CommandPool->GetCommandBuffer(CurrentBuffer);
+	vkCmdBeginRenderPass(*CurrentCommandBuffer->GetCommandBufferHandle(), &inInfo, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void VulkanRenderer::Render(GameWorld* inGameWorld)
+{
+	VulkanCommandBuffer* CommandBuffer = CommandPool->GetCommandBuffer(CurrentBuffer);
+
+	// Update dynamic viewport state
+	VkViewport viewport = {};
+	viewport.height = (float)ViewportSize.Height;
+	viewport.width = (float)ViewportSize.Width;
+	viewport.minDepth = (float)0.0f;
+	viewport.maxDepth = (float)1.0f;
+	vkCmdSetViewport(*CommandBuffer->GetCommandBufferHandle(), 0, 1, &viewport);
+
+	// Update dynamic scissor state
+	VkRect2D scissor = {};
+	scissor.extent.width = ViewportSize.Width;
+	scissor.extent.height = ViewportSize.Height;
+	scissor.offset.x = 0;
+	scissor.offset.y = 0;
+	vkCmdSetScissor(*CommandBuffer->GetCommandBufferHandle(), 0, 1, &scissor);
+
+	VkDeviceSize offsets[1] = { 0 };
+
+	// Bind the rendering pipeline
+	// The pipeline (state object) contains all states of the rendering pipeline, binding it will set all the states specified at pipeline creation time
+	vkCmdBindPipeline(*CommandBuffer->GetCommandBufferHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, *GraphicsPipeline->GetPipelineHandle());
+
+	// Bind Vertex Buffer
+	//vkCmdBindVertexBuffers(*CommandBuffer->GetCommandBufferHandle(),
+	//	0, 1, VertexBuffer->GetBufferHandle(), offsets);
+	//
+	//vkCmdBindIndexBuffer(*CommandBuffer->GetCommandBufferHandle(),
+	//	*IndexBuffer->GetBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
+	//
+	//vkCmdDrawIndexed(*CommandBuffer->GetCommandBufferHandle(),
+	//	3, 1, 0, 0, 1);
+
+	// Bind descriptor sets describing shader binding points
+	//vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+
+	// Bind the rendering pipeline
+	// The pipeline (state object) contains all states of the rendering pipeline, binding it will set all the states specified at pipeline creation time
+	//vkCmdBindPipeline(DrawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+	// Bind triangle vertex buffer (contains position and colors)
+	//vkCmdBindVertexBuffers(drawCmdBuffers[i], 0, 1, &vertices.buffer, offsets);
+
+	// Bind triangle index buffer
+	//vkCmdBindIndexBuffer(drawCmdBuffers[i], indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+	// Draw indexed triangle
+	//vkCmdDrawIndexed(drawCmdBuffers[i], indices.count, 1, 0, 0, 1);
+}
+
+void VulkanRenderer::EndRecordingDrawCommands(int32 inCommandBufferIndex)
+{
+}
+
+void VulkanRenderer::EndCommandBuffer()
+{
+	VulkanCommandBuffer* CurrentCommandBuffer = CommandPool->GetCommandBuffer(CurrentBuffer);
+	CurrentCommandBuffer->EndCommandBuffer();
+}
+
+void VulkanRenderer::EndRenderPass()
+{
+	VulkanCommandBuffer* CurrentCommandBuffer = CommandPool->GetCommandBuffer(CurrentBuffer);
+	vkCmdEndRenderPass(*CurrentCommandBuffer->GetCommandBufferHandle());
+}
+
+void VulkanRenderer::EndRenderFrame()
+{
+	VulkanCommandBuffer* CurrentCommandBuffer = CommandPool->GetCommandBuffer(CurrentBuffer);
+
+	//// Firstly end the current command buffers submission for drawing commands
+	//CurrentCommandBuffer->EndRenderPass();
+	//CurrentCommandBuffer->EndCommandBuffer();
+
+	/* after waiting reset the fence */
+	CurrentCommandBuffer->ResetWaitFence();
+
+	// Submit to the graphics queue passing a wait fence
+	Device->GetGraphicsQueue()->SubmitQueue(CurrentCommandBuffer, &RenderComplete);
+
+	// Present the current buffer to the swap chain
+	// Pass the semaphore signaled by the command buffer submission from the submit info as the wait semaphore for swap chain presentation
+	// This ensures that the image is not presented to the windowing system until all commands have been submitted
+	VkResult present = Swapchain->QueuePresent(Device->GetPresentQueue(), &RenderComplete, CurrentBuffer);// VTemp->QueuePresent(VTemp->Device->GetPresentQueue()->GetQueueHandle(), VTemp->CurrentBuffer, VTemp->RenderComplete);
+	if (!((present == VK_SUCCESS) || (present == VK_SUBOPTIMAL_KHR))) {
+		VK_CHECK_RESULT(present, "[EntryPoint]: Failed to present an image!");
+	}
+}
+
+void VulkanRenderer::OnRenderViewportResized(RenderViewportSize& inNewViewportSize)
+{
+	// Ensure all operations on the device have been finished before destroying resources
+	Device->WaitUntilIdle();
+
+	// Recreate swap chain
+	ViewportSize = inNewViewportSize;
+
+	Swapchain->Recreate(false, &ViewportSize.Width, &ViewportSize.Height);
+	{
+		delete DepthStencilView;
+
+		VkImageCreateInfo ImageCreateInfo = VulkanUtils::Initializers::ImageCreateInfo();
+		ImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		ImageCreateInfo.format = DepthFormat;
+		ImageCreateInfo.extent = { ViewportSize.Width, ViewportSize.Height, 1 };
+		ImageCreateInfo.mipLevels = 1;
+		ImageCreateInfo.arrayLayers = 1;
+		ImageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		ImageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		ImageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+		DepthStencilView = new VulkanTextureView(Device, ImageCreateInfo);
+
+		VkImageAspectFlags AspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
+		// Stencil aspect should only be set on depth + stencil formats (VK_FORMAT_D16_UNORM_S8_UINT..VK_FORMAT_D32_SFLOAT_S8_UINT
+		if (DepthFormat >= VK_FORMAT_D16_UNORM_S8_UINT) {
+			AspectFlags |= VK_IMAGE_ASPECT_STENCIL_BIT;
+		}
+
+		DepthStencilView->CreateImageView(VK_IMAGE_VIEW_TYPE_2D, DepthFormat, 0, 1, 0, 1, AspectFlags);
+	}
+
+	/* Update Renderpasses render area to new area since window was resized */
+	VkRect2D RenderArea = { 0,0, ViewportSize.Width, ViewportSize.Height };
+	RenderPass->UpdateRenderArea(RenderArea);
+	RenderPass->UpdateExtent2D(RenderArea.extent);
+
+	{
+		for (uint32 i = 0; i < FrameBuffers.size(); ++i)
+		{
+			FrameBuffers[i]->DestroyBuffer();
+		}
+
+		VkImageView Attachments[2];
+
+		// Depth/Stencil attachment is the same for all frame buffers
+		Attachments[1] = *DepthStencilView->GetImageViewHandle();
+
+		VkExtent2D Extent = { ViewportSize.Width, ViewportSize.Height };
+
+		FrameBuffers.resize(Swapchain->GetImageCount());
+		for (uint32 i = 0; i < Swapchain->GetImageCount(); ++i)
+		{
+			Attachments[0] = Swapchain->GetSwapchainBuffer(i)->View;
+			FrameBuffers[i]->AllocateBuffer(2, Attachments, &Extent);
+		}
+	}
+
+	// Command buffers need to be recreated as they may store
+	// references to the recreated frame buffer
+	CommandPool->DestroyBuffers();
+
+	// Create command buffers and fences
+	{
+		// Create one command buffer for each swap chain image and reuse for rendering
+		for (uint32 i = 0; i < Swapchain->GetImageCount(); ++i)
+		{
+			VulkanCommandBuffer* CommandBuffer = CommandPool->CreateCommandBuffer(i);
+			CommandBuffer->AllocateCommandBuffer();
+		}
+
+		for (uint32 i = 0; i < Swapchain->GetImageCount(); ++i)
+		{
+			CommandPool->GetCommandBuffer(i)->AddWaitSemaphore(&PresentationComplete);
+		}
+	}
+
+	// Now recreate new command buffers
+	//BuildCommandBuffers();
+}
+
+void VulkanRenderer::Shutdown()
+{
+	InstanceHandle = nullptr;
+
+	Device->WaitUntilIdle();
+
+	vkDestroyPipelineCache(*Device->GetDeviceHandle(), PipelineCache, nullptr);
+
+	for (uint32 i = 0; i < FrameBuffers.size(); ++i)
+	{
+		delete FrameBuffers[i];
+	}
+
+	delete CommandPool;
+
+	delete DepthStencilView;
+
+	delete RenderPassLayout;
+	delete RenderPass;
+	delete Swapchain;
+
+	vkDestroySemaphore(*Device->GetDeviceHandle(), PresentationComplete, nullptr);
+	vkDestroySemaphore(*Device->GetDeviceHandle(), RenderComplete, nullptr);
+
+#ifdef VULKAN_STANDALONE
+	/* Imgui */
+
+	delete ImguiFontTextureView;
+	vkDestroySampler(*Device->GetDeviceHandle(), ImguiSampler, nullptr);
+
+	delete ImguiDescriptorPool;
+	delete ImguiDescriptorSetsLayout;
+
+	vkDestroyPipelineCache(*Device->GetDeviceHandle(), ImguiPipelineCache, nullptr);
+	delete ImguiPipelineLayout;
+
+	delete ImguiVertexShader;
+	delete ImguiPixelShader;
+
+	delete ImguiPipeline;
+
+	vkDestroyBuffer(*Device->GetDeviceHandle(), ImguiVertexBuffer, nullptr);
+	vkFreeMemory(*Device->GetDeviceHandle(), ImguiVertexBufferData, nullptr);
+
+	vkDestroyBuffer(*Device->GetDeviceHandle(), ImguiIndexBuffer, nullptr);
+	vkFreeMemory(*Device->GetDeviceHandle(), ImguiIndexBufferData, nullptr);
+
+	/* Imgui */
+#endif
+
+	delete MainVulkanMemoryHeap;
+
+	delete PixelShader;
+	delete VertShader;
+	delete ShaderFactory;
+	delete GraphicsResourceManager;
+	delete MainVulkanResourceManager;
+
+	delete PipelineLayout;
+	delete GraphicsPipeline;
+
+	delete Surface;
+	delete Device;
+
+	vkDestroyInstance(VulkanInstance, nullptr);
+}
+
+#ifdef VULKAN_STANDALONE
+bool VulkanRenderer::InitVulkanStandalone(const RendererInitializerList& inRenderInitializerList)
 {
 	ViewportSize = inRenderInitializerList.ViewportSize;
 
@@ -91,7 +407,7 @@ bool VulkanRenderer::Init(const RendererInitializerList& inRenderInitializerList
 	VulkanInitList.DeviceExtensionCount = DeviceExtensionsCount;
 
 	// Initialize Vulkan
-	if (!InitVulkan(VulkanInitList))
+	if (!CreateVulkanInstance(VulkanInitList))
 	{
 		ASSERT(false, "Vulkan initialization failed...");
 		return false;
@@ -245,7 +561,27 @@ bool VulkanRenderer::Init(const RendererInitializerList& inRenderInitializerList
 		ClearValues[1].depthStencil = { 1.0f, 0 };
 		RenderPassLayout->SetClearValues(ClearValues);
 
-		RenderPass = new VulkanRenderPass(Device, *RenderPassLayout);
+		// Subpass dependencies for layout transitions
+		std::vector<VkSubpassDependency> SubpassDependency;
+		SubpassDependency.resize(2);
+
+		SubpassDependency[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+		SubpassDependency[0].dstSubpass = 0;
+		SubpassDependency[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		SubpassDependency[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		SubpassDependency[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		SubpassDependency[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		SubpassDependency[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+		SubpassDependency[1].srcSubpass = 0;
+		SubpassDependency[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+		SubpassDependency[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		SubpassDependency[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		SubpassDependency[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		SubpassDependency[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		SubpassDependency[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+		RenderPass = new VulkanRenderPass(Device, *RenderPassLayout, SubpassDependency);
 		VE_CORE_LOG_INFO("Successfully created renderpass...");
 	}
 
@@ -440,149 +776,157 @@ bool VulkanRenderer::Init(const RendererInitializerList& inRenderInitializerList
 
 	return true;
 }
+#endif // VULKAN_STANDALONE
 
-void VulkanRenderer::BeginRenderFrame()
+#ifdef VULKAN_GLFW
+bool VulkanRenderer::InitVulkanGLFW(const RendererInitializerList& inRenderInitializerList)
 {
-	// Firstly complete that last command buffer draw commands 
-	VulkanCommandBuffer* LastCommandBuffer = CommandPool->GetCommandBuffer(CurrentBuffer);
+	ViewportSize = inRenderInitializerList.ViewportSize;
 
-	// Use a fence to wait until the command buffer has finished execution before using it again
-	// Start of frame we would want to wait until last frame has finished 
-	LastCommandBuffer->SetWaitFence();
+	VkResult Result;
 
-	// SRS - on other platforms use original bare code with local semaphores/fences for illustrative purposes
-	// Get next image in the swap chain (back/front buffer)
-	VkResult Acquire = Swapchain->AcquireNextImage(LastCommandBuffer, &CurrentBuffer);// VTemp->AcquireNextImage(VTemp->PresentationComplete, &VTemp->CurrentBuffer);
-	if (!((Acquire == VK_SUCCESS) || (Acquire == VK_SUBOPTIMAL_KHR))) {
-		VK_CHECK_RESULT(Acquire, "[EntryPoint]: Could not aquire next swapchain image!");
-	}
+	// Firstly Initlaize Vulkan
+	VulkanInitializerList VulkanInitList = { 0 };
 
-	// Get the new command buffer 
-	VulkanCommandBuffer* CurrentCommandBuffer = CommandPool->GetCommandBuffer(CurrentBuffer);
+	// Select all the feature to enable 
+	VkPhysicalDeviceFeatures EnabledFeatures = { };
+	EnabledFeatures.tessellationShader = VK_TRUE;
+	EnabledFeatures.geometryShader = VK_TRUE;
+	EnabledFeatures.fillModeNonSolid = VK_TRUE;
+	EnabledFeatures.samplerAnisotropy = VK_TRUE; //MSAA
+	EnabledFeatures.multiViewport = VK_TRUE;
 
-	// Begin the buffer to start queuing in draw command/requests
-	CurrentCommandBuffer->BeginCommandBuffer();
-	// Start the first sub pass specified in our default render pass setup by the base class
-	// This will clear the color and depth attachment
-	CurrentCommandBuffer->BeginRenderPass(RenderPass, FrameBuffers[CurrentBuffer]);
-}
+	VulkanInitList.EnabledFeatures = EnabledFeatures;
 
-void VulkanRenderer::Render(GameWorld* inGameWorld)
-{
-	VulkanCommandBuffer* CommandBuffer = CommandPool->GetCommandBuffer(CurrentBuffer);
-
-	// Update dynamic viewport state
-	VkViewport viewport = {};
-	viewport.height = (float)ViewportSize.Height;
-	viewport.width = (float)ViewportSize.Width;
-	viewport.minDepth = (float)0.0f;
-	viewport.maxDepth = (float)1.0f;
-	vkCmdSetViewport(*CommandBuffer->GetCommandBufferHandle(), 0, 1, &viewport);
-
-	// Update dynamic scissor state
-	VkRect2D scissor = {};
-	scissor.extent.width = ViewportSize.Width;
-	scissor.extent.height = ViewportSize.Height;
-	scissor.offset.x = 0;
-	scissor.offset.y = 0;
-	vkCmdSetScissor(*CommandBuffer->GetCommandBufferHandle(), 0, 1, &scissor);
-
-	VkDeviceSize offsets[1] = { 0 };
-
-	// Bind the rendering pipeline
-	// The pipeline (state object) contains all states of the rendering pipeline, binding it will set all the states specified at pipeline creation time
-	vkCmdBindPipeline(*CommandBuffer->GetCommandBufferHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, *GraphicsPipeline->GetPipelineHandle());
-
-	// Bind Vertex Buffer
-	//vkCmdBindVertexBuffers(*CommandBuffer->GetCommandBufferHandle(),
-	//	0, 1, VertexBuffer->GetBufferHandle(), offsets);
-	//
-	//vkCmdBindIndexBuffer(*CommandBuffer->GetCommandBufferHandle(),
-	//	*IndexBuffer->GetBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
-	//
-	//vkCmdDrawIndexed(*CommandBuffer->GetCommandBufferHandle(),
-	//	3, 1, 0, 0, 1);
-
-	// Bind descriptor sets describing shader binding points
-	//vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-
-	// Bind the rendering pipeline
-	// The pipeline (state object) contains all states of the rendering pipeline, binding it will set all the states specified at pipeline creation time
-	//vkCmdBindPipeline(DrawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
-	// Bind triangle vertex buffer (contains position and colors)
-	//vkCmdBindVertexBuffers(drawCmdBuffers[i], 0, 1, &vertices.buffer, offsets);
-
-	// Bind triangle index buffer
-	//vkCmdBindIndexBuffer(drawCmdBuffers[i], indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-	// Draw indexed triangle
-	//vkCmdDrawIndexed(drawCmdBuffers[i], indices.count, 1, 0, 0, 1);
-}
-
-void VulkanRenderer::EndRenderFrame()
-{
-	VulkanCommandBuffer* CurrentCommandBuffer = CommandPool->GetCommandBuffer(CurrentBuffer);
-
-	// Firstly end the current command buffers submission for drawing commands
-	CurrentCommandBuffer->EndRenderPass();
-	CurrentCommandBuffer->EndCommandBuffer();
-
-	/* after waiting reset the fence */
-	CurrentCommandBuffer->ResetWaitFence();
-
-	// Submit to the graphics queue passing a wait fence
-	Device->GetGraphicsQueue()->SubmitQueue(CurrentCommandBuffer, &RenderComplete);
-
-	// Present the current buffer to the swap chain
-	// Pass the semaphore signaled by the command buffer submission from the submit info as the wait semaphore for swap chain presentation
-	// This ensures that the image is not presented to the windowing system until all commands have been submitted
-	VkResult present = Swapchain->QueuePresent(Device->GetPresentQueue(), &RenderComplete, CurrentBuffer);// VTemp->QueuePresent(VTemp->Device->GetPresentQueue()->GetQueueHandle(), VTemp->CurrentBuffer, VTemp->RenderComplete);
-	if (!((present == VK_SUCCESS) || (present == VK_SUBOPTIMAL_KHR))) {
-		VK_CHECK_RESULT(present, "[EntryPoint]: Failed to present an image!");
-	}
-}
-
-void VulkanRenderer::BeginEditorGuiRenderFrame()
-{
-	VulkanCommandBuffer* CommandBuffer = CommandPool->GetCommandBuffer(CurrentBuffer);
-
-	// Bind the rendering pipeline
-	// The pipeline (state object) contains all states of the rendering pipeline, binding it will set all the states specified at pipeline creation time
-	vkCmdBindPipeline(*CommandBuffer->GetCommandBufferHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, *ImguiPipeline->GetPipelineHandle());
-
-	// Init imGui windows and elements - start a new imgui frame
-	ImGui::NewFrame();
-}
-
-void VulkanRenderer::EndEditorGuiRenderFrame()
-{
-	VulkanCommandBuffer* CommandBuffer = CommandPool->GetCommandBuffer(CurrentBuffer);
-
-	// Render to generate draw buffers
-	ImGui::Render();
-	UpdateImguiBuffers();
-	DrawImguiFrame(CommandBuffer);
-
-	ImGui::EndFrame();
-}
-
-void VulkanRenderer::OnRenderViewportResized(RenderViewportSize& inNewViewportSize)
-{
-	// Ensure all operations on the device have been finished before destroying resources
-	Device->WaitUntilIdle();
-
-	// Recreate swap chain
-	ViewportSize = inNewViewportSize;
-
-	Swapchain->Recreate(false, &ViewportSize.Width, &ViewportSize.Height);
+	// All instance extensions to enable 
+	const uint32 InstanceExtensionCount = 1;
+	const char* InstanceExtensions[InstanceExtensionCount]
 	{
-		delete DepthStencilView;
+		"VK_EXT_debug_utils"
+	};
 
+	VulkanInitList.InstanceExtensions = InstanceExtensions;
+	VulkanInitList.InstanceExtensionCount = InstanceExtensionCount;
+
+	// All instance layers to enable 
+	const uint32 InstanceLayerCount = 1;
+	const char* InstanceLayers[InstanceLayerCount]
+	{
+
+#if RENDER_DOC
+		"VK_LAYER_RENDERDOC_Capture",
+#else
+		"VK_LAYER_KHRONOS_validation",
+#endif
+	};
+
+	VulkanInitList.InstanceLayers = InstanceLayers;
+	VulkanInitList.InstanceLayersCount = InstanceLayerCount;
+
+	// All device extensions to enable 
+	const uint32 DeviceExtensionsCount = 2;
+	const char* DeviceExtensions[DeviceExtensionsCount]
+	{
+		"VK_EXT_descriptor_indexing",
+		"VK_KHR_multiview",
+	};
+
+	VulkanInitList.DeviceExtensions = DeviceExtensions;
+	VulkanInitList.DeviceExtensionCount = DeviceExtensionsCount;
+
+	// Initialize Vulkan
+	if (!CreateVulkanInstance(VulkanInitList))
+	{
+		ASSERT(false, "Vulkan initialization failed...");
+		return false;
+	}
+
+	VE_CORE_LOG_INFO("Successfully created an Instance..");
+
+	// Create Vulkan Surface and Device
+	{
+		// Physical Device
+		uint32 PhysicalDevicesCount = 0;
+
+		// Get Number of available physical devices
+		VK_CHECK_RESULT(vkEnumeratePhysicalDevices(VulkanInstance, &PhysicalDevicesCount, nullptr), "[VulkanRenderer]: No physical devices (GPU) found!");
+		if (PhysicalDevicesCount == 0)
+		{
+			VE_CORE_LOG_ERROR("No device with Vulkan support found");
+			return false;
+		}
+
+		// Enumerate physical devices
+		std::vector<VkPhysicalDevice> PhysicalDevices(PhysicalDevicesCount);
+		Result = (vkEnumeratePhysicalDevices(VulkanInstance, &PhysicalDevicesCount, PhysicalDevices.data()));
+		if (Result != VK_SUCCESS)
+		{
+			VE_CORE_LOG_ERROR("Could not enumerate physical devices");
+			return false;
+		}
+
+		// GPU Selection
+		VulkanUtils::Helpers::GetBestPhysicalDevice(PhysicalDevices.data(), PhysicalDevicesCount, PhysicalDevice);
+
+		// Find a suitable depth format
+		VkBool32 ValidDepthFormat = VulkanUtils::Helpers::GetSupportedDepthFormat(PhysicalDevice, &DepthFormat);
+		assert(ValidDepthFormat);
+		Device = new VulkanDevice(PhysicalDevice, VulkanInitList.EnabledFeatures, VulkanInitList.DeviceExtensionCount, VulkanInitList.DeviceExtensions);
+
+		// Let glfw create the surface for us 
+		VkSurfaceKHR SurfaceHandle;
+		VK_CHECK_RESULT(glfwCreateWindowSurface(VulkanInstance, (GLFWwindow*)Application::Get()->GetWindow().GetGLFWNativeHandle(), nullptr, &SurfaceHandle), "[VulkanRenderer]: glfw failed to create a window surface..");
+		Surface = new VulkanSurface(Device, &VulkanInstance, SurfaceHandle);
+		Device->CreateDevice(Surface);
+	}
+
+	// Create Swapchain
+	Swapchain = new VulkanSwapChain(Device, Surface, inRenderInitializerList.ViewportSize.Width, inRenderInitializerList.ViewportSize.Height);
+
+	// Create Command Buffer pool and command buffers
+	{
+		// Create a default command pool for graphics command buffers
+		CommandPool = new VulkanCommandPool(Device);
+		CommandPool->CreateCommandPool(Device->GetGraphicsQueue()->GetQueueIndex());
+
+		// Create command buffers
+		{
+			// Create one command buffer for each swap chain image and reuse for rendering
+			for (uint32 i = 0; i < Swapchain->GetImageCount(); ++i)
+			{
+				VulkanCommandBuffer* CommandBuffer = CommandPool->CreateCommandBuffer(i);
+				CommandBuffer->AllocateCommandBuffer();
+			}
+
+			VE_CORE_LOG_INFO("Successfully created draw command buffers...");
+		}
+	}
+
+	// Create synchronization objects (Semaphores)
+	{
+		// Semaphores (Used for correct command ordering)
+		VkSemaphoreCreateInfo SemaphoreCreateInfo = VulkanUtils::Initializers::SemaphoreCreateInfo(nullptr);
+
+		// Create a semaphore used to synchronize image presentation
+		// Ensures that the image is displayed before we start submitting new commands to the queue
+		VK_CHECK_RESULT(vkCreateSemaphore(*Device->GetDeviceHandle(), &SemaphoreCreateInfo, nullptr, &PresentationComplete), "[EntryPoint]: Failed to create a semaphore for image presentation!");
+
+		for (uint32 i = 0; i < Swapchain->GetImageCount(); ++i)
+		{
+			CommandPool->GetCommandBuffer(i)->AddWaitSemaphore(&PresentationComplete);
+		}
+
+		// Create a semaphore used to synchronize command submission
+		// Ensures that the image is not presented until all commands have been submitted and executed
+		VK_CHECK_RESULT(vkCreateSemaphore(*Device->GetDeviceHandle(), &SemaphoreCreateInfo, nullptr, &RenderComplete), "[EntryPoint]: Failed to create a semaphore for render synchronization!");
+	}
+
+	// Setting up depth and stencil buffers
+	{
 		VkImageCreateInfo ImageCreateInfo = VulkanUtils::Initializers::ImageCreateInfo();
 		ImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
 		ImageCreateInfo.format = DepthFormat;
-		ImageCreateInfo.extent = { ViewportSize.Width, ViewportSize.Height, 1 };
+		ImageCreateInfo.extent = { inRenderInitializerList.ViewportSize.Width, inRenderInitializerList.ViewportSize.Height, 1 };
 		ImageCreateInfo.mipLevels = 1;
 		ImageCreateInfo.arrayLayers = 1;
 		ImageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -598,125 +942,263 @@ void VulkanRenderer::OnRenderViewportResized(RenderViewportSize& inNewViewportSi
 		}
 
 		DepthStencilView->CreateImageView(VK_IMAGE_VIEW_TYPE_2D, DepthFormat, 0, 1, 0, 1, AspectFlags);
+		VE_CORE_LOG_INFO("Successfully created depth stencil buffers...");
 	}
 
-	/* Update Renderpasses render area to new area since window was resized */
-	VkRect2D RenderArea = { 0,0, ViewportSize.Width, ViewportSize.Height };
-	RenderPass->UpdateRenderArea(RenderArea);
-	RenderPass->UpdateExtent2D(RenderArea.extent);
-
+	// Setting up render pass
 	{
-		for (uint32 i = 0; i < FrameBuffers.size(); ++i)
-		{
-			FrameBuffers[i]->DestroyBuffer();
-		}
+		std::vector<VkAttachmentDescription> Attachments = { };
+		Attachments.resize(2);
+		// Color attachment
+		Attachments[0].format = *Surface->GetColorFormat();//ColorFormat;
+		Attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+		Attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		Attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		Attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		Attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		Attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		Attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		// Depth attachment
+		Attachments[1].format = DepthFormat;
+		Attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
+		Attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		Attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		Attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		Attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		Attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		Attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+		VkAttachmentReference ColorReference = {};
+		ColorReference.attachment = 0;
+		ColorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference DepthReference = {};
+		DepthReference.attachment = 1;
+		DepthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkRect2D RenderArea = { 0,0, inRenderInitializerList.ViewportSize.Width, inRenderInitializerList.ViewportSize.Height };
+		RenderPassLayout = new VulkanRenderLayout(Device, 1, RenderArea, &RenderArea.extent);
+		RenderPassLayout->SetAttachments(Attachments);
+		RenderPassLayout->SetColorReference(ColorReference);
+		RenderPassLayout->SetDepthReference(DepthReference);
+
+		// Set clear values for all framebuffer attachments with loadOp set to clear
+		// We use two attachments (color and depth) that are cleared at the start of the subpass and as such we need to set clear values for both
+		std::vector<VkClearValue> ClearValues;
+		ClearValues.resize(2);
+		ClearValues[0].color = { { 0.0f, 0.0f, 0.2f, 1.0f } };
+		ClearValues[1].depthStencil = { 1.0f, 0 };
+		RenderPassLayout->SetClearValues(ClearValues);
+
+		// Subpass dependencies for layout transitions
+		std::vector<VkSubpassDependency> SubpassDependency;
+		SubpassDependency.resize(2);
+
+		SubpassDependency[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+		SubpassDependency[0].dstSubpass = 0;
+		SubpassDependency[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		SubpassDependency[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		SubpassDependency[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		SubpassDependency[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		SubpassDependency[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+		SubpassDependency[1].srcSubpass = 0;
+		SubpassDependency[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+		SubpassDependency[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		SubpassDependency[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		SubpassDependency[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		SubpassDependency[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		SubpassDependency[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+		RenderPass = new VulkanRenderPass(Device, *RenderPassLayout, SubpassDependency);
+		VE_CORE_LOG_INFO("Successfully created renderpass...");
+	}
+
+	// Create Pipeline cache
+	{
+		VkPipelineCacheCreateInfo PipelineCacheCreateInfo = {};
+		PipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+		VK_CHECK_RESULT(vkCreatePipelineCache(*Device->GetDeviceHandle(), &PipelineCacheCreateInfo, nullptr, &PipelineCache), "[EntryPoint]: Failed to create a pipeline cache!");
+		VE_CORE_LOG_INFO("Successfully created pipeline cache...");
+	}
+
+	// Create Frame buffers
+	{
 		VkImageView Attachments[2];
 
 		// Depth/Stencil attachment is the same for all frame buffers
 		Attachments[1] = *DepthStencilView->GetImageViewHandle();
 
-		VkExtent2D Extent = { ViewportSize.Width, ViewportSize.Height };
+		VkExtent2D Extent = { inRenderInitializerList.ViewportSize.Width, inRenderInitializerList.ViewportSize.Height };
 
 		FrameBuffers.resize(Swapchain->GetImageCount());
 		for (uint32 i = 0; i < Swapchain->GetImageCount(); ++i)
 		{
 			Attachments[0] = Swapchain->GetSwapchainBuffer(i)->View;
+			FrameBuffers[i] = new VulkanFrameBuffer(Device, RenderPass);
 			FrameBuffers[i]->AllocateBuffer(2, Attachments, &Extent);
 		}
+
+		VE_CORE_LOG_INFO("Successfully created framebuffers...");
 	}
 
-	// Command buffers need to be recreated as they may store
-	// references to the recreated frame buffer
-	CommandPool->DestroyBuffers();
+	// allocate 1 gibibytes of memory -> 1024 mebibytes = 1 gib
+	MainVulkanMemoryHeap = new VulkanMemoryHeap(Device, 1);
 
-	// Create command buffers and fences
+	// Prepare the vulkan pipeline
 	{
-		// Create one command buffer for each swap chain image and reuse for rendering
-		for (uint32 i = 0; i < Swapchain->GetImageCount(); ++i)
-		{
-			VulkanCommandBuffer* CommandBuffer = CommandPool->CreateCommandBuffer(i);
-			CommandBuffer->AllocateCommandBuffer();
-		}
+		// Create the pipeline layout, since we have no push constants nor descriptor sets, we just want an empty layout
+		PipelineLayout = new VulkanPipelineLayout(Device);
+		PipelineLayout->CreateEmpty();
 
-		for (uint32 i = 0; i < Swapchain->GetImageCount(); ++i)
+		// Create the graphics pipeline 
+		GraphicsPipeline = new VulkanGraphicsPipeline(Device);
+		VkGraphicsPipelineCreateInfo GraphicsPipelineCreateInfo = VulkanUtils::Initializers::GraphicsPipelineCreateInfo();
+
+		MainVulkanResourceManager = new VulkanResourceManager(Device);
+		GraphicsResourceManager = new ResourceManager(MainVulkanResourceManager);
+		ShaderFactory = new VulkanShaderFactory(GraphicsResourceManager);
+
+		const char VertexShaderStr[] = "float4 main(float3 inVertex : POSITION) : SV_POSITION { return float4(inVertex, 1.0f); }";
+		const char PixelShaderStr[] = "float4 main(float4 inPosition : SV_POSITION) : SV_TARGET { return float4(1.0f, 0.0f, 0.0f, 1.0f); }";
+
+		VertShader = ShaderFactory->CreateVertexShaderFromString(Device, VertexShaderStr, true);
+		PixelShader = ShaderFactory->CreateFragmentShaderFromString(Device, PixelShaderStr, true);
+
 		{
-			CommandPool->GetCommandBuffer(i)->AddWaitSemaphore(&PresentationComplete);
+			VkPipelineShaderStageCreateInfo VertexStageCreateInfo = VulkanUtils::Initializers::PipelineShaderStageCreateInfo();
+			VertexStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+			VertexStageCreateInfo.module = *(VkShaderModule*)GraphicsResourceManager->GetShaderModule(VertShader->GetShaderKey());
+			VertexStageCreateInfo.pName = "main";
+
+			VkPipelineShaderStageCreateInfo PixelStageCreateInfo = VulkanUtils::Initializers::PipelineShaderStageCreateInfo();
+			PixelStageCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+			PixelStageCreateInfo.module = *(VkShaderModule*)GraphicsResourceManager->GetShaderModule(PixelShader->GetShaderKey());;
+			PixelStageCreateInfo.pName = "main";
+
+			VkPipelineShaderStageCreateInfo ShaderStages[2] = { VertexStageCreateInfo,PixelStageCreateInfo };
+
+			GraphicsPipelineCreateInfo.stageCount = 2;
+			GraphicsPipelineCreateInfo.pStages = ShaderStages;
+
+			VkPipelineInputAssemblyStateCreateInfo InputAssemblyStateCreateInfo = VulkanUtils::Initializers::PipelineInputAssemblyStateCreateInfo();
+			InputAssemblyStateCreateInfo.primitiveRestartEnable = false;
+			InputAssemblyStateCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+			GraphicsPipelineCreateInfo.pInputAssemblyState = &InputAssemblyStateCreateInfo;
+
+			VulkanUtils::Descriptions::VertexBinding VertBinding = { };
+			VertBinding.Binding = 0;
+			VertBinding.Stride = sizeof(float) * 3;
+			VertBinding.InputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+			VulkanUtils::Descriptions::VertexAttribute VertAttribute = { };
+			VertAttribute.Binding = 0;
+			VertAttribute.Format = VK_FORMAT_R32G32B32_SFLOAT;
+			VertAttribute.Location = 0;
+			VertAttribute.Offset = 0;
+
+			VkVertexInputBindingDescription VertexInputBindingDescription = { };
+			VertBinding.WriteTo(VertexInputBindingDescription);
+
+			VkVertexInputAttributeDescription VertexInputAttributeDescription = { };
+			VertAttribute.WriteTo(VertexInputAttributeDescription);
+
+			VkPipelineVertexInputStateCreateInfo VertexInputStateCreateInfo = VulkanUtils::Initializers::PipelineVertexInputStateCreateInfo();
+			VertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
+			VertexInputStateCreateInfo.vertexAttributeDescriptionCount = 1;
+			VertexInputStateCreateInfo.pVertexBindingDescriptions = &VertexInputBindingDescription;
+			VertexInputStateCreateInfo.pVertexAttributeDescriptions = &VertexInputAttributeDescription;
+
+			GraphicsPipelineCreateInfo.pVertexInputState = &VertexInputStateCreateInfo;
+
+			VkViewport Viewport = { 0, 0, (float)inRenderInitializerList.ViewportSize.Width, (float)inRenderInitializerList.ViewportSize.Height, 0.0f, 1.0f };
+			VkRect2D Scissor = { {0, 0}, { (float)inRenderInitializerList.ViewportSize.Width, (float)inRenderInitializerList.ViewportSize.Height} };
+
+			VkPipelineViewportStateCreateInfo PipelineViewportStateCreateInfo = VulkanUtils::Initializers::PipelineViewportStateCreateInfo();
+			PipelineViewportStateCreateInfo.viewportCount = 1;
+			PipelineViewportStateCreateInfo.scissorCount = 1;
+			PipelineViewportStateCreateInfo.pViewports = &Viewport;
+			PipelineViewportStateCreateInfo.pScissors = &Scissor;
+
+			GraphicsPipelineCreateInfo.pViewportState = &PipelineViewportStateCreateInfo;
+
+			VkPipelineRasterizationStateCreateInfo RasterizationStateCreateInfo = VulkanUtils::Initializers::PipelineRasterizationStateCreateInfo();
+			RasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
+			RasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+			RasterizationStateCreateInfo.lineWidth = 1.0f;
+			RasterizationStateCreateInfo.cullMode = VK_CULL_MODE_FRONT_BIT;
+			RasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+			RasterizationStateCreateInfo.depthClampEnable = VK_FALSE;
+			RasterizationStateCreateInfo.depthBiasEnable = VK_FALSE;
+			RasterizationStateCreateInfo.depthBiasClamp = 0.0f;
+			RasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f;
+			RasterizationStateCreateInfo.depthBiasSlopeFactor = 0.0f;
+
+			GraphicsPipelineCreateInfo.pRasterizationState = &RasterizationStateCreateInfo;
+
+			VkPipelineMultisampleStateCreateInfo MultisampleStateCreateInfo = VulkanUtils::Initializers::PipelineMultisampleStateCreateInfo();
+			MultisampleStateCreateInfo.sampleShadingEnable = VK_FALSE;
+			MultisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+			MultisampleStateCreateInfo.minSampleShading = 1.0f;
+			MultisampleStateCreateInfo.pSampleMask = VK_NULL_HANDLE;
+			MultisampleStateCreateInfo.alphaToCoverageEnable = VK_FALSE;
+			MultisampleStateCreateInfo.alphaToOneEnable = VK_FALSE;
+
+			GraphicsPipelineCreateInfo.pMultisampleState = &MultisampleStateCreateInfo;
+
+			VkPipelineDepthStencilStateCreateInfo DepthStencilStateCreateInfo = VulkanUtils::Initializers::PipelineDepthStencilStateCreateInfo();
+			DepthStencilStateCreateInfo.depthTestEnable = VK_TRUE;
+			DepthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
+			DepthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+			DepthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
+			DepthStencilStateCreateInfo.minDepthBounds = 0.0f;
+			DepthStencilStateCreateInfo.maxDepthBounds = 1.0f;
+			DepthStencilStateCreateInfo.stencilTestEnable = VK_FALSE;
+
+			GraphicsPipelineCreateInfo.pDepthStencilState = &DepthStencilStateCreateInfo;
+
+			VkPipelineColorBlendAttachmentState ColorBlendAttachmentState = { };
+			ColorBlendAttachmentState.colorWriteMask = 0xF;
+			ColorBlendAttachmentState.blendEnable = VK_FALSE;
+			ColorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_COLOR;
+			ColorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_DST_COLOR;
+			ColorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+			ColorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+			ColorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_DST_ALPHA;
+			ColorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+
+			VkPipelineColorBlendStateCreateInfo ColorBlendStateCreateInfo = VulkanUtils::Initializers::PipelineColorBlendStateCreateInfo();
+			ColorBlendStateCreateInfo.logicOpEnable = VK_FALSE;
+			ColorBlendStateCreateInfo.logicOp = VK_LOGIC_OP_COPY;
+			ColorBlendStateCreateInfo.attachmentCount = 1;
+			ColorBlendStateCreateInfo.pAttachments = &ColorBlendAttachmentState;
+			ColorBlendStateCreateInfo.blendConstants[0] = 0.0f;
+			ColorBlendStateCreateInfo.blendConstants[1] = 0.0f;
+			ColorBlendStateCreateInfo.blendConstants[2] = 0.0f;
+			ColorBlendStateCreateInfo.blendConstants[3] = 0.0f;
+
+			GraphicsPipelineCreateInfo.pColorBlendState = &ColorBlendStateCreateInfo;
+
+			VkDynamicState DynamicStates[2] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+
+			VkPipelineDynamicStateCreateInfo DynamicStateCreateInfo = VulkanUtils::Initializers::PipelineDynamicStateCreateInfo();
+			DynamicStateCreateInfo.dynamicStateCount = 2;
+			DynamicStateCreateInfo.pDynamicStates = DynamicStates;
+
+			GraphicsPipelineCreateInfo.pDynamicState = &DynamicStateCreateInfo;
+
+			GraphicsPipelineCreateInfo.layout = *PipelineLayout->GetPipelineLayoutHandle();
+			GraphicsPipelineCreateInfo.renderPass = *RenderPass->GetRenderPassHandle();
+			GraphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+			GraphicsPipeline->Create(GraphicsPipelineCreateInfo);
 		}
 	}
 
-	// Now recreate new command buffers
-	//BuildCommandBuffers();
+	return true;
 }
-
-void VulkanRenderer::Shutdown()
-{
-	Device->WaitUntilIdle();
-
-	vkDestroyPipelineCache(*Device->GetDeviceHandle(), PipelineCache, nullptr);
-
-	for (uint32 i = 0; i < FrameBuffers.size(); ++i)
-	{
-		delete FrameBuffers[i];
-	}
-
-	delete CommandPool;
-
-	delete DepthStencilView;
-
-	delete RenderPassLayout;
-	delete RenderPass;
-	delete Swapchain;
-
-	vkDestroySemaphore(*Device->GetDeviceHandle(), PresentationComplete, nullptr);
-	vkDestroySemaphore(*Device->GetDeviceHandle(), RenderComplete, nullptr);
-
-	/* Imgui */
-
-	delete ImguiFontTextureView;
-	vkDestroySampler(*Device->GetDeviceHandle(), ImguiSampler, nullptr);
-
-	delete ImguiDescriptorPool;
-	delete ImguiDescriptorSetsLayout;
-
-	vkDestroyPipelineCache(*Device->GetDeviceHandle(), ImguiPipelineCache, nullptr);
-	delete ImguiPipelineLayout;
-
-	delete ImguiVertexShader;
-	delete ImguiPixelShader;
-
-	delete ImguiPipeline;
-
-	vkDestroyBuffer(*Device->GetDeviceHandle(), ImguiVertexBuffer, nullptr);
-	vkFreeMemory(*Device->GetDeviceHandle(), ImguiVertexBufferData, nullptr);
-
-	vkDestroyBuffer(*Device->GetDeviceHandle(), ImguiIndexBuffer, nullptr);
-	vkFreeMemory(*Device->GetDeviceHandle(), ImguiIndexBufferData, nullptr);
-
-	/* Imgui */
-
-	delete MainVulkanMemoryHeap;
-
-	delete PixelShader;
-	delete VertShader;
-	delete ShaderFactory;
-	delete GraphicsResourceManager;
-	delete MainVulkanResourceManager;
-
-	delete PipelineLayout;
-	delete GraphicsPipeline;
-
-	delete Surface;
-	delete Device;
-
-	vkDestroyInstance(VulkanInstance, nullptr);
-
-}
-
-bool VulkanRenderer::InitVulkan(VulkanInitializerList& inVulkanInitializerList)
-{
-	return CreateVulkanInstance(inVulkanInitializerList);
-}
+#endif
 
 bool VulkanRenderer::CreateVulkanInstance(VulkanInitializerList& inVulkanInitializerList)
 {
@@ -819,7 +1301,8 @@ bool VulkanRenderer::CreateVulkanInstance(VulkanInitializerList& inVulkanInitial
 	return vkCreateInstance(&InstanceCreateInfo, nullptr, &VulkanInstance) == VK_SUCCESS;
 }
 
-bool VulkanRenderer::InitImGui()
+#ifdef VULKAN_STANDALONE
+bool VulkanRenderer::InitImguiStandalone()
 {
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
@@ -1638,3 +2121,4 @@ void VulkanRenderer::DrawImguiFrame(VulkanCommandBuffer* inCommandBuffer)
 		}
 	}
 }
+#endif

@@ -2,7 +2,7 @@
 #include <Runtime/Core/Strings/StringHash.h>
 
 // User Defining a literal -- _SHID = StringHashID
-uint32 operator"" _SHID(const char* inString, size_t inLength)
+inline uint32 operator"" _SHID(const char* inString, size_t inLength)
 {
 	return StringHash::GetStringHash(inString);
 }

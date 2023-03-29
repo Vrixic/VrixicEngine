@@ -12,19 +12,13 @@ private:
 
 	VulkanRenderLayout RenderLayout;
 
-public:
-	/*VulkanRenderPass(VulkanDevice* device, uint32 numAttachments, VkAttachmentDescription* attachments,
-		uint32 numColorAttachment, VkAttachmentReference* colorReference, VkAttachmentReference* depthReference,
-		uint32 numInputAttachments, VkAttachmentReference* inputAttachments,
-		uint32 numPreserveAttachments, VkAttachmentReference* preserveAttachments, uint32 numClearValues,
-		VkClearValue* clearValues);*/
-	
+public:	
 	/**
 	* @param inRenderLayout - the render layout used to create the render pass 
 	* 
-	* @remarks Creates the RenderPass
+	* @remarks Creates the RenderPass if bCreateDefault is true (Default = true) 
 	*/
-	VulkanRenderPass(VulkanDevice* inDevice, VulkanRenderLayout& inRenderLayout);
+	VulkanRenderPass(VulkanDevice* inDevice, VulkanRenderLayout& inRenderLayout, std::vector<VkSubpassDependency>& inSubpassDependencies);
 
 	~VulkanRenderPass();
 
@@ -32,6 +26,14 @@ public:
 	VulkanRenderPass operator=(const VulkanRenderPass& other) = delete;
 
 public:
+	/**
+	* Creates a render pass with the render layout passed in and subpass dependencies passed in
+	* 
+	* @param inSubpassDependencies the subpass dependencies of the render pass 
+	* @remarks asserts if renderpass is valid, only create one if current is invalid, otherwise destory and then create 
+	*/
+	void Create(std::vector<VkSubpassDependency>& inSubpassDependencies);
+
 	/**
 	* Updates the render area 
 	*/

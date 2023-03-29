@@ -14,10 +14,11 @@ namespace Mouse
 		Button0 = 0,
 		Button1 = 1,
 		Button2 = 2,
-		Button16 = 16,
+		Button3 = 3,
+		Button4 = 4,
 
-		ButtonLeft = Button1,
-		ButtonRight = Button2,
-		ButtonMiddle = Button16
+		ButtonLeft = Button0,
+		ButtonRight = Button1,
+		ButtonMiddle = Button2,
 	};
 }

@@ -2,18 +2,15 @@
 #include "Core/Core.h"
 #include <Core/Windows/Window.h>
 #include "Editor/GameEditor.h"
-#include <Misc/Defines/GenericDefines.h>
 
 #include <iostream>
 
 class VRIXIC_API Application
 {
-	friend class VGameEngine;
-
 private:
 	static Application* ApplicationPtr; // The application pointer
 
-	TUniquePtr<Window> WindowPtr; // Pointer to window
+	TUniquePtr<IWindow> WindowPtr; // Pointer to window
 
 	TSharedPtr<VGameEngine> GameEngine;
 
@@ -29,5 +26,15 @@ public:
 	void OnEvent(WindowEvent& inEvent);
 
 	void Run();
+
+	static Application* Get()
+	{
+		return ApplicationPtr;
+	}
+
+	IWindow& GetWindow() const
+	{
+		return *WindowPtr;
+	}
 };
 

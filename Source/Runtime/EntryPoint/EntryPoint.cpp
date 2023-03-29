@@ -347,7 +347,27 @@ public:
 			ClearValues[1].depthStencil = { 1.0f, 0 };
 			RenderPassLayout->SetClearValues(ClearValues);
 
-			RenderPass = new VulkanRenderPass(Device, *RenderPassLayout);
+			// Subpass dependencies for layout transitions
+			std::vector<VkSubpassDependency> Dependencies;
+			Dependencies.resize(2);
+
+			Dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+			Dependencies[0].dstSubpass = 0;
+			Dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+			Dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			Dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+			Dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			Dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+			Dependencies[1].srcSubpass = 0;
+			Dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+			Dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			Dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+			Dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			Dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+			Dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+			RenderPass = new VulkanRenderPass(Device, *RenderPassLayout, Dependencies);
 			VE_CORE_LOG_INFO("Successfully created renderpass...");
 		}
 
@@ -389,7 +409,7 @@ public:
 		BufferCreateInfo.DeviceSize = sizeof(Indices);
 		BufferCreateInfo.MemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 		IndexBuffer = MainVulkanMemoryHeap->AllocateBuffer(EBufferType::Index, BufferCreateInfo);
-		
+
 		BufferCreateInfo.BufferUsageFlags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		BufferCreateInfo.DeviceSize = sizeof(Vertices);
 		VertexBuffer = MainVulkanMemoryHeap->AllocateBuffer(EBufferType::Vertex, BufferCreateInfo);
@@ -465,8 +485,8 @@ public:
 
 			GraphicsPipelineCreateInfo.pVertexInputState = &VertexInputStateCreateInfo;
 
-			VkViewport Viewport = { 0, 0, VTemp->Width, VTemp->Height, 0.0f, 1.0f };
-			VkRect2D Scissor = { {0, 0}, { VTemp->Width, VTemp->Height} };
+			VkViewport Viewport = { 0, 0, (float)VTemp->Width, (float)VTemp->Height, 0.0f, 1.0f };
+			VkRect2D Scissor = { {0, 0}, { (float)VTemp->Width, (float)VTemp->Height} };
 
 			VkPipelineViewportStateCreateInfo PipelineViewportStateCreateInfo = VulkanUtils::Initializers::PipelineViewportStateCreateInfo();
 			PipelineViewportStateCreateInfo.viewportCount = 1;
@@ -965,13 +985,13 @@ int OldEntryPointFunction()
 	const char* InstanceExtensions[InstanceExtensionCount]
 	{
 		"VK_EXT_debug_utils"
-	};	
+	};
 
-	
+
 	const uint32 InstanceLayerCount = 1;
 	const char* InstanceLayers[InstanceLayerCount]
 	{
-		
+
 #if RENDER_DOC
 		"VK_LAYER_RENDERDOC_Capture",
 #else

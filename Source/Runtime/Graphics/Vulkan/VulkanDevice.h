@@ -221,6 +221,8 @@ private:
 	VkFormat ColorFormat;
 	VkColorSpaceKHR ColorSpace;
 
+	VkSurfaceFormatKHR SurfaceFormat;
+
 	//uint32 GraphicsQueueNodeIndex;
 
 	//std::vector<VkQueueFamilyProperties> QueueFamilyProperties;
@@ -233,6 +235,15 @@ public:
 
 public:
 	/**
+	* @param inInstance - The vulkan instance this surfance will use
+	* @param inSurfaceHandle - the surface to the window that is already created by another object
+	*
+	* @remarks Creates the Surface
+	*/
+	VulkanSurface(VulkanDevice* inDevice, VkInstance* inInstance, VkSurfaceKHR inSurfaceHandle);
+
+	/**
+	* Creates a vulkan surface KHR for the window passed in (-- Need to make it windows independent )
 	* @param inInstance - The vulkan instance this surfance will use
 	* @param inWindowInstance - the window instance this surface will use
 	* @param inWindow - this window this surface will use
@@ -262,6 +273,11 @@ public:
 		return &ColorSpace;
 	}
 
+	inline const VkSurfaceFormatKHR* GetSurfaceFormat() const
+	{
+		return &SurfaceFormat;
+	}
+
 	//inline const std::vector<VkQueueFamilyProperties>* GetQueueFamilyProperties() const
 	//{
 		//return &QueueFamilyProperties;
@@ -278,6 +294,7 @@ private:
 	uint32 ImageWidth;
 	uint32 ImageHeight;
 
+	uint32 MinImageCount;
 	uint32 ImageCount;
 
 	/* Swapchain Images */
@@ -289,6 +306,8 @@ private:
 	};
 	/* Swap chain buffers */
 	std::vector<SwapChainBuffer> Buffers;
+
+	VkPresentModeKHR SwapchainPresentMode;
 
 public:
 	PFN_vkCreateSwapchainKHR fpCreateSwapchainKHR;
@@ -373,9 +392,19 @@ public:
 		return ImageCount;
 	}
 
+	inline uint32 GetMinImageCount() const
+	{
+		return MinImageCount;
+	}
+
 	inline const SwapChainBuffer* GetSwapchainBuffer(uint32 index) const
 	{
 		return &Buffers[index];
+	}
+
+	inline const VkPresentModeKHR* GetSwapchainPresentMode() const
+	{
+		return &SwapchainPresentMode;
 	}
 };
 

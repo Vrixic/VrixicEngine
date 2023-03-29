@@ -145,12 +145,12 @@ public:
 
 	inline const VkAttachmentReference* GetColorReference() const
 	{
-		return &ColorReference;
+		return ColorReference.layout == VK_IMAGE_LAYOUT_UNDEFINED ? nullptr : &ColorReference;
 	}
 
 	inline const VkAttachmentReference* GetDepthReference() const
 	{
-		return &DepthReference;
+		return DepthReference.layout == VK_IMAGE_LAYOUT_UNDEFINED ? nullptr : &DepthReference;
 	}
 
 	inline const VkExtent2D* GetExtent2D() const

@@ -13,7 +13,7 @@
 /**
 * Representation of a windows platform window 
 */
-class VRIXIC_API WindowsWindow : public Window
+class VRIXIC_API WindowsWindow : public IWindow
 {
 private:
 	/**
@@ -122,7 +122,16 @@ public:
 
 	virtual uint32 GetHeight() const override { return WindowsData.Height; };
 
-	virtual void* GetNativeWindowHandle() const override { return static_cast<void*>(&(HWND)WindowHandle); };
+	virtual void* GetNativeWindowHandle() override 
+	{ 
+		//return static_cast<void*>((HWND*)&WindowHandle);
+		return static_cast<void*>(&(HWND)WindowHandle); 
+	};
 
 	virtual void* GetNativeWindowInstanceHandle() const override { return WindowClass::Get().GetInstance(); };
+
+	/**
+	* @returns void* always equal to nullptr as its not using glfw to create a window 
+	*/
+	virtual void* GetGLFWNativeHandle() const override { return nullptr; }
 };

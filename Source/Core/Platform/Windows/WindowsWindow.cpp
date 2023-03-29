@@ -19,6 +19,24 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #include <iostream>
 #include <chrono>
 
+#define MAKE_POINTS(lParam) const POINTS Point = MAKEPOINTS(lParam)
+
+/**
+* Makes it easy to make a mouse down event 
+*/
+#define WINDOW_PROC_MOUSE_DOWN_EVENT(mouseCode, lParam)			\
+MAKE_POINTS(lParam);											\
+MouseButtonPressedEvent Event(mouseCode, Point.x, Point.y);		\
+OnInputEvent(Event);											
+
+/**
+* Makes it easy to make a mouse up event 
+*/
+#define WINDOW_PROC_MOUSE_UP_EVENT(mouseCode, lParam)			\
+MAKE_POINTS(lParam);											\
+MouseButtonReleasedEvent Event(mouseCode, Point.x, Point.y);	\
+OnInputEvent(Event);	
+
 // ---------------------------------------------------------------------
 // -						Window class stuff						   -
 // ---------------------------------------------------------------------
@@ -329,28 +347,62 @@ LRESULT WindowsWindow::HandleWindowsMessage(HWND hWnd, UINT uMsg, WPARAM wParam,
 		break;
 	}
 
+	// All mouse down and up message sare repetive except this way its less branches and we get to configure the mouse code ourselves
 	case WM_LBUTTONDOWN:
+	{
+		WINDOW_PROC_MOUSE_DOWN_EVENT(0, lParam);
+		/*const POINTS Point = MAKEPOINTS(lParam);
+		MouseButtonPressedEvent Event(0, Point.x, Point.y);
+		OnInputEvent(Event);*/
+		break;
+	}
 	case WM_RBUTTONDOWN:
+	{
+		WINDOW_PROC_MOUSE_DOWN_EVENT(1, lParam);
+		/*const POINTS Point = MAKEPOINTS(lParam);
+		MouseButtonPressedEvent Event(1, Point.x, Point.y);
+		OnInputEvent(Event);*/
+		break;
+	}
 	case WM_MBUTTONDOWN:
+	{
+		WINDOW_PROC_MOUSE_DOWN_EVENT(2, lParam);
+		/*const POINTS Point = MAKEPOINTS(lParam);
+		MouseButtonPressedEvent Event(2, Point.x, Point.y);
+		OnInputEvent(Event);*/
+		break;
+	}
 	case WM_XBUTTONDOWN:
 	{
-		const POINTS Point = MAKEPOINTS(lParam);
-		MouseButtonPressedEvent Event(static_cast<uint32>(wParam), Point.x, Point.y);
-		OnInputEvent(Event);
+		WINDOW_PROC_MOUSE_DOWN_EVENT(((GET_XBUTTON_WPARAM(wParam) == XBUTTON1) ? 3 : 4), lParam);
+		/*const POINTS Point = MAKEPOINTS(lParam);
+		MouseButtonPressedEvent Event(((GET_XBUTTON_WPARAM(wParam) == XBUTTON1) ? 3 : 4), Point.x, Point.y);
+		OnInputEvent(Event);*/
 		break;
 	}
-
 	case WM_LBUTTONUP:
+	{
+		WINDOW_PROC_MOUSE_UP_EVENT(0, lParam);
+		break;
+	}
 	case WM_RBUTTONUP:
+	{
+		WINDOW_PROC_MOUSE_UP_EVENT(1, lParam);
+		break;
+	}
 	case WM_MBUTTONUP:
+	{
+		WINDOW_PROC_MOUSE_UP_EVENT(2, lParam);
+		break;
+	}
 	case WM_XBUTTONUP:
 	{
-		const POINTS Point = MAKEPOINTS(lParam);
+		WINDOW_PROC_MOUSE_UP_EVENT(((GET_XBUTTON_WPARAM(wParam) == XBUTTON1) ? 3 : 4), lParam);
+		/*const POINTS Point = MAKEPOINTS(lParam);
 		MouseButtonReleasedEvent Event(static_cast<uint32>(wParam), Point.x, Point.y);
-		OnInputEvent(Event);
+		OnInputEvent(Event);*/
 		break;
 	}
-
 
 	case WM_MOUSEWHEEL:
 	{

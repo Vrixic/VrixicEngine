@@ -10,7 +10,7 @@ VGameEngine::VGameEngine()
 	: World(nullptr)
 {
 #ifdef VULKAN
-	Renderer = TPointer<RenderInterface>((RenderInterface**)MemoryManager::Get().MallocConstructAligned<VulkanRenderer>(sizeof(VulkanRenderer), 8));
+	Renderer = TPointer<IRenderSystem>((IRenderSystem**)MemoryManager::Get().MallocConstructAligned<VulkanRenderer>(sizeof(VulkanRenderer), 8));
 #endif // VULKAN
 
 }
@@ -25,10 +25,10 @@ void VGameEngine::Init()
 	// Initialize the renderer 
 	RendererInitializerList RendererInitList = { 0 };
 
-	RendererInitList.ViewportSize.Width = Application::ApplicationPtr->WindowPtr->GetWidth();
-	RendererInitList.ViewportSize.Height = Application::ApplicationPtr->WindowPtr->GetHeight();
-	RendererInitList.NativeWindowHandle = Application::ApplicationPtr->WindowPtr->GetNativeWindowHandle();
-	RendererInitList.NativeWindowInstanceHandle = Application::ApplicationPtr->WindowPtr->GetNativeWindowInstanceHandle();
+	RendererInitList.ViewportSize.Width = Application::Get()->GetWindow().GetWidth();
+	RendererInitList.ViewportSize.Height = Application::Get()->GetWindow().GetHeight();
+	RendererInitList.NativeWindowHandle = Application::Get()->GetWindow().GetNativeWindowHandle();
+	RendererInitList.NativeWindowInstanceHandle = Application::Get()->GetWindow().GetNativeWindowInstanceHandle();
 
 	Renderer.Get()->Init(RendererInitList);
 }
@@ -42,13 +42,13 @@ void VGameEngine::Tick()
 	Renderer.Get()->Render(World);
 
 	// Next start rendering the editor GUI
-	Renderer.Get()->BeginEditorGuiRenderFrame();
+	//Renderer.Get()->BeginEditorGuiRenderFrame();
 
 	// Draw the game editor GUI/tools
-	DrawEditorTools();
+	//DrawEditorTools();
 
 	// Stop the editor gui frame 
-	Renderer.Get()->EndEditorGuiRenderFrame();
+	//Renderer.Get()->EndEditorGuiRenderFrame();
 
 	// End of the current render frame and submit the frame 
 	Renderer.Get()->EndRenderFrame();

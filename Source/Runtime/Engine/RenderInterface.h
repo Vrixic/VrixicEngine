@@ -1,6 +1,24 @@
 #pragma once
 #include "GameWorld.h"
+#include <Core/Misc/Interface.h> 
 #include <Misc/Defines/GenericDefines.h>
+
+#include <vector>
+
+/**
+* Graphics API that could be support by the engine 
+*/
+enum class EGraphicsInterface
+{
+	DirectX11,
+	DirectX12,
+	Vulkan
+};
+
+/** 
+* All supported graphics interface, if a graphics interface is supported, it must include a renderer for itself, its resource specific management deriving from IResourceManager;
+*/
+static std::vector<EGraphicsInterface> SupportedGraphicInterfaces = { EGraphicsInterface::Vulkan };
 
 struct RenderViewportSize
 {
@@ -21,7 +39,7 @@ struct RendererInitializerList
 /**
 * Graphics API independent rendering interface 
 */
-class RenderInterface
+class IRenderSystem : Interface 
 {
 public:
 	/**
@@ -30,9 +48,17 @@ public:
 	virtual bool Init(const RendererInitializerList& inRenderInitializerList) = 0;
 
 	/**
-	* Begins a new render frame 
+	* Begins a new render frame
+	* @warning do not call is twice in a row 
 	*/
 	virtual void BeginRenderFrame() = 0;
+
+	/**
+	* Begins listening to draw 
+	* @param inCommandBufferIndex the index of the command buffer to list the command to (by default -1 = use internal next command buffer)
+	* @remarks leave inCommandBufferIndex equal to -1 to use next buffer in line 
+	*/
+	virtual void BeginRecordingDrawCommands(int32 inCommandBufferIndex = -1) = 0;
 
 	/**
 	* Render objects to the new render frame inside the game world 
@@ -40,19 +66,17 @@ public:
 	virtual void Render(GameWorld* inGameWorld) = 0;
 
 	/**
-	* End the render frame | MUST BE CALLED IF BEGIN RENDER FRAME WAS CALLED BEFORE CALLING ANOTHER BEGIN
+	* Ends listening to draw commands 
+	* @param inCommandBufferIndex the index of the command buffer to end
+	* @remarks no assumptions made to which command buffer to end, meaning expliticly tell renderer which one to end 
+	*/
+	virtual void EndRecordingDrawCommands(int32 inCommandBufferIndex) = 0;
+
+	/**
+	* End the render frame
+	* @warning MUST BE CALLED IF BEGIN RENDER FRAME WAS CALLED BEFORE CALLING ANOTHER BEGIN
 	*/
 	virtual void EndRenderFrame() = 0;
-
-	/**
-	* Begins a new render frame for editor GUI
-	*/
-	virtual void BeginEditorGuiRenderFrame() = 0;
-
-	/**
-	* End the render frame for editor GUI | MUST BE CALLED IF BEGIN RENDER FRAME WAS CALLED BEFORE CALLING ANOTHER BEGIN
-	*/
-	virtual void EndEditorGuiRenderFrame() = 0;
 
 	/**
 	* Called when the window resizes 
