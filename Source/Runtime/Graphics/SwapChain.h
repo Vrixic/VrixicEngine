@@ -6,6 +6,7 @@
 #pragma once
 #include <Core/Misc/Interface.h>
 #include "Surface.h"
+#include "SwapChainGenerics.h"
 
 /**
 * Defines a swapchian which has a surface and buffers (Images) it can write into with capabilities of presenting
@@ -14,6 +15,10 @@
 class VRIXIC_API SwapChain : public Interface
 {
 private:
+    // The swap chain configuration
+    SwapChainConfig Descriptor;
+
+    // The surface handle that the sawp chain is associated with 
     Surface* SurfaceHandle;
 
 public:
@@ -38,14 +43,17 @@ public:
     /**
     * @returns EFormat the color format of this swapchain
     */
-    virtual EFormat GetColorFormat() const = 0;
+    virtual EPixelFormat GetColorFormat() const = 0;
 
     /**
     * @returns EFormat the depth stencil format of this swapchain
     */
-    virtual EFormat GetDepthStencilFormat() const = 0;
+    virtual EPixelFormat GetDepthStencilFormat() const = 0;
 
-    Surface& GetSurfaceHandle() const
+    /**
+    * @return Surface& the handle to the surface that is associated with the swapchain
+    */
+    inline Surface& GetSurfaceHandle() const
     {
         return *SurfaceHandle;
     }

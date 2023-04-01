@@ -14,7 +14,7 @@ struct VRIXIC_API Frustum
 		RIGHT, NEARP, FARP
 	};
 
-	VM::Plane Planes[6];
+	Plane Planes[6];
 
 	/*
 	*  WidthMultiplier -> scales the width of the frustum
@@ -26,10 +26,10 @@ struct VRIXIC_API Frustum
 
 	/* For Debug reasons/ visuals */
 #if _DEBUG
-	VM::Vector3D FarPlaneTopLeft, FarPlaneTopRight, FarPlaneBottomLeft, FarPlaneBottomRight;
-	VM::Vector3D NearPlaneTopLeft, NearPlaneTopRight, NearPlaneBottomLeft, NearPlaneBottomRight;
+	Vector3D FarPlaneTopLeft, FarPlaneTopRight, FarPlaneBottomLeft, FarPlaneBottomRight;
+	Vector3D NearPlaneTopLeft, NearPlaneTopRight, NearPlaneBottomLeft, NearPlaneBottomRight;
 
-	VM::Vector3D PlaneCenters[6];
+	Vector3D PlaneCenters[6];
 #endif // _DEBUG
 
 
@@ -58,22 +58,22 @@ public:
 		RecalculateFustrumInternals();
 	}
 
-	void CreateFrustum(const VM::Matrix4D& camModel)
+	void CreateFrustum(const Matrix4D& camModel)
 	{
-		VM::Vector3D FarPlaneCenter;
-		VM::Vector3D NearPlaneCenter;
+		Vector3D FarPlaneCenter;
+		Vector3D NearPlaneCenter;
 
-		VM::Vector3D CameraUpFPH;
-		VM::Vector3D CameraUpNPH;
+		Vector3D CameraUpFPH;
+		Vector3D CameraUpNPH;
 
-		VM::Vector3D CameraRightFPW;
-		VM::Vector3D CameraRightNPW;
+		Vector3D CameraRightFPW;
+		Vector3D CameraRightNPW;
 
 		{
-			VM::Vector3D CameraPosition = camModel[3].ToVector3D();
-			VM::Vector3D CameraRight = camModel[0].ToVector3D() * 0.5f;
-			VM::Vector3D CameraUp = camModel[1].ToVector3D() * 0.5f;
-			VM::Vector3D CameraForward = camModel[2].ToVector3D();
+			Vector3D CameraPosition = camModel[3].ToVector3D();
+			Vector3D CameraRight = camModel[0].ToVector3D() * 0.5f;
+			Vector3D CameraUp = camModel[1].ToVector3D() * 0.5f;
+			Vector3D CameraForward = camModel[2].ToVector3D();
 
 			FarPlaneCenter = CameraPosition + CameraForward * FarPlaneDist;
 			NearPlaneCenter = CameraPosition + CameraForward * NearPlaneDist;
@@ -85,15 +85,15 @@ public:
 			CameraRightNPW = CameraRight * NearPlaneWidth;
 		}
 
-		VM::Vector3D FTL = FarPlaneCenter + CameraUpFPH - CameraRightFPW;
-		VM::Vector3D FTR = FarPlaneCenter + CameraUpFPH + CameraRightFPW;
-		VM::Vector3D FBL = FarPlaneCenter - CameraUpFPH - CameraRightFPW;
-		VM::Vector3D FBR = FarPlaneCenter - CameraUpFPH + CameraRightFPW;
+		Vector3D FTL = FarPlaneCenter + CameraUpFPH - CameraRightFPW;
+		Vector3D FTR = FarPlaneCenter + CameraUpFPH + CameraRightFPW;
+		Vector3D FBL = FarPlaneCenter - CameraUpFPH - CameraRightFPW;
+		Vector3D FBR = FarPlaneCenter - CameraUpFPH + CameraRightFPW;
 
-		VM::Vector3D NTL = NearPlaneCenter + CameraUpNPH - CameraRightNPW;
-		VM::Vector3D NTR = NearPlaneCenter + CameraUpNPH + CameraRightNPW;
-		VM::Vector3D NBL = NearPlaneCenter - CameraUpNPH - CameraRightNPW;
-		VM::Vector3D NBR = NearPlaneCenter - CameraUpNPH + CameraRightNPW;
+		Vector3D NTL = NearPlaneCenter + CameraUpNPH - CameraRightNPW;
+		Vector3D NTR = NearPlaneCenter + CameraUpNPH + CameraRightNPW;
+		Vector3D NBL = NearPlaneCenter - CameraUpNPH - CameraRightNPW;
+		Vector3D NBR = NearPlaneCenter - CameraUpNPH + CameraRightNPW;
 
 		/* Keeps the corners for debug visualizations */
 #if _DEBUG
@@ -126,12 +126,12 @@ public:
 #endif
 	}
 
-	PlaneIntersectionResult TestAABB(const VM::Vector3D& aabbMin, const VM::Vector3D& aabbMax)
+	PlaneIntersectionResult TestAABB(const Vector3D& aabbMin, const Vector3D& aabbMax)
 	{
 		PlaneIntersectionResult Result;
 		for (uint32 i = 0; i < 6; ++i)
 		{
-			if (VM::Plane::IntersectAABBOnPlane(aabbMin, aabbMax, Planes[i]) == PlaneIntersectionResult::Back)
+			if (Plane::IntersectAABBOnPlane(aabbMin, aabbMax, Planes[i]) == PlaneIntersectionResult::Back)
 			{
 				return PlaneIntersectionResult::Back;
 			}
@@ -150,18 +150,18 @@ private:
 		FarPlaneWidth = FarPlaneHeight * AspectRatio;
 	}
 
-	inline static void MakePlaneFromThreePoints(const VM::Vector3D& a, const VM::Vector3D& b, const VM::Vector3D& c, VM::Plane& outPlane)
+	inline static void MakePlaneFromThreePoints(const Vector3D& a, const Vector3D& b, const Vector3D& c, Plane& outPlane)
 	{
-		VM::Vector3D EdgeA = b - a;
-		VM::Vector3D EdgeB = c - b;
-		VM::Vector3D Normal = VM::Vector3D::CrossProduct(EdgeA, EdgeB);
+		Vector3D EdgeA = b - a;
+		Vector3D EdgeB = c - b;
+		Vector3D Normal = Vector3D::CrossProduct(EdgeA, EdgeB);
 		Normal.Normalize();
 
 		outPlane.X = Normal.X;
 		outPlane.Y = Normal.Y;
 		outPlane.Z = Normal.Z;
 
-		outPlane.Distance = VM::Vector3D::DotProduct(Normal, a);
+		outPlane.Distance = Vector3D::DotProduct(Normal, a);
 	}
 };
 

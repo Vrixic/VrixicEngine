@@ -5,6 +5,20 @@
 
 #pragma once
 #include <Core/Core.h>
+#include "Format.h"
+#include <Misc/Defines/GenericDefines.h>
+
+#include <string>
+
+/**
+* Defines whether the shader is a string or a file name or path
+*/
+enum class EShaderSourceType
+{
+    String,         // It is a string containing the shader source code
+    Filename,       // it is a file name 
+    Filepath,       // it is a file path to the shader 
+};
 
 /**
 * All of the shader types
@@ -60,4 +74,32 @@ struct VRIXIC_API ShaderStageFlags
         // defines default shader stages which are vertex and fragment 
         DefaultStages                   = (VertexStage | FragmentStage)
     };
+};
+
+struct VRIXIC_API ShaderCompileFlags
+{
+#define BIT(x) (1 << x)
+    enum
+    {
+        InvertY         = BIT(0) // vulkan specific flag that just inverts vulkans NDCs y coord
+    };
+};
+
+struct VRIXIC_API ShaderConfig
+{
+public:
+    // Defines the type of shader it is 
+    EShaderType Type;
+
+    // The souce code of the shader as a string 
+    std::string SourceCode;
+
+    // defines the type of source it is, is it a string, filename, or a full file path 
+    EShaderSourceType SourceType;
+
+    // the entrypoint function name 
+    std::string EntryPoint;
+
+    // Shader compilation flags 
+    ShaderCompileFlags CompileFlags;
 };

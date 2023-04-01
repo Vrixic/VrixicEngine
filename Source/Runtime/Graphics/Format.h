@@ -5,7 +5,7 @@
 
 #pragma once
 
-enum class EFormat
+enum class EPixelFormat
 {
     Undefined = 0,          // Color format not known
 

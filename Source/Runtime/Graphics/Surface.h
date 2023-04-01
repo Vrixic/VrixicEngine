@@ -15,5 +15,5 @@ class VRIXIC_API Surface : public Interface
     /**
     * @returns EFormat the color format of this swapchain
     */
-    virtual EFormat GetColorFormat() const = 0;
+    virtual EPixelFormat GetColorFormat() const = 0;
 };

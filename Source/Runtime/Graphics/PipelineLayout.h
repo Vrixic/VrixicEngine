@@ -5,7 +5,7 @@
 
 #pragma once
 #include <Core/Misc/Interface.h>
-#include "ResourceGenerics.h"
+#include "RenderResourceGenerics.h"
 
 #include <vector>
 
@@ -20,7 +20,7 @@ public:
 
 public:
     /** Resource type of this binding: buffer, texture, etc... */
-    EBDResourceType ResourceType;
+    EResourceType ResourceType;
 
     /** The number/slot this descritor gets bound to */
     uint32 BindingNum;
@@ -38,7 +38,7 @@ public:
 /**
 * Defines a pipeline layout 
 */
-struct VRIXIC_API PipelineLayoutDescriptor
+struct VRIXIC_API PipelineLayoutConfig
 {
 public:
     /** Consists of all the bindings */
@@ -58,7 +58,7 @@ public:
     /**
     * @remarks creates a pipeline layout with the descriptor passed in
     */
-    PipelineLayout(const PipelineLayoutDescriptor& inPipelineLayoutDescriptor)
+    PipelineLayout(const PipelineLayoutConfig& inPipelineLayoutDescriptor)
         : Bindings (inPipelineLayoutDescriptor.Bindings) { }
 
 public:

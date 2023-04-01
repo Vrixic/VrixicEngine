@@ -23,7 +23,7 @@ class VRIXIC_API IRenderPass : public Interface
 struct VRIXIC_API RenderClearValues
 {
 public:
-    typedef Vrixic::Math::Vector4D LinearColor;
+    typedef Vector4D LinearColor;
 
     LinearColor Color;
     float Depth;

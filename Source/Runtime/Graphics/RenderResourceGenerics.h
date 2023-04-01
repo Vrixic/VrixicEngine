@@ -9,7 +9,7 @@
 /**
 * Enumeration including all the resource types supported and can be used by a pipeline binding decriptor
 */
-enum class EBDResourceType
+enum class EResourceType
 {
     Undefined,      // Resource type is unknown
     Buffer,         // a buffer resource
@@ -21,7 +21,7 @@ enum class EBDResourceType
 /**
 * Binding flags for resources - describes the resources 
 */
-struct ResourceBindFlags
+struct VRIXIC_API ResourceBindFlags
 {
 #define BIT(x) (1 << x)
 
@@ -42,4 +42,19 @@ struct ResourceBindFlags
         // allows tectures to be used as a render target for depth-stencil attachment 
         DepthStencilAttachment      = BIT(4),
     };
+};
+
+/**
+* Buffer usage flags indicate how the buffer will be used 
+*/
+enum class EBufferUsageFlags
+{
+    // used as a vertex buffer
+    Vertex,
+    
+    // used as an index buffer
+    Index,
+
+    // used as a storage buffer
+    Storage
 };

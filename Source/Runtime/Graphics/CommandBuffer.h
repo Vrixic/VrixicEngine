@@ -5,53 +5,8 @@
 
 #pragma once
 #include "Buffer.h"
+#include "PipelineGenerics.h"
 #include "RenderPass.h"
-
-/**
-* Defines a render viewport which is used by command buffers for rendering 
-* Specifies how the normalized device coords (NDC) are transformed into the pixel coords of the framebuffer 
-*/
-struct VRIXIC_API RenderViewport
-{
-public:
-    // The X coordinate from the upper left corner of the screen
-    float X;
-
-    // The Y coordinate from the upper left corner of the screen
-    float Y;
-
-    // Width of the viewport
-    float Width;
-    
-    // Height of the viewport
-    float Height;
-
-    // Min depth range of the viewport 
-    float MinDepth;
-
-    // Max depth range of the viewport 
-    float MaxDepth;
-};
-
-/**
-* Defines a render scissor which is used by command buffers for rendering 
-* Used to render parts of the screen inside of a RenderViewport
-*/
-struct VRIXIC_API RenderScissor
-{
-public:
-    // Width of the scissor rect (How much to width render)
-    float Width;
-
-    // Height of the scissor rect (How much to width render)
-    float Height;
-
-    // The x offset of the upper left corner of the screen
-    float OffsetX;
-
-    // The y offset of the upper left corner of the screen
-    float OffsetY;
-};
 
 /**
 * A Base class all pipeline state objects can derive from
