@@ -18,8 +18,8 @@ VulkanRenderer* VulkanRenderer::InstanceHandle = nullptr;
 
 // UI params are set via push constants
 struct PushConstBlock {
-	Vrixic::Math::Vector2D scale;
-	Vrixic::Math::Vector2D translate;
+	Vector2D scale;
+	Vector2D translate;
 } pushConstBlock;
 
 VulkanRenderer::VulkanRenderer()
@@ -688,8 +688,8 @@ bool VulkanRenderer::InitVulkanStandalone(const RendererInitializerList& inRende
 
 			GraphicsPipelineCreateInfo.pVertexInputState = &VertexInputStateCreateInfo;
 
-			VkViewport Viewport = { 0, 0, inRenderInitializerList.ViewportSize.Width, inRenderInitializerList.ViewportSize.Height, 0.0f, 1.0f };
-			VkRect2D Scissor = { {0, 0}, { inRenderInitializerList.ViewportSize.Width, inRenderInitializerList.ViewportSize.Height} };
+            VkViewport Viewport = { 0.0f, 0.0f, (float)inRenderInitializerList.ViewportSize.Width, (float)inRenderInitializerList.ViewportSize.Height, 0.0f, 1.0f };
+            VkRect2D Scissor = { {0, 0}, { inRenderInitializerList.ViewportSize.Width, inRenderInitializerList.ViewportSize.Height} };
 
 			VkPipelineViewportStateCreateInfo PipelineViewportStateCreateInfo = VulkanUtils::Initializers::PipelineViewportStateCreateInfo();
 			PipelineViewportStateCreateInfo.viewportCount = 1;
@@ -1117,8 +1117,8 @@ bool VulkanRenderer::InitVulkanGLFW(const RendererInitializerList& inRenderIniti
 
 			GraphicsPipelineCreateInfo.pVertexInputState = &VertexInputStateCreateInfo;
 
-			VkViewport Viewport = { 0, 0, (float)inRenderInitializerList.ViewportSize.Width, (float)inRenderInitializerList.ViewportSize.Height, 0.0f, 1.0f };
-			VkRect2D Scissor = { {0, 0}, { (float)inRenderInitializerList.ViewportSize.Width, (float)inRenderInitializerList.ViewportSize.Height} };
+            VkViewport Viewport = { 0.0f, 0.0f, (float)inRenderInitializerList.ViewportSize.Width, (float)inRenderInitializerList.ViewportSize.Height, 0.0f, 1.0f };
+            VkRect2D Scissor = { {0, 0}, { inRenderInitializerList.ViewportSize.Width, inRenderInitializerList.ViewportSize.Height} };
 
 			VkPipelineViewportStateCreateInfo PipelineViewportStateCreateInfo = VulkanUtils::Initializers::PipelineViewportStateCreateInfo();
 			PipelineViewportStateCreateInfo.viewportCount = 1;

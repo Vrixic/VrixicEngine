@@ -490,8 +490,8 @@ public:
 
 			GraphicsPipelineCreateInfo.pVertexInputState = &VertexInputStateCreateInfo;
 
-			VkViewport Viewport = { 0, 0, (float)VTemp->Width, (float)VTemp->Height, 0.0f, 1.0f };
-			VkRect2D Scissor = { {0, 0}, { (float)VTemp->Width, (float)VTemp->Height} };
+			VkViewport Viewport = { 0.0f, 0.0f, (float)VTemp->Width, (float)VTemp->Height, 0.0f, 1.0f };
+			VkRect2D Scissor = { {0, 0}, { (uint32)VTemp->Width, (uint32)VTemp->Height} };
 
 			VkPipelineViewportStateCreateInfo PipelineViewportStateCreateInfo = VulkanUtils::Initializers::PipelineViewportStateCreateInfo();
 			PipelineViewportStateCreateInfo.viewportCount = 1;
