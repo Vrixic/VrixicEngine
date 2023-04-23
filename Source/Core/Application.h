@@ -7,6 +7,7 @@
 #include "Core/Core.h"
 #include <Core/Windows/Window.h>
 #include "Editor/GameEditor.h"
+#include "Events/KeyEvent.h"
 
 #include <iostream>
 
@@ -19,9 +20,9 @@ private:
 
 	TSharedPtr<VGameEngine> GameEngine;
 
-#ifdef _EDITOR
-	TUniquePtr<VGameEditor> GameEditor;
-#endif
+//#ifdef _EDITOR
+//	TUniquePtr<VGameEditor> GameEditor;
+//#endif
 
 	bool bIsRunning;
 public:
@@ -29,6 +30,8 @@ public:
 	virtual ~Application();
 
 	void OnEvent(WindowEvent& inEvent);
+
+	bool OnKeyDownEvent(KeyPressedEvent& inKeyEvent);
 
 	void Run();
 

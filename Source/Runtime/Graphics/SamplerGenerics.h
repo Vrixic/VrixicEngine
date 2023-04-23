@@ -63,6 +63,9 @@ enum class EBorderColor
    IntOpaqueWhite               = 5,
 };
 
+/**
+* Helper struct used to configure settings for a sampler (Vulkan-> VkSampler)
+*/
 struct VRIXIC_API SamplerConfig
 {
 public:

@@ -7,6 +7,8 @@
 #include <Core/Core.h>
 #include "Format.h"
 #include <Misc/Defines/GenericDefines.h>
+#include "VertexInputAttribute.h"
+#include "VertexInputDescription.h"
 
 #include <string>
 
@@ -76,6 +78,9 @@ struct VRIXIC_API ShaderStageFlags
     };
 };
 
+/**
+* Flags that define how to compile a shader 
+*/
 struct VRIXIC_API ShaderCompileFlags
 {
 #define BIT(x) (1 << x)
@@ -85,6 +90,18 @@ struct VRIXIC_API ShaderCompileFlags
     };
 };
 
+/**
+* All attributes needed for a vertex shader 
+*/
+struct VRIXIC_API VertexShaderAttributes
+{
+    /** All of the input attributes for Vertex Shader*/
+    std::vector<VertexInputAttribute> InputAttributes;
+};
+
+/**
+* Used to configure settings for a shader 
+*/
 struct VRIXIC_API ShaderConfig
 {
 public:
@@ -101,5 +118,13 @@ public:
     std::string EntryPoint;
 
     // Shader compilation flags 
-    ShaderCompileFlags CompileFlags;
+    uint32 CompileFlags;
+
+    // All of the vertex shader bindings 
+    VertexInputDescription VertexBindings;
+
+public:
+    ShaderConfig()
+        : Type(EShaderType::Undefined), SourceType(EShaderSourceType::String), CompileFlags(0u) { }
 };
+

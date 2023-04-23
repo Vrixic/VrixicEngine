@@ -12,8 +12,9 @@
 */
 class VRIXIC_API Surface : public Interface
 {
+public:
     /**
-    * @returns EFormat the color format of this swapchain
+    * @returns EPixelFormat the color format of this surface 
     */
     virtual EPixelFormat GetColorFormat() const = 0;
 };

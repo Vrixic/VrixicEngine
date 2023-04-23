@@ -4,80 +4,27 @@
 */
 
 #pragma once
+#include "Buffer.h"
+#include "BufferGenerics.h"
 #include "CommandBufferGenerics.h"
+#include "CommandPool.h"
+#include "CommandPoolGenerics.h"
 #include "CommandQueue.h"
 #include <Core/Misc/Interface.h>
+#include "FrameBuffer.h"
 #include "Pipeline.h"
 #include "PipelineGenerics.h"
 #include "PipelineLayout.h"
+#include "RenderInterfaceGenerics.h"
 #include "RenderPass.h"
 #include "RenderPassGenerics.h"
 #include "Sampler.h"
 #include "SamplerGenerics.h"
 #include "Shader.h"
 #include "SwapChain.h"
+#include "Texture.h"
 
 #include <vector>
-
-/**
-* Graphics API that could be support by the engine
-*/
-enum class ERenderInterface
-{
-    Direct3D12,
-    Vulkan
-};
-
-/**
-* Information about the renderer
-*/
-struct VRIXIC_API RendererInfo
-{
-    // Name of the renderer interface, ex: vulkan
-    std::string Name;
-
-    // device vendor name, ex: NVIDIA
-    std::string DeviceVendorName;
-
-    // device name it self, the GPU, ex: Geforce RTX....
-    std::string DeviceName;
-
-    // All of the enabled extensions on the device in use by the renderer 
-    // ex: for vulkan you can have VK_EXT_multiviewport, etc...
-    std::vector<std::string> EnabledExtensionNames;
-};
-
-/**
-* Details about the application instance, for instance: VkInstance needs to know about the version, name, etc..
-*/
-struct VRIXIC_API ApplicationInstanceInfo
-{
-public:
-    // The name of the application, ex: Sandbox Project, for game it could be game name
-    std::string ApplicationName;
-
-    // The version of the application
-    uint32 ApplicationVersion;
-
-    // Engine name, for this it'll be "Vrixic Engine" -> Do not set
-    std::string EngineName;
-
-    // The engine version -> Do not set 
-    uint32 EngineVersion;
-};
-
-/**
-* Consists of things you can set for vulkan renderer creation
-*/
-struct VRIXIC_API VulkanRendererConfig
-{
-public:
-    // The application instance info used to create instance 
-    ApplicationInstanceInfo AppInstanceInfo;
-
-    // The layers to enable when creating a new vulkan instance 
-    std::vector<std::string> EnabledInstanceLayers;
-};
 
 /**
 * All supported graphics interface, if a graphics interface is supported, it must include a renderer for itself, its resource specific management deriving from IResourceManager;
@@ -87,6 +34,16 @@ static std::vector<ERenderInterface> SupportedGraphicInterfaces = { ERenderInter
 class VRIXIC_API IRenderInterface : Interface
 {
 public:
+    /**
+    * Initializes the render interface 
+    */
+    virtual void Initialize() = 0;
+
+    /**
+    * Shuts down this interface making it unuseable 
+    */
+    virtual void Shutdown() = 0;
+
     /* ------------------------------------------------------------------------------- */
     /* -------------                   Swap chains                 ------------------- */
     /* ------------------------------------------------------------------------------- */
@@ -95,21 +52,21 @@ public:
     * Creates a new swapchain that is renders onto the surface that is used to create the swap chain
     * -> Do not pass in a null surface, it should already be created as windows are already created before renderer initialization
     *
-    * @param inSwapChainConfig the Configription used to create a swapchain
+    * @param inSwapChainConfig the configuration used to create a swapchain
     * @param inSurface the surface that the swapchain uses and render to
     *
     * @remarks multi-swapchains not supported yet
     */
-    virtual SwapChain* CreateSwapChain(const SwapChainConfig& inSwapChainConfig, std::shared_ptr<Surface>& inSurface) = 0;
+    virtual SwapChain* CreateSwapChain(const SwapChainConfig& inSwapChainConfig, Surface* inSurface) = 0;
 
     /* ------------------------------------------------------------------------------- */
     /* -------------                 Command Buffers               ------------------- */
     /* ------------------------------------------------------------------------------- */
 
     /**
-    * Creates command buffer (s) with the specified settings as Configribed in the Configriptor
+    * Creates command buffer (s) with the specified settings as configured in the configuration | (For vulkan: The command pool is created by the queue in use; meaning a CommandQueue will always have its respective CommandPool)
     *
-    * @param inCmdBufferConfig specifies the Configription of the command buffers (if empty, it'll create one command buffer that is level Primary)
+    * @param inCmdBufferConfig specifies the configuration of the command buffers (if empty, it'll create one command buffer that is level Primary)
     */
     virtual ICommandBuffer* CreateCommandBuffer(const CommandBufferConfig& inCmdBufferConfig) = 0;
 
@@ -125,11 +82,11 @@ public:
     /* ------------------------------------------------------------------------------- */
 
     /**
-    * Creates a buffer with the specified buffer Configriptor
+    * Creates a buffer with the specified buffer configuration
     *
-    * @param inBufferDesc info used to create the buffer
+    * @param inBufferConfig info used to create the buffer
     */
-    virtual Buffer* CreateBuffer(const BufferDescriptor& inBufferDesc) = 0;
+    virtual Buffer* CreateBuffer(const BufferConfig& inBufferConfig) = 0;
 
     /**
     * Writes/Update data to the specified buffer (if data already exist, this will update)
@@ -157,6 +114,42 @@ public:
     * @param inBuffer the buffer to free
     */
     virtual void Free(Buffer* inBuffer) = 0;
+
+    /* ------------------------------------------------------------------------------- */
+    /* -------------                    Textures                   ------------------- */
+    /* ------------------------------------------------------------------------------- */
+
+    /**
+    * Creates a new texture
+    *
+    * @param inTextureConfig  info used to create the texture
+    */
+    virtual Texture* CreateTexture(const TextureConfig& inTextureConfig) = 0;
+
+    /**
+    * Releases/Destroys the texture passed in
+    *
+    * @param inTexture the texture to free
+    */
+    virtual void Free(Texture* inTexture) = 0;
+
+    /* ------------------------------------------------------------------------------- */
+    /* -------------                  Frame Buffers                ------------------- */
+    /* ------------------------------------------------------------------------------- */
+
+    /**
+    * Creates a new frame buffer
+    *
+    * @param inFrameBufferConfig  info used to create the frame buffer
+    */
+    virtual IFrameBuffer* CreateFrameBuffer(const FrameBufferConfig& inFrameBufferConfig) = 0;
+
+    /**
+    * Releases/Destroys the frame buffer passed in
+    *
+    * @param inFrameBuffer the frame buffer to free
+    */
+    virtual void Free(IFrameBuffer* inFrameBuffer) = 0;
 
     /* ------------------------------------------------------------------------------- */
     /* -------------                   Render pass                 ------------------- */
@@ -213,6 +206,24 @@ public:
     virtual void Free(IPipeline* inPipeline) = 0;
 
     /* ------------------------------------------------------------------------------- */
+    /* -------------                   Semaphores                  ------------------- */
+    /* ------------------------------------------------------------------------------- */
+
+    /**
+    * Creates a new semaphore object
+    * 
+    * @param inSemaphoreConfig contains info on how to create the semaphore 
+    */
+    virtual ISemaphore* CreateRenderSemaphore(const SemaphoreConfig& inSemaphoreConfig) = 0;
+
+    /**
+    * Releases/Destroys the semaphore passed in
+    *
+    * @param inSemaphore the semaphore to free
+    */
+    virtual void Free(ISemaphore* inSemaphore) = 0;
+
+    /* ------------------------------------------------------------------------------- */
     /* -------------                     Fences                    ------------------- */
     /* ------------------------------------------------------------------------------- */
 
@@ -255,7 +266,7 @@ public:
     *
      * @param inSamplerConfig info used to create the sampler
     */
-    virtual Shader* CreateShader(const SamplerConfig& inSamplerConfig) = 0;
+    virtual Sampler* CreateSampler(const SamplerConfig& inSamplerConfig) = 0;
 
     /**
     * Releases/Destroys the sampler passed in

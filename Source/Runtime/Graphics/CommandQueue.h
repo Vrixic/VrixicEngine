@@ -7,6 +7,7 @@
 #include <Core/Misc/Interface.h>
 #include "CommandBuffer.h"
 #include "Fence.h"
+#include "Semaphore.h"
 
 class VRIXIC_API ICommandQueue : public Interface
 {
@@ -16,8 +17,10 @@ public:
     *  uses the command buffers fence to submit the buffer
     * 
     * @param inCommandBuffer the command buffer that will get submitted
+    * @param numSignalSemaphores number of signal semaphores
+    * @param inSignalSemaphores the signal semaphore(s)
     */
-    virtual void Submit(ICommandBuffer* inCommandBuffer) = 0;
+    virtual void Submit(ICommandBuffer* inCommandBuffer, uint32 inNumSignalSemaphores, ISemaphore* inSignalSemaphores) = 0;
 
     /**
     * Sets a wait fence that will block the CPU execution until the fence has been signaled

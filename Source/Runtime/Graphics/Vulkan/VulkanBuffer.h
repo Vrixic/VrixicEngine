@@ -6,7 +6,9 @@
 #pragma once
 #include "VulkanDevice.h"
 #include <Misc/Defines/VulkanProfilerDefines.h>
+#include <Runtime/Graphics/Buffer.h>
 #include <Runtime/Memory/Core/MemoryManager.h>
+#include "VulkanTypeConverter.h"
 
 /**
 * Buffer allocation diagram
@@ -282,7 +284,7 @@ private:
 * 
 * -- Memory is already mapped to meaning Pointer to Memory in CPU side already exits, make sure to 64 byte align memory ranges when flushing 
 */
-class VRIXIC_API VulkanBuffer
+class VRIXIC_API VulkanBuffer : public Buffer
 {
 private:
 	friend class VulkanMemoryHeap;
@@ -298,21 +300,21 @@ private:
 
 	uint64 Offset;
 
-	VkDeviceSize Size;
 	VkDeviceSize Alignment;
 
 public:
-	VulkanBuffer(const VulkanDevice* inDevice, int32 inDeviceMemoryID, uint64 inOffset)
+	VulkanBuffer(const VulkanDevice* inDevice, const BufferConfig& inBufferConfiguration, int32 inDeviceMemoryID, uint64 inOffset)
 		: Device(inDevice), BufferHandle(VK_NULL_HANDLE), DeviceMemoryID(inDeviceMemoryID),
-		Size(0), Alignment(0), Offset(inOffset), DeviceMemory(nullptr) { }
+		Alignment(0), Offset(inOffset), DeviceMemory(nullptr) 
+    { 
+        BufferConfiguration = inBufferConfiguration;
+    }
 
 	/**
 	* Destroy vulkan buffer upon destruction
 	*/
 	~VulkanBuffer()
 	{
-		VE_PROFILE_VULKAN_FUNCTION();
-
 		if (BufferHandle != VK_NULL_HANDLE)
 		{
 			Device->WaitUntilIdle();
@@ -324,51 +326,12 @@ public:
 	VulkanBuffer operator=(const VulkanBuffer& other) = delete;
 
 public:
-	/**
-	* Create Buffer handle using the create info (does extra things if BufferUsageFlags requires it), also creates
-	*
-	* @param inAllocater The allocater to use to allocate the device memory
-	* @param inBufferCreateInfo Buffer Handle creation info
-	*
-	* @return bool Buffer handle creation is successful
-	*/
-	bool AllocateBuffer(VulkanDeviceMemoryAllocater* const inAllocater, VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
-	{
-		VE_PROFILE_VULKAN_FUNCTION();
-
-		// Create the Buffer Handle 
-		AllocateBuffer(inBufferCreateInfo);
-
-		// Create the memory backing up the buffer handle
-		VkMemoryRequirements MemoryRequirements;
-		VkMemoryAllocateInfo MemoryAllocateInfo = VulkanUtils::Initializers::MemoryAllocateInfo();
-		vkGetBufferMemoryRequirements(*Device->GetDeviceHandle(), BufferHandle, &MemoryRequirements);
-
-		MemoryAllocateInfo.allocationSize = MemoryRequirements.size;
-		MemoryAllocateInfo.memoryTypeIndex = Device->GetMemoryTypeIndex(MemoryRequirements.memoryTypeBits, inBufferCreateInfo.MemoryPropertyFlags, nullptr);
-
-		// If the buffer has VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT set we also need to enable the appropriate flag during allocation
-		VkMemoryAllocateFlagsInfoKHR MemoryAllocateFlagsInfoKHR = { };
-		if (inBufferCreateInfo.BufferUsageFlags & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
-			MemoryAllocateFlagsInfoKHR.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
-			MemoryAllocateFlagsInfoKHR.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
-			MemoryAllocateInfo.pNext = &MemoryAllocateFlagsInfoKHR;
-		}
-
-		Alignment = MemoryRequirements.alignment;
-		DeviceMemoryID = inAllocater->AllocateMemory(MemoryAllocateInfo);
-
-		return true;
-	}
-
 	/*
 	* Invalidate a memory range to make it visible to the host CPU
 	* refer to VulkanDeviceMemory::Invalidate() for in depth overview
 	*/
 	bool Invalidate(VkDeviceSize inSize, VkDeviceSize inOffset)
 	{
-		VE_PROFILE_VULKAN_FUNCTION();
-
 		return DeviceMemory->Invalidate(inSize, Offset + inOffset);
 	}
 
@@ -382,12 +345,10 @@ public:
 	*/
 	void* Map(VkDeviceSize inSize, VkDeviceSize inOffset)
 	{
-		VE_PROFILE_VULKAN_FUNCTION();
-
 		inOffset += Offset;
 		if (inSize == VK_WHOLE_SIZE)
 		{
-			inSize = Size;
+			inSize = BufferConfiguration.Size;
 		}
 
 		return DeviceMemory->Map(inSize, inOffset);
@@ -400,7 +361,6 @@ public:
 	*/
 	void Unmap()
 	{
-		VE_PROFILE_VULKAN_FUNCTION();
 		DeviceMemory->Unmap();
 	}
 
@@ -410,18 +370,51 @@ public:
 	*/
 	bool FlushMappedMemory(VkDeviceSize inSize, VkDeviceSize inOffset)
 	{
-		VE_PROFILE_VULKAN_FUNCTION();
-
 		inOffset += Offset;
 		if (inSize == VK_WHOLE_SIZE)
 		{
-			inSize = Size;
+			inSize = BufferConfiguration.Size;
 		}
 
 		return DeviceMemory->FlushMappedMemory(inSize, inOffset);
 	}
 
 private:
+    /**
+    * Create Buffer handle using the create info (does extra things if BufferUsageFlags requires it), also creates
+    *
+    * @param inAllocater The allocater to use to allocate the device memory
+    * @param inBufferCreateInfo Buffer Handle creation info
+    *
+    * @return bool Buffer handle creation is successful
+    */
+    bool AllocateBuffer(VulkanDeviceMemoryAllocater* const inAllocater, VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
+    {
+        // Create the Buffer Handle 
+        AllocateBuffer(inBufferCreateInfo);
+
+        // Create the memory backing up the buffer handle
+        VkMemoryRequirements MemoryRequirements;
+        VkMemoryAllocateInfo MemoryAllocateInfo = VulkanUtils::Initializers::MemoryAllocateInfo();
+        vkGetBufferMemoryRequirements(*Device->GetDeviceHandle(), BufferHandle, &MemoryRequirements);
+
+        MemoryAllocateInfo.allocationSize = MemoryRequirements.size;
+        MemoryAllocateInfo.memoryTypeIndex = Device->GetMemoryTypeIndex(MemoryRequirements.memoryTypeBits, inBufferCreateInfo.MemoryPropertyFlags, nullptr);
+
+        // If the buffer has VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT set we also need to enable the appropriate flag during allocation
+        VkMemoryAllocateFlagsInfoKHR MemoryAllocateFlagsInfoKHR = { };
+        if (inBufferCreateInfo.BufferUsageFlags & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
+            MemoryAllocateFlagsInfoKHR.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
+            MemoryAllocateFlagsInfoKHR.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+            MemoryAllocateInfo.pNext = &MemoryAllocateFlagsInfoKHR;
+        }
+
+        Alignment = MemoryRequirements.alignment;
+        DeviceMemoryID = inAllocater->AllocateMemory(MemoryAllocateInfo);
+
+        return true;
+    }
+
 	/**
 	* Creates a buffer handle using the create info
 	*
@@ -429,19 +422,12 @@ private:
 	*/
 	void AllocateBuffer(VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
 	{
-		VE_PROFILE_VULKAN_FUNCTION();
-
 		// Create the buffer handle
 		VkBufferCreateInfo BufferCreateInfo = VulkanUtils::Initializers::BufferCreateInfo();
 		BufferCreateInfo.usage = inBufferCreateInfo.BufferUsageFlags;
 		BufferCreateInfo.size = inBufferCreateInfo.DeviceSize;
 
-		Size = inBufferCreateInfo.DeviceSize;
-#if _DEBUG
 		VK_CHECK_RESULT(vkCreateBuffer(*Device->GetDeviceHandle(), &BufferCreateInfo, nullptr, &BufferHandle), "[VulkanBuffer]: Failed trying to create buffer");
-#else
-		vkCreateBuffer(*Device->GetDeviceHandle(), &BufferCreateInfo, nullptr, &BufferHandle);
-#endif
 	}
 
 	/**
@@ -453,8 +439,6 @@ private:
 	*/
 	bool Bind(VkDeviceSize inOffset)
 	{
-		VE_PROFILE_VULKAN_FUNCTION();
-
 #if _DEBUG
 		VkResult Result;
 		Result = vkBindBufferMemory(*Device->GetDeviceHandle(), BufferHandle, *DeviceMemory->GetMemoryHandle(), Offset + inOffset);
@@ -468,7 +452,7 @@ private:
 public:
 	uint64 GetBufferSize() const
 	{
-		return Size;
+		return BufferConfiguration.Size;
 	}
 
 	const VkBuffer* GetBufferHandle() const
@@ -563,7 +547,10 @@ public:
 		BufferCreateInfo.BufferUsageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 		BufferCreateInfo.MemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 
-		Buffer = new VulkanBuffer(Device, -1, 0);
+        BufferConfig BufferConfg;
+        BufferConfg.Size = HeapSize;
+
+		Buffer = new VulkanBuffer(Device, BufferConfg, -1, 0);
 		Buffer->AllocateBuffer(DeviceMemoryAllocater, BufferCreateInfo);
 		MemoryID = Buffer->GetDeviceMemoryID();
 
@@ -596,32 +583,32 @@ public:
 	* Allocates a buffer to be used by clients
 	*
 	* @param inBufferType The type of buffer to be created, refer to EBufferType...
-	* @param inBufferCreateInfo Information of how the buffer should be created
+	* @param inBufferConfig Information of how the buffer should be created
 	*
 	* @return VulkanBuffer* A pointer to the buffer that was created
 	*/
-	VulkanBuffer* AllocateBuffer(EBufferType inBufferType, VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
+	VulkanBuffer* AllocateBuffer(/*EBufferType inBufferType,*/ const BufferConfig& inBufferConfig)
 	{
 		VE_PROFILE_VULKAN_FUNCTION();
 
 		VulkanBuffer* Buffer = nullptr;
 
-		switch (inBufferType)
+		switch (inBufferConfig.UsageFlags)
 		{
-		case EBufferType::Index:
-			Buffer = AllocateIndexBuffer(inBufferCreateInfo);
+		case EBufferUsageFlags::Index:
+			Buffer = AllocateIndexBuffer(inBufferConfig);
 			break;
-		case EBufferType::Vertex:
-			Buffer = AllocateVertexBuffer(inBufferCreateInfo);
+		case EBufferUsageFlags::Vertex:
+			Buffer = AllocateVertexBuffer(inBufferConfig);
 			break;
-		case EBufferType::Storage:
-			Buffer = AllocateStorageBuffer(inBufferCreateInfo);
+		case EBufferUsageFlags::Storage:
+			Buffer = AllocateStorageBuffer(inBufferConfig);
 			break;
-		case EBufferType::Uniform:
-			break;
-		case EBufferType::Staging:
-			Buffer = AllocateStagingBuffer(inBufferCreateInfo);
-			break;
+		//case EBufferType::Uniform:
+		//	break;
+		//case EBufferType::Staging:
+		//	Buffer = AllocateStagingBuffer(inBufferConfig);
+		//	break;
 		default:
 			break;
 		}
@@ -633,34 +620,34 @@ private:
 	/**
 	* Allocated a index buffer
 	*/
-	VulkanBuffer* AllocateIndexBuffer(VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
+	VulkanBuffer* AllocateIndexBuffer(const BufferConfig& inBufferConfig)
 	{
-		return AllocateBuffer(inBufferCreateInfo);
+		return AllocateBufferInternal(inBufferConfig);
 	}
 
 	/**
 	* Allocated a vertex buffer
 	*/
-	VulkanBuffer* AllocateVertexBuffer(VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
-	{
-		return AllocateBuffer(inBufferCreateInfo);
-	}
+	VulkanBuffer* AllocateVertexBuffer(const BufferConfig& inBufferConfig)
+    {
+        return AllocateBufferInternal(inBufferConfig);
+    }
 
 	/**
 	* Allocated a storage buffer
 	*/
-	VulkanBuffer* AllocateStorageBuffer(VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
-	{
-		return AllocateBuffer(inBufferCreateInfo);
-	}
+	VulkanBuffer* AllocateStorageBuffer(const BufferConfig& inBufferConfig)
+    {
+        return AllocateBufferInternal(inBufferConfig);
+    }
 	
 	/**
 	* Allocated a storage buffer
 	*/
-	VulkanBuffer* AllocateStagingBuffer(VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
-	{
-		return AllocateBuffer(inBufferCreateInfo);
-	}
+	VulkanBuffer* AllocateStagingBuffer(const BufferConfig& inBufferConfig)
+    {
+        return AllocateBufferInternal(inBufferConfig);
+    }
 
 	/**
 	* Allocates a buffer, Alignment of memory offset is done for you
@@ -669,20 +656,31 @@ private:
 	*
 	* @return VulkanBuffer* The buffer that was created
 	*/
-	VulkanBuffer* AllocateBuffer(VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
+	VulkanBuffer* AllocateBufferInternal(const BufferConfig& inBufferConfig)
 	{
 		VE_PROFILE_VULKAN_FUNCTION();
 
-		VulkanBuffer* AllocBuffer = new VulkanBuffer(Device, -1, MemoryUsed);
-		AllocBuffer->AllocateBuffer(inBufferCreateInfo);
+        VulkanUtils::Descriptions::VulkanBufferCreateInfo BufferCreateInfo = { 0 };
+
+        BufferCreateInfo.BufferUsageFlags = VulkanTypeConverter::ConvertBufferUsageFlagsToVk(inBufferConfig.UsageFlags);
+        BufferCreateInfo.DeviceSize = inBufferConfig.Size;
+        BufferCreateInfo.MemoryPropertyFlags = VulkanTypeConverter::ConvertMemoryFlagsToVk(inBufferConfig.MemoryFlags);
+
+		VulkanBuffer* AllocBuffer = new VulkanBuffer(Device, inBufferConfig , -1, MemoryUsed);
+		AllocBuffer->AllocateBuffer(BufferCreateInfo);
 		AllocBuffer->DeviceMemory = DeviceMemoryAllocater->GetDeviceMemory(MemoryID);
 		AllocBuffer->DeviceMemoryID = MemoryID;
 		AllocBuffer->Alignment = Buffer->Alignment;
 
 		AllocBuffer->Bind(0);
 
+        if (inBufferConfig.InitialData != nullptr)
+        {
+            memcpy(AllocBuffer->GetMappedPointer(), inBufferConfig.InitialData, inBufferConfig.Size);
+        }
+
 		/* Align the memory to alignment so next buffer will be aligned correctly */
-		float AlignmentCheck = static_cast<float>(AllocBuffer->Size) / static_cast<float>(Buffer->Alignment);
+		float AlignmentCheck = static_cast<float>(inBufferConfig.Size) / static_cast<float>(Buffer->Alignment);
 		AlignmentCheck = ceilf(AlignmentCheck);
 
 		MemoryUsed += static_cast<uint64>(AlignmentCheck * Buffer->Alignment);

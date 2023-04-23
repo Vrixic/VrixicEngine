@@ -5,6 +5,7 @@
 
 #pragma once
 #include <Core/Core.h>
+#include "Extents.h"
 #include <Misc/Defines/GenericDefines.h>
 #include "Format.h"
 
@@ -54,6 +55,9 @@ public:
 
 };
 
+/**
+* Contain information for configuring a render pass creation 
+*/
 struct VRIXIC_API RenderPassConfig
 {
 public:
@@ -65,6 +69,9 @@ public:
 
     // Number of samples for the attachment, CANNOT BE ZERO (Default = 1, which indicated multisampling is disabled)
     uint32 NumSamples;
+
+    // The render area that will be in use for the render pass 
+    Extent2D RenderArea;
 
 public:
     uint32 GetNumColorAttachments() const

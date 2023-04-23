@@ -14,17 +14,8 @@ class VRIXIC_API Shader : public Interface
 {
 protected:
     EShaderType ShaderType;
-    uint32 ShaderFlags;
 
 public:
-    /**
-    * @returns uint32 the stage flags for this shader 
-    */
-    inline uint32 GetStageFlags() const 
-    {
-        return ShaderFlags;
-    }
-
     /**
     * @returns EShaderType the shader type for this shader 
     */

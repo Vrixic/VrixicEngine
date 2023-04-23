@@ -60,13 +60,13 @@ const void* VulkanResourceManager::GetShaderModule(uint32 inShaderKey) const
 	return &ShaderModules[inShaderKey];
 }
 
-void VulkanResourceManager::FreeAllMemory(VulkanDevice* inDevice) const
+void VulkanResourceManager::FreeAllMemory() const
 {
-	inDevice->WaitUntilIdle();
+	Device->WaitUntilIdle();
 
 	for (uint32 i = 0; i < ShaderModules.size(); ++i)
 	{
-		vkDestroyShaderModule(*inDevice->GetDeviceHandle(), ShaderModules[i], nullptr);
+		vkDestroyShaderModule(*Device->GetDeviceHandle(), ShaderModules[i], nullptr);
 	}
 }
 

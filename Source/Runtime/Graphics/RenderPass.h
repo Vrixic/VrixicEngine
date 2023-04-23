@@ -7,6 +7,8 @@
 #include <Core/Misc/Interface.h>
 #include <Runtime/Core/Math/Vector4D.h>
 
+class IFrameBuffer;
+
 /**
 * Base class for api to define a render pass object, a shell, as of now empty 
 * Renderpasses tell API(also GPUs) many things about how to render a frame and what attachments to use and also keeps tracks of relation ships (Subpasses), 
@@ -28,6 +30,10 @@ public:
     LinearColor Color;
     float Depth;
     uint32 Stencil;
+
+public:
+    RenderClearValues()
+        : Color(0.0f, 0.0f, 0.0f, 1.0f), Depth(0.0f), Stencil(0u) { }
 };
 
 /**
@@ -39,9 +45,16 @@ public:
     // Render pass pointer 
     IRenderPass* RenderPassPtr;
 
+    // The frame buffer to attach
+    IFrameBuffer* FrameBuffer;
+
     // Clear values array (Could also be one)
     RenderClearValues* ClearValues;
 
     // Number of clear values
     uint32 NumClearValues;
+
+public:
+    RenderPassBeginInfo()
+        : RenderPassPtr(nullptr), FrameBuffer(nullptr), ClearValues(nullptr), NumClearValues(0) { }
 };

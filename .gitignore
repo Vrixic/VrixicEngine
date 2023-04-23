@@ -365,3 +365,4 @@ _deps
 #Assets/ -- For now its just shaders, later on will need to ignore meshes and textures used for testing 
 Build/
 CMake/VrixicEngineBuild/
+AutomatedTests/

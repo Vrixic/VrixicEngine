@@ -5,11 +5,13 @@
 
 #pragma once
 #include <Core/Misc/Interface.h>
+#include "PipelineGenerics.h"
 
 /**
 * Pipeline state interface aka. VkPipeline for vulkan 
 */
 class VRIXIC_API IPipeline : Interface
 { 
-
+public:
+    inline virtual EPipelineBindPoint GetBindPoint() const = 0;
 };

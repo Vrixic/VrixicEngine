@@ -4,33 +4,34 @@
 */
 
 #pragma once
+#include "BufferGenerics.h"
 #include "RenderResource.h"
 
 /**
-* Holds the desription of a buffer of any type
+* Holds the description of a buffer of any type
 */
-struct VRIXIC_API BufferDescriptor
+struct VRIXIC_API BufferConfig
 {
 public:
     // The size of the buffer in bytes.
     uint64 Size;
 
     // this are flags that specify the usage of the buffer BufferUsageFlags::Index, etc..
-    uint32 UsageFlags;
+    EBufferUsageFlags UsageFlags;
 
-    // Binding flags for the buffer 
-    uint32 BindFlags;
+    // this flags are for the memory that the buffer will occupy
+    uint32 MemoryFlags;
 
     // Initial data which the buffer will be initialized with (raw pointer to the data)
     const void* InitialData;
 
 public:
-    BufferDescriptor()
+    BufferConfig()
     {
         Size = 0;
-        UsageFlags = 0;
-        BindFlags = 0;
+        MemoryFlags = 0;
         InitialData = nullptr;
+        UsageFlags = (EBufferUsageFlags)-1;
     }
 };
 
@@ -40,30 +41,27 @@ public:
 class VRIXIC_API Buffer : RenderResource
 {
 protected:
-    BufferDescriptor BufferDesc;
+    BufferConfig BufferConfiguration;
 
 public:
     /**
     * The usage flags of this buffer 
     */
-    inline uint32 GetUsageFlags() const
+    inline EBufferUsageFlags GetUsageFlags() const
     {
-        return BufferDesc.UsageFlags;
+        return BufferConfiguration.UsageFlags;
     }
 
     /**
-    * The bind flags of this buffer
+    * @returns BufferConfig& a info struct of the buffer configuration, can contain things like size and other flags
     */
-    inline uint32 GetBindFlags() const
+    virtual const BufferConfig& GetBufferConfig() const
     {
-        return BufferDesc.BindFlags;
+        return BufferConfiguration;
     }
 
     /**
-    * @returns BufferDescriptor a info struct of the buffer description, can contain things like size and other flags
+    * @returns EResourceType the resource type of this object 
     */
-    virtual BufferDescriptor GetDescriptor() const
-    {
-        return BufferDesc;
-    }
+    virtual inline EResourceType GetResourceType() const override final;
 };

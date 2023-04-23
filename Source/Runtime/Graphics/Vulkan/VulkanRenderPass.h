@@ -5,17 +5,24 @@
 
 #pragma once
 #include "VulkanRenderLayout.h"
+#include <Runtime/Graphics/RenderPass.h>
+#include <Runtime/Graphics/RenderPassGenerics.h>
 
 /**
 * Representation of vulkan render pass 
 */
-class VRIXIC_API VulkanRenderPass
+class VRIXIC_API VulkanRenderPass : public IRenderPass
 {
 private:
 	VulkanDevice* Device;
 	VkRenderPass RenderPassHandle;
 
 	VulkanRenderLayout RenderLayout;
+
+    VkSampleCountFlagBits SampleCountFlagBits;
+    uint32 DepthStencilAttachmentIndex;
+
+    uint32 NumColorAttachments;
 
 public:	
 	/**
@@ -24,6 +31,14 @@ public:
 	* @remarks Creates the RenderPass if bCreateDefault is true (Default = true) 
 	*/
 	VulkanRenderPass(VulkanDevice* inDevice, VulkanRenderLayout& inRenderLayout, std::vector<VkSubpassDependency>& inSubpassDependencies);
+
+    /**
+    * @param inRenderLayout - the render layout used to create the render pass
+    * @param inRenderConfig - configuration used for the creation of the renderpass
+    *
+    * @remarks Creates the RenderPass if bCreateDefault is true (Default = true)
+    */
+	VulkanRenderPass(VulkanDevice* inDevice, VulkanRenderLayout& inRenderLayout, const RenderPassConfig& inRenderPassConfig);
 
 	~VulkanRenderPass();
 
@@ -65,5 +80,15 @@ public:
 	{
 		return &RenderLayout;
 	}
+
+    inline VkSampleCountFlagBits GetSampleCountFlagBits() const
+    {
+        return SampleCountFlagBits;
+    }
+
+    inline uint32 GetNumColorAttachments() const
+    {
+        return NumColorAttachments;
+    }
 };
 

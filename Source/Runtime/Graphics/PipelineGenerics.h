@@ -5,7 +5,9 @@
 
 #pragma once
 #include <Core/Core.h>
+#include "PipelineLayout.h"
 #include "RenderPass.h"
+#include "Shader.h"
 
 /**
 * Primitve tology - defines how vertices are read in
@@ -132,11 +134,11 @@ enum class EFrontFace
 };
 
 /**
-* 
+* Logic Operations 
 */
 enum class ELogicOp
 {
-    Disabled        = -1,
+    Disabled        = -1, // none, do not want to use any logic operations 
     Clear           = 0,
     And             = 1,
     AndReverse      = 2,
@@ -155,18 +157,35 @@ enum class ELogicOp
     Set             = 15,
 };
 
+/**
+* The bind point for a pipeline 
+*/
+enum class EPipelineBindPoint
+{
+    Undefined       = -1,
+    Graphics        = 0,
+    Compute         = 1,
+    //RayTracingKhr = 1000165000,
+    //SubpassShadingHuawei = 1000369003,
+    //RAY_TRACING_NV = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
+};
+
+/**
+* Color component flags structure 
+*/
 struct VRIXIC_API ColorComponentFlags
 {
 #define BIT(x) (1 << x)
     enum
     {
-        R       = BIT(0),
-        G       = BIT(1),
-        B       = BIT(2),
-        A       = BIT(3),
+        R       = BIT(0), // Red
+        G       = BIT(1), // Green
+        B       = BIT(2), // Blue
+        A       = BIT(3), // Alpha
 
-        RGB     = R | G | B,
-        All     = RGB | A
+        RGB     = R | G | B, // Red Green Blue
+        RGBA    = RGB | A, // Red Green Blue Alpha
+        All     = RGBA
     };
 };
 
@@ -195,6 +214,10 @@ public:
 
     // Max depth range of the viewport 
     float MaxDepth;
+
+public:
+    RenderViewport()
+        : X(0.0f), Y(0.0f), Width(0.0f), Height(0.0f), MinDepth(0.0f), MaxDepth(0.0f) { }
 };
 
 /**
@@ -204,21 +227,25 @@ public:
 struct VRIXIC_API RenderScissor
 {
 public:
-    // Width of the scissor rect (How much to width render)
-    float Width;
-
-    // Height of the scissor rect (How much to width render)
-    float Height;
-
     // The x offset of the upper left corner of the screen
-    float OffsetX;
+    int32 OffsetX;
 
     // The y offset of the upper left corner of the screen
-    float OffsetY;
+    int32 OffsetY;
+
+    // Width of the scissor rect (How much to width render)
+    uint32 Width;
+
+    // Height of the scissor rect (How much to width render)
+    uint32 Height;
+
+public:
+    RenderScissor()
+        : OffsetX(0), OffsetY(0), Width(0), Height(0) { } 
 };
 
 /**
-* Defines depth state
+* Defines depth state configuration settings 
 */
 struct VRIXIC_API DepthConfig
 {
@@ -231,6 +258,10 @@ public:
 
     // the comparison operator used for depth testing 
     ECompareOp CompareOp;
+
+public:
+    DepthConfig()
+        : bIsTestingEnabled(false), bIsWritingEnabled(false), CompareOp(ECompareOp::Less) { }
 };
 
 /**
@@ -259,6 +290,11 @@ public:
 
     // integer stencil reference value that is used in the unsigned stencil comparison operations
     uint32 ReferenceValue;
+
+public:
+    StencilOpConfig()
+        : StencilFailOp(EStencilOp::Keep), StencilPassOp(EStencilOp::Keep), DepthFailOp(EStencilOp::Keep),
+          CompareOp(ECompareOp::Less), CompareMask(0u), WriteMask(0u), ReferenceValue(0u) { }
 };
 
 /**
@@ -270,11 +306,18 @@ public:
     // perform stencil test?
     bool bIsTestingEnabled;
 
+    // specifies if the reference value will be dynamically set 
+    bool bIsReferenceValueDynamic;
+
     // specifies front face descriptions of stencil testing
     StencilOpConfig Front;
 
     // specifies back face descriptions of stencil testing
     StencilOpConfig Back;
+
+public:
+    StencilStateConfig()
+        : bIsTestingEnabled(false), bIsReferenceValueDynamic(false) { }
 };
 
 /**
@@ -291,6 +334,10 @@ public:
 
     // Scalar factor that is applied to a fragments slope in depth bias calculations
     float SlopeFactor;
+
+public:
+    DepthBiasConfig()
+        : ConstantFactor(0.0f), Clamp(0.0f), SlopeFactor(0.0f) { }
 };
 
 /**
@@ -322,6 +369,12 @@ public:
 
     // width of rasterized line segments.
     float LineWidth;
+
+public:
+    RasterizerConfig()
+        : PolygonMode(EPolygonMode::Fill), CullMode(ECullMode::None), FrontFace(EFrontFace::Clockwise),
+        bDepthClampEnabled(false), bRasterizerDiscardEnabled(false), bDepthBiasEnabled(false),
+        LineWidth(1.0f) { }
 };
 
 /**
@@ -354,6 +407,12 @@ public:
 
     // specifys R G B A components that are enabled for writing 
     uint8 ColorWriteMask;
+
+public:
+    BlendOpConfig()
+        : bIsBlendEnabled(false), SrcColorBlendFactor(EBlendFactor::SrcAlpha), DstColorBlendFactor(EBlendFactor::OneMinusSrcAlpha),
+        ColorBlendOp(EBlendOp::Add), AlphaBlendOp(EBlendOp::Add), SrcAlphaBlendFactor(EBlendFactor::SrcAlpha), DstAlphaBlendFactor(EBlendFactor::OneMinusSrcAlpha),
+        ColorWriteMask(ColorComponentFlags::All) { }
 };
 
 /**
@@ -362,11 +421,21 @@ public:
 struct VRIXIC_API BlendStateConfig
 {
 public:
+    // Specifies if alphaToCoverageEnabled is enabled to be used as a multi-sampling technique 
+    bool bAlphaToCoverageEnabled;
+
+    // Specifies to enable independentBlendEnabled when blending simultanieous color attachments
+    // for use in multi-sample states 
+    bool bIndependentBlendEnabled;
+
+    // the bitmask used if bAlphaToCoverageEnabled is enabled 
+    uint32 SampleMask; 
+
     // Specifies logic fragment operation
     ELogicOp LogicOp;
 
     // All of the blend op color attachments 
-    std::vector<BlendOpConfig> BlendOpDescriptors;
+    std::vector<BlendOpConfig> BlendOpConfigs;
 
     // if the blend factor will be dynamically set 
     bool bIsBlendFactorDynamic;
@@ -376,14 +445,21 @@ public:
     float BlendConstants[4];
 
 public:
-    uint32 GetNumBlendOpDescriptors() const
+    BlendStateConfig()
+        : bAlphaToCoverageEnabled(false), bIndependentBlendEnabled(false), SampleMask(0u), LogicOp(ELogicOp::Disabled),
+        bIsBlendFactorDynamic(false), BlendConstants{ 0.0f, 0.0f, 0.0f, 0.0f } { }
+
+public:
+    uint32 GetNumBlendOpConfigs() const
     {
-        return BlendOpDescriptors.size();
+        return BlendOpConfigs.size();
     }
 };
 
 /**
 * Defines a graphics pipeline description
+* 
+* @note only supports two types of shaders for now Fragment & Vertex 
 */
 struct VRIXIC_API GraphicsPipelineConfig
 {
@@ -393,6 +469,12 @@ public:
 
     // Renderpass associated with this pipeline
     const IRenderPass* RenderPassPtr;
+
+    // Vertex Shader, manipulates vertices
+    Shader* VertexShader;
+
+    // Pixel Shader, manipulates pixels
+    Shader* FragmentShader;
 
     // The primitive topology
     EPrimitiveTopology PrimitiveTopology;
@@ -404,15 +486,20 @@ public:
     std::vector<RenderScissor> Scissors;
 
     // The depth description 
-    DepthConfig     DepthDesc;
+    DepthConfig     DepthState;
 
     // The stencil description
-    StencilStateConfig StencilDesc;
+    StencilStateConfig StencilState;
 
     // The rasterization stage description
-    RasterizerConfig RasterizerDesc;
+    RasterizerConfig RasterizerState;
 
     // the blend state description
-    BlendStateConfig  BlendDesc;
+    BlendStateConfig  BlendState;
+
+public:
+    GraphicsPipelineConfig()
+        : PipelineLayoutPtr(nullptr), RenderPassPtr(nullptr), VertexShader(nullptr), FragmentShader(nullptr),
+        PrimitiveTopology(EPrimitiveTopology::TriangleList) { }
 };
 

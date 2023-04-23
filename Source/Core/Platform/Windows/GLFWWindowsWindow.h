@@ -22,12 +22,17 @@ private:
 	*/
 	struct VRIXIC_API FWindowData
 	{
+	public:
 		std::string Name;
 		uint32 Width, Height;
 
 		uint16 MouseX, MouseY;
 
 		EventCallbackFunc EventCallback;
+
+	public:
+		FWindowData()
+			: Width(0), Height(0), MouseX(0), MouseY(0) { }
 	};
 
 	FWindowData WindowsData;

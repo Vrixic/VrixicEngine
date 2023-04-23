@@ -5,12 +5,14 @@
 
 #pragma once
 #include "VulkanDevice.h"
+#include <Runtime/Graphics/Texture.h>
 
 /**
 * A wrapper for VkImage and VkImage view, mainly used for depth and stenciling
 */
-class VRIXIC_API VulkanTextureView
+class VRIXIC_API VulkanTextureView final : public Texture
 {
+    friend class VulkanSwapChain;
 private:
 	VulkanDevice* Device;
 
@@ -19,13 +21,26 @@ private:
 
 	VkImageView ViewHandle;
 
+    VkFormat ImageFormat;
+
+    uint32 NumMipLevels;
+
+    uint32 NumArrayLayers;
+
 public:
 	/**
 	* @param inImageCreateInfo - Image creation info
 	* 
 	* @remarks Creates, Allocates, and Binds Image Memory 
 	*/
-	VulkanTextureView(VulkanDevice* inDevice, VkImageCreateInfo& inImageCreateInfo);
+	//VulkanTextureView(VulkanDevice* inDevice, VkImageCreateInfo& inImageCreateInfo);
+
+    /**
+    * @param inTextureConfig - texture configuration used to create the texture 
+    *
+    * @remarks Creates, Allocates, and Binds Image Memory
+    */
+    VulkanTextureView(VulkanDevice* inDevice, const TextureConfig& inTextureConfig);
 
 	~VulkanTextureView();
 
@@ -40,7 +55,39 @@ public:
 	* @param inFormat - The image view format
 	*/
 	void CreateImageView(VkImageViewType inViewType, VkFormat& inFormat, uint32 inBaseMiplevel, uint32 inLevelCount, uint32 inBaseArrayLayer,
-		uint32 inLayerCount, VkImageAspectFlags& inAspectFlags);
+		uint32 inLayerCount);
+
+    /**
+    * Creates the image view for image that was created on construct
+    *
+    * @param inTextureViewConfig configuration used for the creation of the image view 
+    */
+    void CreateImageView(const TextureViewConfig& inTextureViewConfig);
+
+    /**
+    * Creates a default image view from the image 
+    */
+    void CreateDefaultImageView();
+
+private:
+    /**
+    * Only swapchains should use this version
+    */
+    VulkanTextureView()
+        : Texture(ETextureType::Texture2D, ResourceBindFlags::ColorAttachment), Device(nullptr), 
+        ImageHandle(VK_NULL_HANDLE), ImageMemory(VK_NULL_HANDLE), ViewHandle(VK_NULL_HANDLE) { } 
+
+    /**
+    * Creates a VkImage from the configuration settings passed in
+    * 
+    * @param inTextureConfig the configuration used to create the image 
+    */
+    void CreateImage(const TextureConfig& inTextureConfig);
+
+    /**
+    * @returns VkImageAspectFlags aspect flags for this texture (from its Image Format)
+    */
+    VkImageAspectFlags GetAspectFlags() const;
 
 public:
 	inline const VkImage* GetImageHandle() const

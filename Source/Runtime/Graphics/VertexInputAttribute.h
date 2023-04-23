@@ -32,13 +32,13 @@ public:
     uint32          Offset;
 
 public:
-    VertexInputAttribute() = default;
-    VertexInputAttribute(const VertexInputAttribute&) = default;
-    VertexInputAttribute& operator=(const VertexInputAttribute&) = default;
+    inline VertexInputAttribute() = default;
+    inline VertexInputAttribute(const VertexInputAttribute&) = default;
+    inline VertexInputAttribute& operator=(const VertexInputAttribute&) = default;
 
-    bool operator==(const VertexInputAttribute& inRhs) const;
+    inline bool operator==(const VertexInputAttribute& inRhs) const;
 
-    bool operator!=(const VertexInputAttribute& inRhs) const;
+    inline bool operator!=(const VertexInputAttribute& inRhs) const;
 };
 
 bool VertexInputAttribute::operator==(const VertexInputAttribute& inRhs) const

@@ -5,15 +5,9 @@
 
 #pragma once
 #include "Buffer.h"
+#include "Pipeline.h"
 #include "PipelineGenerics.h"
 #include "RenderPass.h"
-
-/**
-* A Base class all pipeline state objects can derive from
-*/
-class VRIXIC_API RenderPipelineState
-{
-};
 
 /**
 * A graphics api independent command buffer that is used for storing/encoding GPU commands, which will get executed later in submission process
@@ -37,6 +31,15 @@ public:
     * @remarks The command buffer can now be submitted to a CommandQueue for presentation
     */
     virtual void End() = 0;
+
+    /* ------------------------------------------------------------------------------- */
+    /* -------------                 Synchronization               ------------------- */
+    /* ------------------------------------------------------------------------------- */
+
+    /**
+    * Adds a wait semaphore, that will be used for command buffer synchronization
+    */
+    //virtual void AddWaitSemaphore(ISemaphore* inWaitSemaphore) = 0;
 
     /* ------------------------------------------------------------------------------- */
     /* ---------------            Viewports and Scissors           ------------------- */
@@ -93,15 +96,19 @@ public:
     */
     virtual void EndRenderPass() = 0;
 
+    /* ------------------------------------------------------------------------------- */
+    /* ---------------                Pipeline Stuff               ------------------- */
+    /* ------------------------------------------------------------------------------- */
+
     /**
-    * Binds a pipeline state which then is used for drawing operations
+    * Binds a pipeline which is then used for drawing operations
     * 
-    * @param inRenderPipelineState the pipeline state to bind 
+    * @param inPipeline the pipeline state to bind 
     */
-    virtual void BindPipelineState(const RenderPipelineState* inRenderPipelineState) = 0;
+    virtual void BindPipeline(const IPipeline* inPipeline) = 0;
 
     /* ------------------------------------------------------------------------------- */
-    /* ---------------               Pipeline States               ------------------- */
+    /* ---------------                Drawing Stuff                ------------------- */
     /* ------------------------------------------------------------------------------- */
 
     /**

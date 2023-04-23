@@ -17,6 +17,7 @@
 #include <iostream>
 
 /* The # macro will turn the expression f into a string literal */
+#if _DEBUG
 #define VK_CHECK_RESULT(f, messageIfFailure)																				\
 {																															\
 	VkResult res = (f);																										\
@@ -26,6 +27,9 @@
 		ASSERT(false, messageIfFailure);																					\
 	}																														\
 }
+#else
+#define VK_CHECK_RESULT(f, messageIfFailure) f
+#endif // _DEBUG
 
 namespace VulkanUtils
 {
@@ -196,7 +200,7 @@ namespace VulkanUtils
 	namespace Helpers
 	{
 		/* Aka. GetBestGPU() */
-		inline VkResult GetBestPhysicalDevice(const VkPhysicalDevice* inPhysicalDevices, unsigned int inPhysicalDevicesCount, VkPhysicalDevice& outBestPhysicalDevice)
+		inline VkResult GetBestPhysicalDevice(const VkPhysicalDevice* inPhysicalDevices, unsigned int inPhysicalDevicesCount, VkPhysicalDevice& outBestPhysicalDevice, int32* outPhysicalDeviceIndex = nullptr)
 		{
 			VE_PROFILE_VULKAN_FUNCTION();
 
@@ -237,6 +241,11 @@ namespace VulkanUtils
 			}
 
 			outBestPhysicalDevice = inPhysicalDevices[BestDeviceTypeIndex];
+
+            if (outPhysicalDeviceIndex != nullptr)
+            {
+                *outPhysicalDeviceIndex = BestDeviceTypeIndex;
+            }
 
 			return Result;
 		}

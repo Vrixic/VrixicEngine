@@ -53,5 +53,5 @@ public:
 	/**
 	* Frees all memory used by the device 
 	*/
-	void FreeAllMemory(VulkanDevice* inDevice) const;
+	void FreeAllMemory() const;
 };

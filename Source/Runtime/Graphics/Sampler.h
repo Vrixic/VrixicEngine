@@ -6,6 +6,9 @@
 #pragma once
 #include "RenderResource.h"
 
+/**
+* Defines a generic sampler (Vulkan -> VkSampler)
+*/
 class VRIXIC_API Sampler : public RenderResource
 {
     /**

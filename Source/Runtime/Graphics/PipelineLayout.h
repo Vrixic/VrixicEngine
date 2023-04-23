@@ -10,6 +10,23 @@
 #include <vector>
 
 /**
+* The binding slot or binding point of a resource or descriptor
+*/
+struct VRIXIC_API PipelineBindingSlot
+{
+public:
+    PipelineBindingSlot() = default;
+    PipelineBindingSlot(const PipelineBindingSlot&) = default;
+
+public:
+    // a zero based index that specifies the binding number 
+    uint32 Index;
+
+    // a zero based index that specifies the descriptor set this binding slot belongs to 
+    uint32 SetIndex;
+};
+
+/**
 * Defines a layout for a single binding of a resource that can get bound to a pipeline layout
 */
 struct VRIXIC_API PipelineBindingDescriptor
@@ -22,9 +39,6 @@ public:
     /** Resource type of this binding: buffer, texture, etc... */
     EResourceType ResourceType;
 
-    /** The number/slot this descritor gets bound to */
-    uint32 BindingNum;
-
     /** amount of resources getting bound ex: 5 uniform buffers */
     uint32 NumResources;
 
@@ -33,6 +47,9 @@ public:
 
     /** Specifies the shader stages that this binding will get bound to */
     uint32 StageFlags;
+
+    /** Specifies the binding slot / binding point for this descriptor */
+    PipelineBindingSlot BindingSlot;
 };
 
 /**

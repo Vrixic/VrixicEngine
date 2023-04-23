@@ -17,7 +17,6 @@ enum class EResourceType
     Sampler,        // a sampler resource 
 };
 
-
 /**
 * Binding flags for resources - describes the resources 
 */
@@ -33,28 +32,17 @@ struct VRIXIC_API ResourceBindFlags
         // buffer resource that is made for indices
         IndexBuffer                 = BIT(1),
 
-        // buffer resource for binding to set of constant (vulkan - > push constants)
+        // buffer resource for binding to set of constant 
         ConstantBuffer              = BIT(2),
 
+        // storage buffer resource used to bind to a buffer
+        StorageBuffer              = BIT(3),
+
         // Allows for textures to be used as a render target for color attachment 
-        ColorAttachment             = BIT(3),
+        ColorAttachment             = BIT(4),
 
         // allows tectures to be used as a render target for depth-stencil attachment 
-        DepthStencilAttachment      = BIT(4),
+        DepthStencilAttachment      = BIT(5),
     };
 };
 
-/**
-* Buffer usage flags indicate how the buffer will be used 
-*/
-enum class EBufferUsageFlags
-{
-    // used as a vertex buffer
-    Vertex,
-    
-    // used as an index buffer
-    Index,
-
-    // used as a storage buffer
-    Storage
-};

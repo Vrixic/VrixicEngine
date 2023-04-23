@@ -5,18 +5,13 @@
 
 #pragma once
 #include <Core/Core.h>
+#include "CommandQueue.h"
 #include <Misc/Defines/GenericDefines.h>
 
 /**
-* Where the pipeline can be bound to 
+* Flags used to specifing the level of the command buffer 
 */
-enum class EPipelineBindPoint
-{
-    Graphics,
-    Compute
-};
-
-struct VRIXIC_API CommandBufferFlags
+struct VRIXIC_API CommandBufferLevelFlags
 {
     enum
     {
@@ -28,6 +23,9 @@ struct VRIXIC_API CommandBufferFlags
     };
 };
 
+/**
+* Contains information used to configure how a command buffer is created 
+*/
 struct VRIXIC_API CommandBufferConfig
 {
 public:
@@ -36,6 +34,9 @@ public:
 
     // Number of command buffers to create/allocate
     uint32 NumBuffersToAllocate;
+
+    // The queue this command buffer will get submitted to 
+    ICommandQueue* CommandQueue;
 
 public:
     CommandBufferConfig() = default;

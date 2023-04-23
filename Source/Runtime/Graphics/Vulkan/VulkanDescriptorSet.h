@@ -23,8 +23,6 @@ public:
 
 	~VulkanDescriptorSetsLayout()
 	{
-		VE_PROFILE_VULKAN_FUNCTION();
-
 		Device->WaitUntilIdle();
 
 		for (uint32 i = 0; i < DescriptorSetLayoutHandles.size(); ++i)
@@ -47,8 +45,6 @@ public:
 	*/
 	uint32 CreateDescriptorSetLayout(VulkanUtils::Descriptions::DescriptorSetLayoutBinding& inLayoutBinding, VulkanUtils::Descriptions::DescriptorSetLayoutCreateInfo& inDescriptorSetLayoutCreateInfo)
 	{
-		VE_PROFILE_VULKAN_FUNCTION();
-
 		VkDescriptorSetLayoutBinding DescriptorSetLayoutBinding;
 		DescriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
@@ -60,15 +56,46 @@ public:
 		DescriptorSetLayoutCreateInfo.pBindings = &DescriptorSetLayoutBinding;
 
 		VkDescriptorSetLayout NewLayout;
-#if _DEBUG
 		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(*Device->GetDeviceHandle(), &DescriptorSetLayoutCreateInfo, nullptr, &NewLayout), "[VulkanDescriptorSetsLayout]: Failed to create a descriptor set layout!");
-#else
-		vkCreateDescriptorSetLayout(*Device->GetDeviceHandle(), &DescriptorSetLayoutCreateInfo, nullptr, &NewLayout);
-#endif
+
 		DescriptorSetLayoutHandles.push_back(NewLayout);
 
 		return DescriptorSetLayoutHandles.size() - 1;
 	}
+
+    /**
+    * Creates a descriptor set layouts
+    *
+    * @param inLayoutBindings bindings that will be used for layout creation
+    * @param inBindingCount count of bindings 
+    * @param inDescriptorSetLayoutCreateInfo Information for changing how the layout is created
+    *
+    * @return the id to where the layout is located
+    */
+    uint32 CreateDescriptorSetLayout(VulkanUtils::Descriptions::DescriptorSetLayoutBinding* inLayoutBindings, uint32 inBindingCount, VulkanUtils::Descriptions::DescriptorSetLayoutCreateInfo& inDescriptorSetLayoutCreateInfo)
+    {
+        VkDescriptorSetLayoutBinding* DescriptorSetLayoutBindings = new VkDescriptorSetLayoutBinding[inBindingCount];
+        
+        for (uint32 i = 0; i < inBindingCount; i++)
+        {
+            DescriptorSetLayoutBindings[i].pImmutableSamplers = nullptr;
+            inLayoutBindings[i].WriteTo(DescriptorSetLayoutBindings[i]);
+        }
+
+        VkDescriptorSetLayoutCreateInfo DescriptorSetLayoutCreateInfo = VulkanUtils::Initializers::DescriptorSetLayoutCreateInfo();
+        inDescriptorSetLayoutCreateInfo.WriteTo(DescriptorSetLayoutCreateInfo);
+        DescriptorSetLayoutCreateInfo.bindingCount = inBindingCount;
+        DescriptorSetLayoutCreateInfo.pBindings = DescriptorSetLayoutBindings;
+
+        VkDescriptorSetLayout NewLayout;
+        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(*Device->GetDeviceHandle(), &DescriptorSetLayoutCreateInfo, nullptr, &NewLayout), "[VulkanDescriptorSetsLayout]: Failed to create a descriptor set layout!");
+
+        DescriptorSetLayoutHandles.push_back(NewLayout);
+
+        delete[] DescriptorSetLayoutBindings;
+
+        return DescriptorSetLayoutHandles.size() - 1;
+    }
 
 public:
 	/**
@@ -105,15 +132,11 @@ public:
 		DescriptorSetsLayout((const VulkanDescriptorSetsLayout*)&inSetsLayout),
 		DescriptorPoolHandle(VK_NULL_HANDLE)
 	{
-		VE_PROFILE_VULKAN_FUNCTION();
-
 		CreateDescriptorPool(inPoolSizes);
 	}
 
 	~VulkanDescriptorPool()
 	{
-		VE_PROFILE_VULKAN_FUNCTION();
-
 		Device->WaitUntilIdle();
 		vkDestroyDescriptorPool(*Device->GetDeviceHandle(), DescriptorPoolHandle, nullptr);
 	}
@@ -129,8 +152,6 @@ public:
 	*/
 	bool AllocateDescriptorSets(uint32 inDescriptorSetCount, VkDescriptorSet* outDescriptorSet, uint32 inLayoutId) const
 	{
-		VE_PROFILE_VULKAN_FUNCTION();
-
 		VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo = VulkanUtils::Initializers::DescriptorSetAllocateInfo();
 		DescriptorSetAllocateInfo.descriptorPool = DescriptorPoolHandle;
 		DescriptorSetAllocateInfo.descriptorSetCount = inDescriptorSetCount;
@@ -154,8 +175,6 @@ public:
 	*/
 	void BindDescriptorSetToBuffer(const VulkanBuffer* inBuffer, const VulkanUtils::Descriptions::WriteDescriptorSet& inWriteDescriptorSet)
 	{
-		VE_PROFILE_VULKAN_FUNCTION();
-
 		VkDescriptorBufferInfo DescriptorBufferInfo = { 0 };
 		DescriptorBufferInfo.buffer = *inBuffer->GetBufferHandle();
 		DescriptorBufferInfo.offset = 0;
@@ -177,8 +196,6 @@ public:
 	*/
 	void BindDescriptorSetToTexture(const VulkanUtils::Descriptions::DescriptorImageInfo& inDescriptorImageInfo, const VulkanUtils::Descriptions::WriteDescriptorSet& inWriteDescriptorSet)
 	{
-		VE_PROFILE_VULKAN_FUNCTION();
-
 		VkDescriptorImageInfo DescriptorImageInfo = { 0 };
 		inDescriptorImageInfo.WriteTo(DescriptorImageInfo);
 
@@ -193,19 +210,13 @@ public:
 private:
 	void CreateDescriptorPool(std::vector<VkDescriptorPoolSize>& inPoolSizes)
 	{
-		VE_PROFILE_VULKAN_FUNCTION();
-
 		VkDescriptorPoolCreateInfo DescriptorPoolCreateInfo = VulkanUtils::Initializers::DescriptorPoolCreateInfo();
 		DescriptorPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT;
 		DescriptorPoolCreateInfo.maxSets = MaxDescriptorSets;
 		DescriptorPoolCreateInfo.poolSizeCount = inPoolSizes.size();
 		DescriptorPoolCreateInfo.pPoolSizes = inPoolSizes.data();
 
-#if _DEBUG
 		VK_CHECK_RESULT(vkCreateDescriptorPool(*Device->GetDeviceHandle(), &DescriptorPoolCreateInfo, nullptr, &DescriptorPoolHandle), "[VulkanDescriptorPool]: Failed to create a descriptor pool!");
-#else
-		vkCreateDescriptorPool(*Device->GetDeviceHandle(), &DescriptorPoolCreateInfo, nullptr, &DescriptorPoolHandle);
-#endif 
 	}
 
 public:

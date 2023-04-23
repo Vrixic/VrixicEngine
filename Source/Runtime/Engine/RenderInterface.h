@@ -23,7 +23,7 @@ enum class EGraphicsInterface
 /** 
 * All supported graphics interface, if a graphics interface is supported, it must include a renderer for itself, its resource specific management deriving from IResourceManager;
 */
-static std::vector<EGraphicsInterface> SupportedGraphicInterfaces = { EGraphicsInterface::Vulkan };
+//static std::vector<EGraphicsInterface> SupportedGraphicInterfaces = { EGraphicsInterface::Vulkan };
 
 struct RenderViewportSize
 {

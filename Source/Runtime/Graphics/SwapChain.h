@@ -4,9 +4,12 @@
 */
 
 #pragma once
+#include "CommandQueue.h"
 #include <Core/Misc/Interface.h>
+#include "Semaphore.h"
 #include "Surface.h"
 #include "SwapChainGenerics.h"
+#include "Texture.h"
 
 /**
 * Defines a swapchian which has a surface and buffers (Images) it can write into with capabilities of presenting
@@ -14,9 +17,9 @@
 */
 class VRIXIC_API SwapChain : public Interface
 {
-private:
+protected:
     // The swap chain configuration
-    SwapChainConfig Descriptor;
+    SwapChainConfig Configuration;
 
     // The surface handle that the sawp chain is associated with 
     Surface* SurfaceHandle;
@@ -24,14 +27,19 @@ private:
 public:
     /**
     * Presents the current buffer to the screen
+    * 
+    * @param inSubmissionQueue the presentation queue used for presenting an image
+    * @param inWaitSemaphore (Optional) Semaphore that is waited on before the image gets presented (only used if its != to nullptr
+    * @param inImageIndex the index of the swapchain image to queue for presentation 
     */
-    virtual void Present() = 0;
+    virtual void Present(ICommandQueue* inSubmissionQueue, ISemaphore* inWaitSemaphore, uint32 inImageIndex) = 0;
 
     /**
     * Resizes all buffers/images within the swapchain, essentially recreating the swapchain
+    * @returns bool true if it resized, false otherwise 
     * @remarks use cases is on window resize or what ever render target its rendering to resized
     */
-    virtual void ResizeBuffers(uint32* outImageWidth, uint32* outImageHeight) = 0;
+    virtual bool ResizeSwapChain(const Extent2D& inNewResolution) = 0;
 
     /**
     * Sets the vsync interval for this swapchain (vertical synchronization), 0 to disable, and 1 or more halfs the refresh rate
@@ -49,6 +57,18 @@ public:
     * @returns EFormat the depth stencil format of this swapchain
     */
     virtual EPixelFormat GetDepthStencilFormat() const = 0;
+
+    /**
+    * @returns uint32 the count of images used by this swapchain
+    */
+    virtual uint32 GetImageCount() const = 0;
+
+    /**
+    * Returns the texture that is requested from the texture this swapchain is using 
+    * 
+    * @returns Texture* the texture at the index specified
+    */
+    virtual Texture* GetTextureAt(uint32 inTextureIndex) const = 0;
 
     /**
     * @return Surface& the handle to the surface that is associated with the swapchain

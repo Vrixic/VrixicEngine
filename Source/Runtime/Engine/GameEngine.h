@@ -5,7 +5,7 @@
 
 #pragma once
 #include "GameWorld.h"
-#include "RenderInterface.h"
+#include <Runtime/Graphics/IRenderInterface.h>
 
 /**
 * The game engine, consists of all the modules and objects needed to run a game
@@ -14,7 +14,34 @@ class VGameEngine
 {
 private:
 	GameWorld* World; // The Current world the engine is updating and rendering 
-	TPointer<IRenderSystem> Renderer; // renderer used to render things 
+	TPointer<IRenderInterface> RenderInterface; // renderer used to render things 
+
+    /**
+    * TESTING The render interface START
+    */
+
+    Surface* SurfacePtr;
+    SwapChain* SwapChainMain;
+
+    //
+    std::vector<ICommandBuffer*> CommandBuffers;
+
+    /* Synchronization */
+    ISemaphore* PresentationCompleteSemaphore; // Swap chain image presentation
+    ISemaphore* RenderCompleteSemaphore; // Command buffer submission and execution
+
+    /* Depth and Stencil buffering */
+    Texture* DepthStencilView;
+
+    IRenderPass* RenderPass;
+
+    //
+    std::vector<IFrameBuffer*> FrameBuffers;
+
+    /**
+    * TESTING The render interface END
+    */
+
 	 
 public:
 	VGameEngine();
@@ -42,5 +69,5 @@ public:
 	void Shutdown();
 
 public:
-	TPointer<IRenderSystem>& GetRenderer() const { return (TPointer<IRenderSystem>&)Renderer; }
+	TPointer<IRenderInterface>& GetRenderInterface() const { return (TPointer<IRenderInterface>&)RenderInterface; }
 };

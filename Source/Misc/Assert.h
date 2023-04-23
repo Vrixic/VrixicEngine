@@ -27,13 +27,14 @@
 #endif
 
 // check the expression and fail if it is false 
-#define ASSERT(expr, message)					\
-  if(expr) { }									\
-  else											\
- {												\
-	VE_CORE_LOG_FATAL(message);					\
-    DEBUG_BREAK();                              \
+#define ASSERT(expr, ...)					        \
+  if(expr) { }									    \
+  else											    \
+ {												    \
+	VE_CORE_LOG_FATAL(__VA_ARGS__);	                \
+    DEBUG_BREAK();                                  \
  }
+
 #else
 #define ASSERT(expr, message) // evaluates to nothing
 #endif
@@ -51,5 +52,11 @@
 #endif
 
 // Engine defined asserts 
-#define VE_ASSERT(expr, message) ASSERT(expr, message)
+#if _DEBUG
+#define VE_ASSERT(expr, ...) ASSERT(expr, __VA_ARGS__)
 #define VE_STATIC_ASSERT(expr, message) STATIC_ASSERT(expr)
+#else
+#define VE_ASSERT(expr, message, ...) 
+#define VE_STATIC_ASSERT(expr, message) 
+#endif // _DEBUG
+

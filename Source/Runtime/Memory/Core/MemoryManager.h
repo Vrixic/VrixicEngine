@@ -4,6 +4,7 @@
 */
 
 #pragma once
+#include <Misc/Defines/StringDefines.h>
 #include <Runtime/Memory/Core/MemoryHeap.h>
 #include <Runtime/Memory/Core/MemoryUtils.h>
 
@@ -75,7 +76,7 @@ public:
 #endif // VE_PROFILE_MEMORY_MANAGER
 
 #if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		ASSERT(!bIsActive, "Memory manager should not be created again.... MemoryManager::StartUp() SHOULD only be called once!");
+		VE_ASSERT(!bIsActive, VE_TEXT("[MemoryManager]: Memory manager should not be created again.... MemoryManager::StartUp() SHOULD only be called once!"));
 		Shutdown();
 #endif
 		bIsActive = true;
@@ -163,8 +164,8 @@ public:
 	*
 	* @return T** - pointer pointing to the memory location
 	*/
-	template<typename T>
-	T** MallocConstructAligned(uint32 inSizeInBytes, uint32 inAlignment = sizeof(T))
+	template<typename T, typename... ArgTypes>
+	T** MallocConstructAligned(uint32 inSizeInBytes, uint32 inAlignment = sizeof(T), ArgTypes&&... inArgs)
 	{
 #if VE_PROFILE_MEMORY_MANAGER
 		VE_PROFILE_FUNCTION();
@@ -188,7 +189,7 @@ public:
 
 		// Calculate the data offset from heap start + the alignment that will get applied
 		MemPage->OffsetFromHeapStart = (MemoryHeapHandle->GetHeapUsed() - inSizeInBytes) + (uint8)AlignedPtr[-1];
-		MemPage->Data = (uint8*)(new (AlignedPtr) T());
+		MemPage->Data = (uint8*)(new (AlignedPtr) T((inArgs)...));
 		MemPage->MemorySize = inSizeInBytes;
 
 		return (T**)&MemPage->Data;
@@ -199,7 +200,7 @@ public:
 	* @return T** - pointer pointing to the memory location
 	*/
 	template<typename T, typename... ArgTypes>
-	T** MallocAllocater(uint32 inSizeInBytesForAllocater, uint32 inAllocaterAlignment = sizeof(T), ArgTypes&&... Args)
+	T** MallocAllocater(uint32 inSizeInBytesForAllocater, uint32 inAllocaterAlignment = sizeof(T), ArgTypes&&... inArgs)
 	{
 #if VE_PROFILE_MEMORY_MANAGER
 		VE_PROFILE_FUNCTION();
@@ -223,7 +224,7 @@ public:
 
 		// Calculate the data offset from heap start + the alignment that will get applied
 		MemPageForAllocater->OffsetFromHeapStart = (MemoryHeapHandle->GetHeapUsed() - SizeOfAllocaterInBytes) + (uint8)AlignedAllocaterPtr[-1];
-		MemPageForAllocater->Data = (uint8*)(new (AlignedAllocaterPtr) T((Args)...));
+		MemPageForAllocater->Data = (uint8*)(new (AlignedAllocaterPtr) T((inArgs)...));
 		MemPageForAllocater->MemorySize = SizeOfAllocaterInBytes;
 
 		((T*)(MemPageForAllocater->Data))->Init(inSizeInBytesForAllocater, inAllocaterAlignment);
@@ -288,8 +289,8 @@ private:
 #endif // VE_PROFILE_MEMORY_MANAGER
 
 #if _DEBUG
-		ASSERT(MemoryHeapSize == 0, "[Memory Manager]: Memory manager cannot initialize with 0 bytes as the size!");
-		ASSERT(MemoryPageHeapSize == 0, "[Memory Manager]: Memory managers page heap size cannot start with 0 bytes!");
+		VE_ASSERT(MemoryHeapSize == 0, VE_TEXT("[Memory Manager]: Memory manager cannot initialize with 0 bytes as the size!"));
+		VE_ASSERT(MemoryPageHeapSize == 0, VE_TEXT("[Memory Manager]: Memory managers page heap size cannot start with 0 bytes!"));
 #endif
 		MemoryHeapSize = MEBIBYTES_TO_BYTES(100);
 		MemoryPageHeapSize = MEBIBYTES_TO_BYTES(50);
@@ -326,7 +327,7 @@ private:
 		// (This works for up to 256-byte alignment.)
 		intptr Shift = AlignedPtr - inPtrToAlign;
 #if _DEBUG || _DEBUG_EDITOR
-		ASSERT(Shift > 0 && Shift <= 256, "[Memory Manager]: invalid amount of bytes are trying to get shifted");
+		VE_ASSERT(Shift > 0 && Shift <= 256, VE_TEXT("[Memory Manager]: invalid amount of bytes are trying to get shifted"));
 #endif
 
 		AlignedPtr[-1] = static_cast<uint8>(Shift & 0xff);

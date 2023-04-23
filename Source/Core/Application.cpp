@@ -8,6 +8,7 @@
 #include <Misc/Assert.h>
 #include <Misc/Defines/StringDefines.h>
 #include <Misc/Profiling/Profiler.h>
+#include "KeyCodes.h"
 #include <Runtime/Memory/Core/MemoryManager.h>
 
 #include <crtdbg.h>
@@ -58,10 +59,10 @@ Application::Application()
 	GameEngine->Init();
 
 	// if in editor mode create the editor for the engine 
-#ifdef _EDITOR
-	GameEditor = CreateUniquePointer<VGameEditor>();
-	GameEditor->Init(GameEngine);
-#endif // _EDITOR
+//#ifdef _EDITOR
+//	GameEditor = CreateUniquePointer<VGameEditor>();
+//	GameEditor->Init(GameEngine);
+//#endif // _EDITOR
 
 }
 
@@ -69,9 +70,9 @@ Application::~Application()
 {
 	VE_PROFILE_FUNCTION();
 
-#if _EDITOR
-	GameEditor->Shutdown();
-#endif
+//#if _EDITOR
+//	GameEditor->Shutdown();
+//#endif
 
 	// Shutdown Game Engine
 	GameEngine->Shutdown();
@@ -86,14 +87,28 @@ void Application::OnEvent(WindowEvent& inEvent)
 
 	VE_CORE_LOG_DISPLAY(VE_TEXT("App::OnEvent: {0}"), inEvent.ToString());
 
+	WindowEventDispatcher EventDispatcher(inEvent);
+ 	EventDispatcher.Dispatch<KeyPressedEvent>(VE_BIND_EVENT_FUNC(OnKeyDownEvent));
+
 	if (inEvent.GetEventType() == EWindowEventType::WindowClose)
 	{
 		bIsRunning = false;
 	}
 
-#if _EDITOR
-	GameEditor->OnEvent(inEvent);
-#endif
+//#if _EDITOR
+//	GameEditor->OnEvent(inEvent);
+//#endif
+}
+
+bool Application::OnKeyDownEvent(KeyPressedEvent& inKeyEvent)
+{
+	if (inKeyEvent.GetKeyCode() == Key::Escape)
+	{
+		bIsRunning = false;
+		return true;
+	}
+
+	return false;
 }
 
 void Application::Run()
@@ -106,11 +121,13 @@ void Application::Run()
 
 		WindowPtr->OnUpdate();
 
-#if _EDITOR
-		GameEditor->Tick();
-#else	
+//#if _EDITOR
+//		GameEditor->Tick();
+//#else	
+//		GameEngine->Tick();
+//#endif // _EDITOR
+
 		GameEngine->Tick();
-#endif // _EDITOR
 
 	}
 

@@ -5,10 +5,12 @@
 
 #pragma once
 #include <Core/Core.h>
+#include "Extents.h"
 #include <Misc/Defines/GenericDefines.h>
-#include <Runtime/Core/Math/Vector2D.h>
 
-
+/**
+* Helper struct used for Swap Chain configuration 
+*/
 struct VRIXIC_API SwapChainConfig
 {
     /**
@@ -16,7 +18,7 @@ struct VRIXIC_API SwapChainConfig
     * 
     * @remarks the renderer could invalidate the resolution in here
     */
-    Vector2D ScreenResolution;
+    Extent2D ScreenResolution;
 
     /**
     * The number of bits for each pixel in the color buffer, usually 32 
@@ -53,30 +55,30 @@ public:
     SwapChainConfig();
     ~SwapChainConfig();
 
-    inline static SwapChainConfig& CreateDefaultDescriptor();
+    inline static SwapChainConfig CreateDefaultConfig();
 
 private:
-    inline void SetDefaultDescritor();
+    inline void SetDefaultConfig();
 };
 
 inline SwapChainConfig::SwapChainConfig()
 {
-    SetDefaultDescritor();
+    SetDefaultConfig();
 }
 
 inline SwapChainConfig::~SwapChainConfig() { }
 
-inline SwapChainConfig& SwapChainConfig::CreateDefaultDescriptor()
+inline SwapChainConfig SwapChainConfig::CreateDefaultConfig()
 {
-    SwapChainConfig Desc = { 0 };
-    Desc.SetDefaultDescritor();
+    SwapChainConfig Desc = { };
+    Desc.SetDefaultConfig();
 
     return Desc;
 }
 
-inline void SwapChainConfig::SetDefaultDescritor()
+inline void SwapChainConfig::SetDefaultConfig()
 {
-    ScreenResolution = Vector2D(1280.0f, 720.0f);
+    ScreenResolution = Extent2D(1280, 720);
     ColorBits = 32;
     DepthBits = 24;
     StencilBits = 8;

@@ -35,7 +35,7 @@ public:
 
 	virtual const void* GetShaderModule(uint32 inShaderKey) const override;
 
-	virtual void FreeAllMemory(VulkanDevice* inDevice) const override;
+	virtual void FreeAllMemory() const override;
 
 private:
 	/**

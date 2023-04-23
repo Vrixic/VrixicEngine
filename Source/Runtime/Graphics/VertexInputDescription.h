@@ -32,13 +32,15 @@ public:
     EInputRate InputRate;
 
 public:
-    VertexInputDescription() = default;
-    VertexInputDescription(const VertexInputDescription&) = default;
-    VertexInputDescription& operator=(const VertexInputDescription&) = default;
+    inline VertexInputDescription()
+        : BindingNum(0), Stride(0), InputRate(EInputRate::Vertex) { }
 
-    void AddVertexAttribute(const VertexInputAttribute& inAttribute);
+    inline VertexInputDescription(const VertexInputDescription&) = default;
+    inline VertexInputDescription& operator=(const VertexInputDescription&) = default;
 
-    const std::vector<VertexInputAttribute>& GetVertexAttributes() const;
+    inline void AddVertexAttribute(const VertexInputAttribute& inAttribute);
+
+    inline const std::vector<VertexInputAttribute>& GetVertexAttributes() const;
 };
 
 void VertexInputDescription::AddVertexAttribute(const VertexInputAttribute& inAttribute)

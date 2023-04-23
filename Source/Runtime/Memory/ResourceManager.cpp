@@ -25,7 +25,7 @@ const void* ResourceManager::GetShaderModule(uint32 inShaderKey) const
 	return ResourceManagerImp->GetShaderModule(inShaderKey);
 }
 
-void ResourceManager::FreeAllMemory(VulkanDevice* inDevice) const
+void ResourceManager::FreeAllMemory() const
 {
-	ResourceManagerImp->FreeAllMemory(inDevice);
+	ResourceManagerImp->FreeAllMemory();
 }

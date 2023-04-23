@@ -6,7 +6,6 @@
 #pragma once
 #include <Core/Core.h>
 #include "Misc/Defines/GenericDefines.h"
-#include "Runtime/Graphics/Vulkan/VulkanDevice.h"
 
 /* An interface of a resource manager */
 class VRIXIC_API IResourceManager
@@ -20,6 +19,6 @@ public:
 
 	virtual const void* GetShaderModule(uint32 inShaderKey) const = 0;
 
-	virtual void FreeAllMemory(VulkanDevice* inDevice) const = 0;
+	virtual void FreeAllMemory() const = 0;
 };
 

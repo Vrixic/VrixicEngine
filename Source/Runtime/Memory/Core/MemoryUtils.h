@@ -5,6 +5,7 @@
 
 #pragma once
 #include <Misc/Assert.h>
+#include <Misc/Defines/StringDefines.h>
 
 #define MEBIBYTES_TO_BYTES(inMiB) inMiB * 1048576
 
@@ -29,7 +30,7 @@ struct MemoryUtils
 	{
 		const uint64 Mask = inAlignment - 1;
 #if _DEBUG || _DEBUG_EDITOR
-		ASSERT((inAlignment & Mask) == 0, "All addresses to be aligned has to be of a power of 2"); // Power of 2
+		VE_ASSERT((inAlignment & Mask) == 0, VE_TEXT("[MemoryUtils]: All addresses to be aligned has to be of a power of 2")); // Power of 2
 #endif
 		return (inAddress + Mask) & ~Mask;
 	}

@@ -16,18 +16,14 @@ namespace Key
 
 	enum : KeyCode
 	{ 
-		Backspace	= 8,
-		Tab			= 9,
-		Enter		= 10,
-		CapsLock	= 20,
-		Escape		= 27,
-		Space		= 32,
-		LeftArrow	= 37,
-		UpArrow		= 38,
-		RightArrow	= 39,
-		DownArrow	= 40,
+		/** Printable Keys->To Screen(Type) */
 
-		Delete		= 46,
+		Space		= 32,
+		Apostrophe	= 39, // '
+		Comma		= 44, // ,
+		Minus		= 45,
+		Period		= 46, // .
+		Slash		= 47, // /
 
 		Zero		= 48, // 0
 		One			= 49, // 1
@@ -39,6 +35,9 @@ namespace Key
 		Seven		= 55, // 7
 		Eight		= 56, // 8
 		Nine		= 57, // 9
+
+		Semicolon	= 59, // ;
+		Equal		= 61, // =
 
 		A = 65, 
 		B = 66,
@@ -67,60 +66,83 @@ namespace Key
 		Y = 89,
 		Z = 90,
 
-		NumPad0 =  96,
-		NumPad1 =  97,
-		NumPad2 =  98,
-		NumPad3 =  99,
-		NumPad4 = 100,
-		NumPad5 = 101,
-		NumPad6 = 102,
-		NumPad7 = 103,
-		NumPad8 = 104,
-		NumPad9 = 105,
+		LeftBracket		= 91, // [
+		BackSlash		= 92, /* \ */
+		RightBracket	= 93, /* ] */
+		Tilde			= 96, // `
 
-		Multiply	= 106,
-		Add			= 107,
-		Subtract	= 109,
-		Divide		= 111,
+		/** Function Keys */
 
+		Escape			= 256,
+		Enter			= 257,
+		Tab				= 258,
+		Backspace		= 259,
+		Insert			= 260,
+		Delete			= 261,
+		ArrowRight		= 262,
+		ArrowLeft		= 263,
+		ArrowDown		= 264,
+		ArrowUp			= 265,
+		PageUp			= 266,
+		PageDown		= 267,
+		Home			= 268,
+		End				= 269,
+		CapsLock		= 280,
+		ScrollLock		= 281,
+		NumLock			= 282,
+		PrintScreen		= 283,
+		Pause			= 284,
 
-		Separator	= 108,
-		Decimal		= 110,
+		F1				= 290,
+		F2				= 291,
+		F3				= 292,
+		F4				= 293,
+		F5				= 294,
+		F6				= 295,
+		F7				= 296,
+		F8				= 297,
+		F9				= 298,
+		F10				= 299,
+		F11				= 300,
+		F12				= 301,
+		F13				= 302,
+		F14				= 303,
+		F15				= 304,
+		F16				= 305,
+		F17				= 306,
+		F18				= 307,
+		F19				= 308,
+		F20				= 309,
+		F21				= 310,
+		F22				= 311,
+		F23				= 312,
+		F24				= 313,
+		F25				= 314,
 
-		F1		= 112,
-		F2		= 113,
-		F3		= 114,
-		F4		= 115,
-		F5		= 116,
-		F6		= 117,
-		F7		= 118,
-		F8		= 119,
-		F9		= 120,
-		F10		= 121,
-		F11		= 122,
-		F12		= 123,
-		F13		= 124,
-		F14		= 125,
-		F15		= 126,
-		F16		= 127,
-		F17		= 128,
-		F18		= 129,
-		F19		= 130,
-		F20		= 131,
-		F21		= 132,
-		F22		= 133,
-		F23		= 134,
-		F24		= 135,
-		
-		NumLock = 144,
-		
-		LeftShiftKey		= 160,
-		RightShiftKey		= 161,
+		NumPad0 = 320,
+		NumPad1 = 321,
+		NumPad2 = 322,
+		NumPad3 = 323,
+		NumPad4 = 324,
+		NumPad5 = 325,
+		NumPad6 = 326,
+		NumPad7 = 327,
+		NumPad8 = 328,
+		NumPad9 = 329,
 
-		LeftControlKey		= 162,
-		RightControlKey		= 163,
+		NumPadPeriod		= 330,
+		NumPadDivide		= 331,
+		NumPadMultiply		= 332,
+		NumPadSubtract		= 333,
+		NumPadAdd			= 334,
+		NumPadEnter			= 335,
+		NumPadEqual			= 336,
 
-		LeftAlt				= 164,
-		RightAlt			= 165,
+		LeftShiftKey		= 340,
+		LeftControlKey		= 341,
+		LeftAlt				= 342,
+		RightShiftKey		= 344,
+		RightControlKey		= 345,
+		RightAlt			= 346,
 	};
 }
