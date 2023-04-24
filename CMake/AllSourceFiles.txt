@@ -201,7 +201,6 @@ D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Engine/GameEngine.cpp
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Engine/GameEngine.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Engine/GameWorld.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/Engine/RenderInterface.h
-D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/EntryPoint/EntryPoint.cpp
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/File/FileHelper.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/File/FileManager.h
 D:/dev/repo/VulkanRenderer/Engine/Source/Runtime/File/FileReader.h
