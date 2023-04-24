@@ -27,16 +27,16 @@ protected:
 public:
     /**
     * Presents the current buffer to the screen
-    * 
+    *
     * @param inSubmissionQueue the presentation queue used for presenting an image
     * @param inWaitSemaphore (Optional) Semaphore that is waited on before the image gets presented (only used if its != to nullptr
-    * @param inImageIndex the index of the swapchain image to queue for presentation 
+    * @param inImageIndex the index of the swapchain image to queue for presentation
     */
     virtual void Present(ICommandQueue* inSubmissionQueue, ISemaphore* inWaitSemaphore, uint32 inImageIndex) = 0;
 
     /**
     * Resizes all buffers/images within the swapchain, essentially recreating the swapchain
-    * @returns bool true if it resized, false otherwise 
+    * @returns bool true if it resized, false otherwise
     * @remarks use cases is on window resize or what ever render target its rendering to resized
     */
     virtual bool ResizeSwapChain(const Extent2D& inNewResolution) = 0;
@@ -47,6 +47,16 @@ public:
     * @returns bool true if successfully set to new vsync interval, false otherwise making it invalid
     */
     virtual bool SetVSyncInterval(uint32 inVSyncInterval) = 0;
+
+public:
+
+    /**
+    * Acquires the next swapchain image index 
+    * 
+    * @param inWaitSemaphore the presentation complete semaphore to wait on 
+    * @param outIndex the new image index to use 
+    */
+    virtual void AcquireNextImageIndex(ISemaphore* inWaitSemaphore, uint32* outIndex) const = 0;
 
     /**
     * @returns EFormat the color format of this swapchain
@@ -64,8 +74,8 @@ public:
     virtual uint32 GetImageCount() const = 0;
 
     /**
-    * Returns the texture that is requested from the texture this swapchain is using 
-    * 
+    * Returns the texture that is requested from the texture this swapchain is using
+    *
     * @returns Texture* the texture at the index specified
     */
     virtual Texture* GetTextureAt(uint32 inTextureIndex) const = 0;

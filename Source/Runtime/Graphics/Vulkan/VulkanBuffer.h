@@ -319,6 +319,7 @@ public:
 		{
 			Device->WaitUntilIdle();
 			vkDestroyBuffer(*Device->GetDeviceHandle(), BufferHandle, nullptr);
+            BufferHandle = VK_NULL_HANDLE;
 		}
 	}
 

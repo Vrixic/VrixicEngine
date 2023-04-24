@@ -25,6 +25,7 @@ private:
 
     //
     std::vector<ICommandBuffer*> CommandBuffers;
+    uint32 CurrentImageIndex;
 
     /* Synchronization */
     ISemaphore* PresentationCompleteSemaphore; // Swap chain image presentation
@@ -35,8 +36,20 @@ private:
 
     IRenderPass* RenderPass;
 
-    //
+    // List of available frame buffers (same as number of swap chain images)
     std::vector<IFrameBuffer*> FrameBuffers;
+
+    Shader* VertexShader;
+    Shader* FragmentShader;
+
+    // Create the pipeline layout, since we have no push constants nor descriptor sets, we just want an empty layout
+    PipelineLayout* GraphicsPipelineLayout;
+
+    // Create the graphics pipeline 
+    IPipeline* GraphicsPipeline;
+
+    Buffer* VertexBuffer;
+    Buffer* IndexBuffer;
 
     /**
     * TESTING The render interface END

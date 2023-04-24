@@ -7,7 +7,7 @@
 #include <Misc/Assert.h>
 #include <Misc/Defines/StringDefines.h>
 
-#define MEBIBYTES_TO_BYTES(inMiB) inMiB * 1048576
+#define MEBIBYTES_TO_BYTES(inMiB) ((uint64)inMiB) * 1048576
 
 /**
 * Static class that contains functions for manipulating memory/pointers

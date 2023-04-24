@@ -72,12 +72,14 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* inDevice, VulkanRenderLayout& i
     ColorReferences.resize(NumColorAttachments);
     for (uint32 i = 0; i < NumColorAttachments; i++)
     {
+        ColorReferences[i] = { };
         ColorReferences[i].attachment = i;
         ColorReferences[i].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     }
 
     if (bHasDepthStencil)
     {
+        DepthStencilReference = { };
         DepthStencilReference.attachment = DepthStencilAttachmentIndex;
         DepthStencilReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     }
@@ -87,6 +89,7 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* inDevice, VulkanRenderLayout& i
         MSAAReferences.resize(NumColorAttachments);
         for (uint32 i = 0; i < NumColorAttachments; i++)
         {
+            MSAAReferences[i] = { };
             MSAAReferences[i].attachment = NumAttachments + i;
             MSAAReferences[i].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         }

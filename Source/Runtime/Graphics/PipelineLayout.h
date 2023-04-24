@@ -84,7 +84,7 @@ public:
     */
     inline virtual uint32 GetNumBinding() const
     {
-        return Bindings.size();
+        return (uint32)Bindings.size();
     }
 
     /**

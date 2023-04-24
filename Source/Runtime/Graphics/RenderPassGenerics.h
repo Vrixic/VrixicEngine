@@ -39,6 +39,18 @@ enum class EAttachmentStoreOp
 };
 
 /**
+* Layout of a texture 
+*/
+enum class ETextureLayout
+{
+   Undefined                = 0,
+   ColorAttachment          = 2,
+   DepthStencilAttachment   = 3,
+   DepthStencilReadOnly     = 4,
+   PresentSrc               = 1000001002, // for swapchains 
+};
+
+/**
 * Defines description for an attachment, the format, load and store operations
 */
 struct VRIXIC_API AttachmentDescription
@@ -53,6 +65,11 @@ public:
     // The store operation of the ouput for the attachment 
     EAttachmentStoreOp StoreOp;
 
+    // layout the attachment image subresource will be (For when the render pass begins)
+    ETextureLayout InitialLayout;
+
+    // layout the attachment image subresource will be transitioned to when render pass ends 
+    ETextureLayout FinalLayout;
 };
 
 /**
@@ -76,6 +93,6 @@ public:
 public:
     uint32 GetNumColorAttachments() const
     {
-        return ColorAttachments.size();
+        return (uint32)ColorAttachments.size();
     }
 };

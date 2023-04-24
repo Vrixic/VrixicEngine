@@ -28,7 +28,14 @@ public:
     * @param inWaitFence the fence the CPU will wait to be signaled
     * @param inTimeout this is the waiting timeout in nanoseconds 
     */
-    virtual void SetWaitFence(IFence* inWaitFence, uint64 inTimeout) = 0;
+    virtual void SetWaitFence(IFence* inWaitFence, uint64 inTimeout) const = 0;
+
+    /**
+    * Resets a wait fence 
+    *
+    * @param inWaitFence the fence to reset
+    */
+    virtual void ResetWaitFence(IFence* inWaitFence) const = 0;
 
     /**
     * Blocks the CPU execution until all submitted command/fences have been completed in other words signaled,

@@ -324,10 +324,16 @@ void VulkanQueue::Submit(ICommandBuffer* inCommandBuffer, uint32 inNumSignalSema
     SubmitQueue(CommandBuff, inNumSignalSemaphores, Semaphores->GetSemaphoresHandle());
 }
 
-void VulkanQueue::SetWaitFence(IFence* inWaitFence, uint64 inTimeout)
+void VulkanQueue::SetWaitFence(IFence* inWaitFence, uint64 inTimeout) const
 {
     VulkanFence* Fence = (VulkanFence*)inWaitFence;
     Fence->Wait(inTimeout);
+}
+
+void VulkanQueue::ResetWaitFence(IFence* inWaitFence) const
+{
+    VulkanFence* Fence = (VulkanFence*)inWaitFence;
+    Fence->Reset();
 }
 
 void VulkanQueue::SetWaitIdle()
@@ -353,8 +359,11 @@ void VulkanQueue::SubmitQueue(VulkanCommandBuffer* commandBuffer, uint32 numSign
     SubmitInfo.pWaitSemaphores = commandBuffer->GetWaitSemaphores();      // Semaphore(s) to wait upon before the submitted command buffer starts executing
     SubmitInfo.pSignalSemaphores = signalSemaphore;     // Semaphore(s) to be signaled when command buffers have completed
 
+    // get vulkan specific fence
+    VulkanFence* WaitFence = (VulkanFence*)commandBuffer->GetWaitFence();
+
     // Submit to the graphics queue passing a wait fence
-    VK_CHECK_RESULT(vkQueueSubmit(Queue, 1, &SubmitInfo, *commandBuffer->GetWaitFenceHandle()), "[VulkanQueue]: Failed to submit a command buffer to graphics queue!");
+    VK_CHECK_RESULT(vkQueueSubmit(Queue, 1, &SubmitInfo, WaitFence->GetFenceHandle()), "[VulkanQueue]: Failed to submit a command buffer to graphics queue!");
 }
 
 void VulkanQueue::SubmitQueue(VulkanCommandBuffer* commandBuffer, VkSemaphore* signalSemaphore)
@@ -368,8 +377,11 @@ void VulkanQueue::SubmitQueue(VulkanCommandBuffer* commandBuffer, const VkSubmit
 {
     VE_PROFILE_VULKAN_FUNCTION();
 
+    // get vulkan specific fence
+    VulkanFence* WaitFence = (VulkanFence*)commandBuffer->GetWaitFence();
+
     // Submit to the graphics queue passing a wait fence
-    VK_CHECK_RESULT(vkQueueSubmit(Queue, 1, &inSubmitInfo, *commandBuffer->GetWaitFenceHandle()), "[VulkanQueue]: Failed to submit a command buffer to graphics queue!");
+    VK_CHECK_RESULT(vkQueueSubmit(Queue, 1, &inSubmitInfo, WaitFence->GetFenceHandle()), "[VulkanQueue]: Failed to submit a command buffer to graphics queue!");
 }
 
 /* ------------------------------------------------------------------------------- */
@@ -565,12 +577,12 @@ bool VulkanSwapChain::SetVSyncInterval(uint32 inVSyncInterval)
     return false;
 }
 
-VkResult VulkanSwapChain::AcquireNextImage(VulkanCommandBuffer* lastCommandBuffer, uint32* imageIndex)
-{
-    // By setting timeout to UINT64_MAX we will always wait until the next image has been acquired or an actual error is thrown
-    // With that we don't have to handle VK_NOT_READY		
-    return fpAcquireNextImageKHR(*Device->GetDeviceHandle(), SwapChainHandle, UINT64_MAX, *lastCommandBuffer->GetWaitSemaphores(), (VkFence)nullptr, imageIndex);
-}
+//VkResult VulkanSwapChain::AcquireNextImage(VulkanCommandBuffer* lastCommandBuffer, uint32* imageIndex)
+//{
+//    // By setting timeout to UINT64_MAX we will always wait until the next image has been acquired or an actual error is thrown
+//    // With that we don't have to handle VK_NOT_READY		
+//    return fpAcquireNextImageKHR(*Device->GetDeviceHandle(), SwapChainHandle, UINT64_MAX, *lastCommandBuffer->GetWaitSemaphores(), (VkFence)nullptr, imageIndex);
+//}
 
 VkResult VulkanSwapChain::QueuePresent(VulkanQueue* queue, VkSemaphore* waitSemaphore, uint32 imageIndex)
 {
@@ -781,7 +793,7 @@ uint32 VulkanSwapChain::SelectSwapChainImageCount(uint32 inNumDesiredImages)
     VkSurfaceCapabilitiesKHR SurfaceCapabilities;
     VK_CHECK_RESULT(SurfacePtr->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(*Device->GetPhysicalDeviceHandle(), *SurfacePtr->GetSurfaceHandle(), &SurfaceCapabilities), "[VulkanSwapChain]: Failed to retreive physical device (GPU) surface capabilities!");
 
-    uint32_t DesiredNumberOfSwapchainImages = inNumDesiredImages;
+    uint32_t DesiredNumberOfSwapchainImages = inNumDesiredImages + 1;
     if ((SurfaceCapabilities.maxImageCount > 0) && (DesiredNumberOfSwapchainImages > SurfaceCapabilities.maxImageCount))
     {
         DesiredNumberOfSwapchainImages = SurfaceCapabilities.maxImageCount;
@@ -826,6 +838,15 @@ VkPresentModeKHR VulkanSwapChain::SelectSwapChainPresentMode(bool inEnableVSync)
     }
 
     return SwapchainPresentMode;
+}
+
+void VulkanSwapChain::AcquireNextImageIndex(ISemaphore* inLastCommandBuffer, uint32* outIndex) const
+{
+    // By setting timeout to UINT64_MAX we will always wait until the next image has been acquired or an actual error is thrown
+	// With that we don't have to handle VK_NOT_READY		
+
+    VulkanSemaphore* Semaphore = (VulkanSemaphore*)inLastCommandBuffer;
+    VK_CHECK_RESULT(fpAcquireNextImageKHR(*Device->GetDeviceHandle(), SwapChainHandle, UINT64_MAX, *Semaphore->GetSemaphoresHandle(), (VkFence)nullptr, outIndex), "[VulkanSwapchain]: Failed to acquire the next swap chain image index...!");
 }
 
 Texture* VulkanSwapChain::GetTextureAt(uint32 inTextureIndex) const

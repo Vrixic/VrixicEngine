@@ -134,6 +134,9 @@ VulkanVertexShader* VulkanShaderFactory::CreateVertexShader(VulkanShaderPool* in
 
         // Build the input layout information 
         VertexShader->BuildInputLayout(1, &inConfig.VertexBindings);
+
+        // Free Resource -> 
+        delete[] CompiledSourceCode;
     }
 
     return VertexShader;
@@ -157,6 +160,9 @@ VulkanFragmentShader* VulkanShaderFactory::CreateFragmentShader(VulkanShaderPool
 
         // Create the shader module 
         inShaderPool->CreateShaderModule(CompiledSourceCode, CompiledSourceCodeSize);
+
+        // Free Resource -> 
+        delete[] CompiledSourceCode;
     }
 
     return FragmentShader;
@@ -176,8 +182,8 @@ void VulkanShaderFactory::CompileSourceCode(const ShaderConfig& inConfig, const 
 #endif
 
     shaderc_shader_kind ShaderKind = { };
-    VString InputFileName = "";
-    VString EntryPointName = "";
+    std::string InputFileName = "";
+    std::string EntryPointName = inConfig.EntryPoint;
     switch (inConfig.Type)
     {
     case EShaderType::Vertex:
@@ -189,7 +195,7 @@ void VulkanShaderFactory::CompileSourceCode(const ShaderConfig& inConfig, const 
     case EShaderType::Fragment:
         ShaderKind = shaderc_fragment_shader;
         InputFileName = "main.frag";
-        EntryPointName = "main";
+        //EntryPointName = "main";
         break;
     default:
         break;
@@ -204,8 +210,10 @@ void VulkanShaderFactory::CompileSourceCode(const ShaderConfig& inConfig, const 
         VE_CORE_LOG_ERROR("Shader Errors: {0}", shaderc_result_get_error_message(result));
     }
 
-    outCode = reinterpret_cast<const uint32*>((char*)shaderc_result_get_bytes(result));
     *outCodeSize = shaderc_result_get_length(result);
+
+    outCode = new uint32[*outCodeSize];
+    memcpy((void*)outCode, shaderc_result_get_bytes(result), *outCodeSize);
 
     shaderc_result_release(result); // done
 }

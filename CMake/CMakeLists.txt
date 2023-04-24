@@ -107,7 +107,7 @@ if (WIN32)
 	
 	# add custom post build event/command to copy the dll made form vrixic engine to sandbox
 	add_custom_command(TARGET VrixicEngine POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:VrixicEngine> ${PROJECT_SOLUTION_DIR}/bin/Debug-x64/Sandbox/
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:VrixicEngine> ${PROJECT_SOLUTION_DIR}/bin/$(Configuration)-$(Platform)/Sandbox
 	COMMENT "Copying VrixicEngine dll to Sandbox build directory")
 	
 	# make sand box the start up project

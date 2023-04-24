@@ -21,7 +21,7 @@
 #else
 
 #define VE_PROFILE_BEGIN_SESSION(name) 
-#define VE_PROFILE_END_SESSION(name) 
+#define VE_PROFILE_END_SESSION() 
 #define VE_PROFILE_FUNCTION(...) 
 
 #endif

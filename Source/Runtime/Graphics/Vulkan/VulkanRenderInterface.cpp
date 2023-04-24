@@ -354,11 +354,13 @@ bool VulkanRenderInterface::CreateVulkanInstance(const VulkanRendererConfig& inV
         InstanceCreateInfo.ppEnabledLayerNames = InstanceLayers.data();
     }
 
+#if _DEBUG
     // Debug Setup
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     VulkanUtils::DebugUtils::PopulateDebugMessengerCreateInfo(debugCreateInfo);
 
     InstanceCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+#endif
 
     return vkCreateInstance(&InstanceCreateInfo, nullptr, &VulkanInstance) == VK_SUCCESS;
 }

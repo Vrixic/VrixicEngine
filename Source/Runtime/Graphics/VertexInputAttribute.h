@@ -26,7 +26,7 @@ public:
     uint32          BindingNum;
 
     // Vertex Attribute format, Ex: RGBA32Float which basically means a Vector4D  
-    EPixelFormat         Format;
+    EPixelFormat    Format;
 
     // The byte offset of this attribute relative from the start of an element in the vertex binding
     uint32          Offset;

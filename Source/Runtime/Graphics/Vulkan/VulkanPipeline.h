@@ -415,7 +415,7 @@ private:
         outMSSCreateInfo.rasterizationSamples = inSampleCountBits;
         outMSSCreateInfo.sampleShadingEnable = VK_FALSE;
         outMSSCreateInfo.minSampleShading = 0.0f;
-        outMSSCreateInfo.pSampleMask = (const VkSampleMask*)&inBlendConfig.SampleMask;
+        outMSSCreateInfo.pSampleMask = inBlendConfig.bAlphaToCoverageEnabled ? (const VkSampleMask*)&inBlendConfig.SampleMask : nullptr;
         outMSSCreateInfo.alphaToCoverageEnable = inBlendConfig.bAlphaToCoverageEnabled;
         outMSSCreateInfo.alphaToOneEnable = VK_FALSE;
     }
@@ -524,6 +524,8 @@ private:
     */
     static void CreateDynamicState(const GraphicsPipelineConfig& inConfig, std::vector<VkDynamicState>& outDynamicStates, VkPipelineDynamicStateCreateInfo& outPDSCreateInfo)
     {
+        outPDSCreateInfo = VulkanUtils::Initializers::PipelineDynamicStateCreateInfo();
+
         if (inConfig.Viewports.empty())
         {
             outDynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);

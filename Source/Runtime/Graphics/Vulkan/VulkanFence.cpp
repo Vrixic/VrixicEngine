@@ -3,7 +3,7 @@
 VulkanFence::VulkanFence(VulkanDevice* inDevice)
     : Device(inDevice)
 {
-    VkFenceCreateInfo FenceCreateInfo = VulkanUtils::Initializers::FenceCreateInfo(0, nullptr);
+    VkFenceCreateInfo FenceCreateInfo = VulkanUtils::Initializers::FenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT, nullptr);
     VK_CHECK_RESULT(vkCreateFence(*Device->GetDeviceHandle(), &FenceCreateInfo, nullptr, &FenceHandle), "[VulkanFence]: failed to create a fence object");
 }
 

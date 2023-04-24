@@ -10,6 +10,7 @@
 #include "VulkanFrameBuffer.h"
 
 class VulkanCommandPool;
+class VulkanFence;
 
 /*
 *  @TODO: State Checking maybe?.... -> Should add some skind of states check, like if its currently in command buffer begins state or in render pass state
@@ -26,7 +27,7 @@ private:
     VkCommandBuffer CommandBufferHandle;
 
     std::vector<VkSemaphore> WaitSemaphores;
-    VkFence	WaitFence;
+    VulkanFence* WaitFence;
 
     uint32 ImageIndex;
 
@@ -177,7 +178,7 @@ public:
     */
     virtual void DrawIndexedInstanced(uint32 inNumIndices, uint32 inNumInstances, uint32 inFirstIndex = 0, uint32 inVertexOffset = 0, uint32 inFirstInstanceIndex = 0) override;
 
-    /*-- EnmdICommandBuffer Interface --*/
+    /*-- End ICommandBuffer Interface --*/
 
     /**
     * Creates a wait fence for this command buffer 
@@ -237,6 +238,17 @@ public:
     void ResetWaitFence() const;
 
 public:
+    /** - Start ICommandInterface - **/
+
+    /**
+    * @returns IFence* the wait fence in use by this command buffer
+    */
+    virtual IFence* GetWaitFence() const override final
+    {
+        return (IFence*)WaitFence;
+    }
+
+    /** - End   ICommandInterface - **/
     inline uint32 GetWaitSemaphoresCount() const
     {
         return (uint32)WaitSemaphores.size();
@@ -245,11 +257,6 @@ public:
     inline const VkSemaphore* GetWaitSemaphores() const
     {
         return WaitSemaphores.data();
-    }
-
-    inline const VkFence* GetWaitFenceHandle() const
-    {
-        return &WaitFence;
     }
 
     inline uint32 GetImageIndex() const

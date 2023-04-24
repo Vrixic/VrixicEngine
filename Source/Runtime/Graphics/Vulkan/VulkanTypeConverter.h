@@ -58,6 +58,11 @@ public:
     static VkSampleCountFlagBits ConvertSampleCountToVk(uint32 inSamples);
 
     /**
+    * Converts texture layout to vulkan image layout
+    */
+    static VkImageLayout ConvertTextureLayoutToVk(ETextureLayout inLayout);
+
+    /**
     * Converts attachment descriptions to vulkan specific attachment descriptions
     */
     static VkAttachmentDescription ConvertAttachmentDescToVk(const AttachmentDescription& inDesc, VkSampleCountFlagBits inSamples);

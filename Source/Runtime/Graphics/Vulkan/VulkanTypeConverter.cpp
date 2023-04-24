@@ -330,6 +330,24 @@ VkSampleCountFlagBits VulkanTypeConverter::ConvertSampleCountToVk(uint32 inSampl
     return (VkSampleCountFlagBits)0;
 }
 
+VkImageLayout VulkanTypeConverter::ConvertTextureLayoutToVk(ETextureLayout inLayout)
+{
+    switch (inLayout)
+    {
+    case ETextureLayout::Undefined:                  return VK_IMAGE_LAYOUT_UNDEFINED;
+    case ETextureLayout::ColorAttachment:            return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    case ETextureLayout::DepthStencilAttachment:     return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    case ETextureLayout::DepthStencilReadOnly:       return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    case ETextureLayout::PresentSrc:                 return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    default:
+        break;
+    }
+
+    ConversionFailed("VkImageLayout", "ETextureLayout");
+
+    return (VkImageLayout)0;
+}
+
 VkAttachmentDescription VulkanTypeConverter::ConvertAttachmentDescToVk(const AttachmentDescription& inDesc, VkSampleCountFlagBits inSamples)
 {
     VkAttachmentDescription Desc;
@@ -340,8 +358,11 @@ VkAttachmentDescription VulkanTypeConverter::ConvertAttachmentDescToVk(const Att
     Desc.storeOp = ConvertAttachmentStoreOpToVk(inDesc.StoreOp);
     Desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     Desc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    Desc.initialLayout = (inDesc.LoadOp == EAttachmentLoadOp::Load ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_UNDEFINED);
-    Desc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    //Desc.initialLayout = (inDesc.LoadOp == EAttachmentLoadOp::Load ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_UNDEFINED);
+   // Desc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    Desc.initialLayout = ConvertTextureLayoutToVk(inDesc.InitialLayout);
+    Desc.finalLayout = ConvertTextureLayoutToVk(inDesc.FinalLayout);
 
     return Desc;
 }

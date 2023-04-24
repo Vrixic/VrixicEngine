@@ -208,7 +208,14 @@ public:
     * @param inWaitFence the fence the CPU will wait to be signaled
     * @param inTimeout this is the waiting timeout in nanoseconds
     */
-    virtual void SetWaitFence(IFence* inWaitFence, uint64 inTimeout) override;
+    virtual void SetWaitFence(IFence* inWaitFence, uint64 inTimeout) const override;
+
+    /**
+    * Resets a wait fence
+    *
+    * @param inWaitFence the fence to reset
+    */
+    virtual void ResetWaitFence(IFence* inWaitFence) const override;
 
     /**
     * Blocks the CPU execution until all submitted command/fences have been completed in other words signaled,
@@ -426,7 +433,7 @@ public:
     *
     * @return VkResult of the image acquisition
     */
-    VkResult AcquireNextImage(VulkanCommandBuffer* inLastCommandBuffer, uint32* inImageIndex);
+    //VkResult AcquireNextImage(VulkanCommandBuffer* inLastCommandBuffer, uint32* inImageIndex);
 
 private:
     /**
@@ -486,6 +493,18 @@ private:
     VkPresentModeKHR SelectSwapChainPresentMode(bool inEnableVSync);
 
 public:
+    /** - ISwapchain Interface Start - */
+
+    /**
+    * Acquires the next swapchain image index
+    *
+    * @param inWaitSemaphore the presentation complete semaphore to wait on 
+    * @param outIndex the new image index to use
+    */
+    virtual void AcquireNextImageIndex(ISemaphore* inWaitSemaphore, uint32* outIndex) const override;
+
+    /** - ISwapchain Interface End   - */
+
     inline const VkSwapchainKHR* GetSwapChainHandle() const
     {
         return &SwapChainHandle;
