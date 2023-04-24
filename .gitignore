@@ -366,4 +366,5 @@ _deps
 Build/
 CMake/VrixicEngineBuild/
 AllSourceFiles.txt
+CMake/AllSourceFiles.txt
 AutomatedTests/
