@@ -11,7 +11,6 @@
 #include "KeyCodes.h"
 #include <Runtime/Memory/Core/MemoryManager.h>
 
-#include <crtdbg.h>
 #include <Windows.h>
 #include <chrono>
 
@@ -21,13 +20,6 @@ Application::Application()
 {
 	VE_ASSERT(ApplicationPtr == nullptr, "Application should not be created twice! Application already exists!");
 	ApplicationPtr = this;
-
-	// Logging and Memory Output
-#if _DEBUG
-	_CrtDumpMemoryLeaks();
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-	_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG);
-#endif // _DEBUG
 
 #if _EDITOR
 	/* Allocate a console */
@@ -79,6 +71,8 @@ Application::~Application()
 
 	// Shutdown the Memory Manager
 	MemoryManager::Get().Shutdown();
+
+	FreeConsole();
 }
 
 void Application::OnEvent(WindowEvent& inEvent)

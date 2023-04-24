@@ -13,7 +13,7 @@
 
 #include <External/imgui/Includes/imgui.h>
 
-#define RENDER_DOC 1
+#define RENDER_DOC 0
 
 VGameEngine::VGameEngine()
     : World(nullptr)
@@ -325,24 +325,6 @@ void VGameEngine::Init()
 
 void VGameEngine::Tick()
 {
-    // Start a new render frame 
-    //Renderer.Get()->BeginRenderFrame();
-
-    // Render the world first 
-    //Renderer.Get()->Render(World);
-
-    // Next start rendering the editor GUI
-    //Renderer.Get()->BeginEditorGuiRenderFrame();
-
-    // Draw the game editor GUI/tools
-    //DrawEditorTools();
-
-    // Stop the editor gui frame 
-    //Renderer.Get()->EndEditorGuiRenderFrame();
-
-    // End of the current render frame and submit the frame 
-    //Renderer.Get()->EndRenderFrame();
-
     // Firstly complete that last command buffer draw commands 
     ICommandBuffer* LastCommandBuffer = CommandBuffers[CurrentImageIndex];
 

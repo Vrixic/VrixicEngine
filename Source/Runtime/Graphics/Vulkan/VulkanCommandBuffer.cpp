@@ -26,6 +26,7 @@ VulkanCommandBuffer::~VulkanCommandBuffer()
 	//{
 	//	vkDestroySemaphore(Device->GetDeviceHandle(), WaitSemaphores[i], nullptr);
 	//}
+    Device->WaitUntilIdle();
 
     delete WaitFence;
 	//vkDestroyFence(*Device->GetDeviceHandle(), WaitFence, nullptr);
@@ -176,6 +177,8 @@ void VulkanCommandBuffer::AllocateCommandBuffer(const CommandBufferConfig& inCon
 void VulkanCommandBuffer::FreeCommandBuffer()
 {
     VE_ASSERT(CommandBufferHandle != VK_NULL_HANDLE, VE_TEXT("[VulkanCommandBuffer]: Cannot free an already invalid command buffer!!"));
+
+    Device->WaitUntilIdle();
 
 	vkFreeCommandBuffers(*Device->GetDeviceHandle(), CommandPool->GetCommandPoolHandle(), AllocatedBufferCount, &CommandBufferHandle);
     CommandBufferHandle = VK_NULL_HANDLE;
