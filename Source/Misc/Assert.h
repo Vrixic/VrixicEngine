@@ -53,10 +53,31 @@
 
 // Engine defined asserts 
 #if _DEBUG
+/**
+* This is a regular assert, pass in an expression that returns a boolean, do not pass in functions when actually do something as in release build, they will be taken out 
+*/
 #define VE_ASSERT(expr, ...) ASSERT(expr, __VA_ARGS__)
 #define VE_STATIC_ASSERT(expr, message) STATIC_ASSERT(expr)
+
+/**
+* This is a function assert used to check the return value of a function
+* @param func the functions return value (should be a call to the function)
+* @param rvalueCheck the return value of the function that will have the expression ReturnValue == rvalueCheck true
+*/
+#define VE_FUNC_ASSERT(func, rvalueCheck, ...)          \
+        VE_ASSERT(func == rvalueCheck, __VA_ARGS__)
 #else
+/**
+* This is a regular assert, pass in an expression that returns a boolean, do not pass in functions when actually do something as in release build, they will be taken out
+*/
 #define VE_ASSERT(expr, message, ...) 
 #define VE_STATIC_ASSERT(expr, message) 
+
+/**
+* This is a function assert used to check the return value of a function
+* @param func the functions return value (should be a call to the function)
+* @param rvalueCheck the return value of the function that will have the expression ReturnValue == rvalueCheck true
+*/
+#define VE_FUNC_ASSERT(func, rvalueCheck, ...) func
 #endif // _DEBUG
 

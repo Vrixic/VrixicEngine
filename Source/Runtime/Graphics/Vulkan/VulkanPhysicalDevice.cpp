@@ -9,6 +9,7 @@ VulkanPhysicalDevice::VulkanPhysicalDevice()
 {
     PhysicalDeviceHandle = VK_NULL_HANDLE;
     PhysicalDeviceProperties = { 0 };
+    PhysicalDeviceFeatures = { };
 }
 
 VulkanPhysicalDevice::~VulkanPhysicalDevice() { }

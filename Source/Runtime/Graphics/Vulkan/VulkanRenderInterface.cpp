@@ -16,7 +16,7 @@
 
 VulkanRenderInterface::VulkanRenderInterface(const VulkanRendererConfig& inVulkanRendererConfig)
 {
-    VE_ASSERT(CreateVulkanInstance(inVulkanRendererConfig), "[VulkanRenderInterface]: failed to create a vulkan instance object..");
+    VE_FUNC_ASSERT(CreateVulkanInstance(inVulkanRendererConfig), true, "[VulkanRenderInterface]: failed to create a vulkan instance object..");
 
     VkResult Result;
 
@@ -34,7 +34,6 @@ VulkanRenderInterface::VulkanRenderInterface(const VulkanRendererConfig& inVulka
 
         // Create Logical Device 
         Device = new VulkanDevice(PhysicalDeviceHandle, EnabledFeatures, (uint32)inVulkanRendererConfig.EnabledDeviceExtensionCount, (const char**)inVulkanRendererConfig.EnabledDeviceExtensions);
-        //Device->CreateDevice((VulkanSurface*)inVulkanRendererConfig.SurfacePtr);
     }
 }
 
