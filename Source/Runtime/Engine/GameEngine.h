@@ -54,7 +54,6 @@ private:
     /**
     * TESTING The render interface END
     */
-
 	 
 public:
 	VGameEngine();

@@ -68,11 +68,13 @@ public:
 
         // DescriptorPool
         std::vector<VkDescriptorPoolSize> PoolSizes;
+        uint32 MaxSets = 0;
 
-        uint32* CountPerType = new uint32[11];
+        uint32 CountPerType[11] = { 0,0,0,0,0,0,0,0,0,0,0 };
         for (uint32 i = 0; i < inPipelineLayoutConfig.Bindings.size(); i++)
         {
             CountPerType[LayoutBinding[i].DescriptorType] += LayoutBinding[i].DescriptorCount;
+            MaxSets += LayoutBinding[i].DescriptorCount;
         }
 
         for (uint32 i = 0; i < 11; i++)
@@ -88,8 +90,8 @@ public:
         }
 
         delete[] LayoutBinding;
-        delete[] CountPerType;
-        DescriptorPool = new VulkanDescriptorPool(Device, *DescriptorSetsLayout, 2, PoolSizes);
+        //delete[] CountPerType;
+        DescriptorPool = new VulkanDescriptorPool(Device, *DescriptorSetsLayout, MaxSets > 0 ? MaxSets : 2, PoolSizes);
     }
 
     ~VulkanPipelineLayout()
@@ -170,6 +172,11 @@ public:
     inline const VkPipelineLayout* GetPipelineLayoutHandle() const
     {
         return &PipelineLayoutHandle;
+    }
+
+    inline const VulkanDescriptorPool* GetDescriptorPool() const
+    {
+        return DescriptorPool;
     }
 };
 

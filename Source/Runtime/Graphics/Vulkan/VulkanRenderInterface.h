@@ -9,7 +9,12 @@
 #include <Runtime/Graphics/Vulkan/VulkanShader.h>
 #include <Runtime/Memory/ResourceManager.h>
 
+#include <imgui_impl_vulkan.h>
+
+class VulkanFrameBuffer;
 class VulkanMemoryHeap;
+class VulkanRenderLayout;
+class VulkanRenderPass;
 
 /**
 * Vulkans implementation of the render interface
@@ -53,6 +58,36 @@ private:
 
     /** Main memory heap for all vulkan allocation, (Index, Vertex, storage buffers, etc...) */
     VulkanMemoryHeap* VulkanMemoryHeapMain;
+
+    /** - ImGui - **/
+
+    /**
+    * Helper struct that consists of all objects in use by the imgui render system
+    */
+    struct HImGuiData
+    {
+        VkAllocationCallbacks*   AllocatorCallback  = nullptr;
+        VkInstance               Instance           = VK_NULL_HANDLE;
+        VkPhysicalDevice         PhysicalDevice     = VK_NULL_HANDLE;
+        VkDevice                 Device             = VK_NULL_HANDLE;
+        uint32_t                 QueueFamily        = (uint32_t)-1;
+        VkQueue                  Queue              = VK_NULL_HANDLE;
+        VkDebugReportCallbackEXT DebugReport        = VK_NULL_HANDLE;
+        VkPipelineCache          PipelineCache      = VK_NULL_HANDLE;
+        VkDescriptorPool         DescriptorPool     = VK_NULL_HANDLE;
+
+        VulkanRenderLayout*      RenderLayout       = nullptr;
+        VulkanRenderPass*        RenderPass         = nullptr;
+
+        std::vector<VulkanFrameBuffer*> FrameBuffers;
+
+        ImGui_ImplVulkanH_Window MainWindowData;
+        int                      MinImageCount      = 2;
+        bool                     SwapChainRebuild   = false;
+    };
+    static HImGuiData ImGuiData;
+
+    /** - ImGui - **/
 
 public:
     /**
@@ -321,6 +356,42 @@ public:
     * @param inSampler the sampler to free
     */
     virtual void Free(Sampler* inSampler) override;
+
+    /* ------------------------------------------------------------------------------- */
+    /* -------------                     ImGui                     ------------------- */
+    /* ------------------------------------------------------------------------------- */
+
+    static void ImguiCheckVkResultFunc(VkResult err)
+    {
+        VK_CHECK_RESULT(err, "[ImguiVulkanImpInit]: failed");
+    }
+
+    /**
+    * Initializes ImGui using GLFW by default
+    */
+    virtual void InitImGui(SwapChain* inMainSwapChain, Surface* inSurface) override;
+
+    /**
+    * Starts a new frame for imgui
+    */
+    virtual void BeginImGuiFrame() const override;
+
+    /**
+    * Renders ImGui objects (Upload index/vertex data if need be)
+    *
+    * @param inCommandBuffer the command buffer to encode/draw to
+    */
+    virtual void RenderImGui(const ICommandBuffer* inCommandBuffer, uint32 inCurrentImageIndex) const override;
+
+    /**
+    * Starts a new frame for imgui
+    */
+    virtual void EndImGuiFrame() const override;
+
+    /**
+    * Shuts down ImGui and cleans up all its resources
+    */
+    void ShutdownImGui();
 
 public:
     /**

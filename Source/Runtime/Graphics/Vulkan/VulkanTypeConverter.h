@@ -166,4 +166,14 @@ public:
     * Converts texture type to vulkan specific texture view type (image type)
     */
     static VkImageViewType ConvertTextureViewTypeToVk(ETextureType inType);
+
+    /**
+    * Converts subpass access flags to vulkan specific access flags
+    */
+    static VkAccessFlags ConvertSubpassAccessFlagsToVk(uint32 inFlags);
+
+    /**
+    * Converts SubpassDependencyDescription to vulkan specific VkSubpassDependency
+    */
+    static VkSubpassDependency ConvertSubpassDependencyDescToVk(const SubpassDependencyDescription& inDesc);
 };

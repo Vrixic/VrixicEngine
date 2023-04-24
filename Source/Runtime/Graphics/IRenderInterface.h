@@ -27,6 +27,12 @@
 #include <vector>
 
 /**
+* IMGUI SECTION INFO
+* Vrixic Engines editor will be made using ImGui, and so to make it simple to inject and use ImGui
+* The implementation details of ImGui will be left for the specific Render Interface to implement
+*/
+
+/**
 * All supported graphics interface, if a graphics interface is supported, it must include a renderer for itself, its resource specific management deriving from IResourceManager;
 */
 static std::vector<ERenderInterface> SupportedGraphicInterfaces = { ERenderInterface::Vulkan };
@@ -35,12 +41,12 @@ class VRIXIC_API IRenderInterface : Interface
 {
 public:
     /**
-    * Initializes the render interface 
+    * Initializes the render interface
     */
     virtual void Initialize() = 0;
 
     /**
-    * Shuts down this interface making it unuseable 
+    * Shuts down this interface making it unuseable
     */
     virtual void Shutdown() = 0;
 
@@ -193,7 +199,7 @@ public:
 
     /**
     * Creates a new graphics pipeline with the specified configurations
-    * 
+    *
     * @param inGraphicsPipelineConfig info used to create the graphics pipeline
     */
     virtual IPipeline* CreatePipeline(const GraphicsPipelineConfig& inGraphicsPipelineConfig) = 0;
@@ -211,8 +217,8 @@ public:
 
     /**
     * Creates a new semaphore object
-    * 
-    * @param inSemaphoreConfig contains info on how to create the semaphore 
+    *
+    * @param inSemaphoreConfig contains info on how to create the semaphore
     */
     virtual ISemaphore* CreateRenderSemaphore(const SemaphoreConfig& inSemaphoreConfig) = 0;
 
@@ -274,6 +280,32 @@ public:
     * @param inSampler the sampler to free
     */
     virtual void Free(Sampler* inSampler) = 0;
+
+    /* ------------------------------------------------------------------------------- */
+    /* -------------                     ImGui                     ------------------- */
+    /* ------------------------------------------------------------------------------- */
+
+    /**
+    * Initializes ImGui using GLFW by default
+    */
+    virtual void InitImGui(SwapChain* inMainSwapChain, Surface* inSurface) = 0;
+
+    /**
+    * Starts a new frame for imgui
+    */
+    virtual void BeginImGuiFrame() const = 0;
+
+    /**
+    * Renders ImGui objects (Upload index/vertex data if need be)
+    *
+    * @param inCommandBuffer the command buffer to encode/draw to
+    */
+    virtual void RenderImGui(const ICommandBuffer* inCommandBuffer, uint32 inCurrentImageIndex) const = 0;
+
+    /**
+    * Starts a new frame for imgui
+    */
+    virtual void EndImGuiFrame() const = 0;
 
 public:
     /**

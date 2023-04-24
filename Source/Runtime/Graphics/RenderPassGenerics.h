@@ -51,6 +51,20 @@ enum class ETextureLayout
 };
 
 /**
+* All flags in use by the subpass dependencies
+*/
+struct SubpassAssessFlags
+{
+    enum
+    {
+#define BIT(x) (1 << x)
+
+        ColorAttachmentRead          = BIT(0),
+        ColorAttachmentWrite         = BIT(1)
+    };
+};
+
+/**
 * Defines description for an attachment, the format, load and store operations
 */
 struct VRIXIC_API AttachmentDescription
@@ -73,6 +87,24 @@ public:
 };
 
 /**
+* It is a subpass dependency which states the flow of the renderpass and how the src and dst mask are in use 
+*/
+struct VRIXIC_API SubpassDependencyDescription
+{
+public:
+
+    // Source Access Mask 
+    uint32 SrcAccessMaskFlags;
+
+    // Destination Access Mask 
+    uint32 DstAccessMaskFlags;
+
+public:
+    SubpassDependencyDescription()
+        : SrcAccessMaskFlags(0), DstAccessMaskFlags(0) { }
+};
+
+/**
 * Contain information for configuring a render pass creation 
 */
 struct VRIXIC_API RenderPassConfig
@@ -80,6 +112,9 @@ struct VRIXIC_API RenderPassConfig
 public:
     // Color attachments for the render pass
     std::vector<AttachmentDescription> ColorAttachments;
+
+    // List of subpass dependencies
+    std::vector<SubpassDependencyDescription> SubpassDependencies;
 
     // Depth and stencil attachment used by the render pass
     AttachmentDescription DepthStencilAttachment;
@@ -89,6 +124,10 @@ public:
 
     // The render area that will be in use for the render pass 
     Extent2D RenderArea;
+
+public:
+    RenderPassConfig()
+        : NumSamples(1), RenderArea(1280u, 720u) { }
 
 public:
     uint32 GetNumColorAttachments() const

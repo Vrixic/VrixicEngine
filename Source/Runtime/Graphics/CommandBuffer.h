@@ -26,13 +26,13 @@ public:
     * Begins the recording process which enables the renderer to start listing GPU commands
     * @remarks resets all previously recorded commands
     */
-    virtual void Begin() = 0;
+    virtual void Begin() const = 0;
 
     /**
     * Ends the recording process
     * @remarks The command buffer can now be submitted to a CommandQueue for presentation
     */
-    virtual void End() = 0;
+    virtual void End() const = 0;
 
     /* ------------------------------------------------------------------------------- */
     /* -------------                 Synchronization               ------------------- */
@@ -91,12 +91,12 @@ public:
     * @param inRenderPassBeginInfo the information used to begin the render pass
     * @info render pass are just steps (subpasses) drawing commands are divided into for allowing things like attachments, etc.. to happen (also keeps relationships between the commands)
     */
-    virtual void BeginRenderPass(const RenderPassBeginInfo& inRenderPassBeginInfo) = 0;;
+    virtual void BeginRenderPass(const RenderPassBeginInfo& inRenderPassBeginInfo) const = 0;
 
     /**
     * Ends the current render pass
     */
-    virtual void EndRenderPass() = 0;
+    virtual void EndRenderPass() const = 0;
 
     /* ------------------------------------------------------------------------------- */
     /* ---------------                Pipeline Stuff               ------------------- */

@@ -114,15 +114,13 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* inDevice, VulkanRenderLayout& i
 
     SubpassDesc.pDepthStencilAttachment = (bHasDepthStencil ? &DepthStencilReference : nullptr);
 
-    // Sub pass Dependency
-    VkSubpassDependency SubpassDependency = { };
-    SubpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    SubpassDependency.dstSubpass = 0;
-    SubpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    SubpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    SubpassDependency.srcAccessMask = 0;
-    SubpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;;
-    SubpassDependency.dependencyFlags = 0;
+    std::vector<VkSubpassDependency> SubpassDependencies;
+    SubpassDependencies.resize(inRenderPassConfig.SubpassDependencies.size());
+
+    for (uint32 i = 0; i < inRenderPassConfig.SubpassDependencies.size(); i++)
+    {
+        SubpassDependencies[i] = VulkanTypeConverter::ConvertSubpassDependencyDescToVk(inRenderPassConfig.SubpassDependencies[i]);
+    }
 
     // Create the actual renderpass
     VkRenderPassCreateInfo RenderPassInfo = VulkanUtils::Initializers::RenderPassCreateInfo();
@@ -130,8 +128,8 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* inDevice, VulkanRenderLayout& i
     RenderPassInfo.pAttachments = AttachmentDescs;
     RenderPassInfo.subpassCount = 1;
     RenderPassInfo.pSubpasses = &SubpassDesc;
-    RenderPassInfo.dependencyCount = 1;
-    RenderPassInfo.pDependencies = &SubpassDependency;
+    RenderPassInfo.dependencyCount = SubpassDependencies.size();
+    RenderPassInfo.pDependencies = SubpassDependencies.data();
 
     VK_CHECK_RESULT(vkCreateRenderPass(*Device->GetDeviceHandle(), &RenderPassInfo, nullptr, &RenderPassHandle), "[VulkanRenderPass]: Failed to create a render pass!");
 

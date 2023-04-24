@@ -11,10 +11,13 @@
 */
 enum class EResourceType
 {
-    Undefined,      // Resource type is unknown
-    Buffer,         // a buffer resource
-    Texture,        // a texture resource
-    Sampler,        // a sampler resource 
+    Undefined,                  // Resource type is unknown
+    Buffer,                     // a buffer resource
+    Texture,                    // a texture resource
+    Sampler,                    // a sampler resource 
+    CombinedTextureSampler,     // combination of a texture and a sampler
+    StorageTexture,              // 
+    InputAttachment             //
 };
 
 /**
@@ -36,13 +39,18 @@ struct VRIXIC_API ResourceBindFlags
         ConstantBuffer              = BIT(2),
 
         // storage buffer resource used to bind to a buffer
-        StorageBuffer              = BIT(3),
+        StorageBuffer               = BIT(3),
+
+        TexelBuffer                 = BIT(4),
 
         // Allows for textures to be used as a render target for color attachment 
-        ColorAttachment             = BIT(4),
+        ColorAttachment             = BIT(5),
 
         // allows tectures to be used as a render target for depth-stencil attachment 
-        DepthStencilAttachment      = BIT(5),
+        DepthStencilAttachment      = BIT(6),
+
+        // dynamics buffers 
+        Dynamic                     = BIT(7)
     };
 };
 

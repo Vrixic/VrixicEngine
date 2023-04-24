@@ -11,7 +11,12 @@
 #include <Core/Platform/Windows/GLFWWindowsWindow.h>
 #include <Runtime/Memory/Core/MemoryManager.h>
 
-#include <External/imgui/Includes/imgui.h>
+#include <External/glfw/Includes/GLFW/glfw3.h>
+
+static void ImguiCheckVkResultFunc(VkResult err)
+{
+    VK_CHECK_RESULT(err, "[ImguiVulkanImpInit]: failed");
+}
 
 #define RENDER_DOC 0
 
@@ -138,6 +143,12 @@ VGameEngine::VGameEngine()
         Color.FinalLayout = ETextureLayout::PresentSrc;
 
         Config.ColorAttachments.push_back(Color);
+
+        SubpassDependencyDescription SBDesc = { };
+        SBDesc.SrcAccessMaskFlags = 0;
+        SBDesc.DstAccessMaskFlags = SubpassAssessFlags::ColorAttachmentRead | SubpassAssessFlags::ColorAttachmentWrite;
+
+        Config.SubpassDependencies.push_back(SBDesc);
 
         RenderPass = RenderInterface.Get()->CreateRenderPass(Config);
         VE_CORE_LOG_INFO("Successfully created renderpass...");
@@ -310,6 +321,9 @@ VGameEngine::VGameEngine()
     }
 
     CurrentImageIndex = 0;
+
+    // Init Imgui 
+    RenderInterface.Get()->InitImGui(SwapChainMain, SurfacePtr);
 }
 
 VGameEngine::~VGameEngine()
@@ -346,7 +360,7 @@ void VGameEngine::Tick()
     RenderClearValues ClearValues[2];
     ClearValues[0].Color = { 0.0f, 0.0f, 0.2f,  1.0f };
     ClearValues[0].Depth = { 1.0f };
-    ClearValues[0].Stencil = {0};
+    ClearValues[0].Stencil = { 0 };
 
     RPBeginInfo.ClearValues = ClearValues;
     RPBeginInfo.NumClearValues = 2;
@@ -368,6 +382,16 @@ void VGameEngine::Tick()
 
     // End the render pas
     CurrentCommandBuffer->EndRenderPass();
+
+    // IMGUI
+    static bool bShowDemoWindow = true;
+    RenderInterface.Get()->BeginImGuiFrame();
+
+    ImGui::ShowDemoWindow(&bShowDemoWindow);
+
+    RenderInterface.Get()->EndImGuiFrame();
+
+    RenderInterface.Get()->RenderImGui(CurrentCommandBuffer, CurrentImageIndex);
 
     // Stop encoding commands to the command buffer
     CurrentCommandBuffer->End();

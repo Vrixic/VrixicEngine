@@ -32,14 +32,14 @@ VulkanCommandBuffer::~VulkanCommandBuffer()
 	//vkDestroyFence(*Device->GetDeviceHandle(), WaitFence, nullptr);
 }
 
-void VulkanCommandBuffer::Begin()
+void VulkanCommandBuffer::Begin() const
 {
     VE_PROFILE_VULKAN_FUNCTION();
 
     BeginCommandBuffer();
 }
 
-void VulkanCommandBuffer::End()
+void VulkanCommandBuffer::End() const
 {
     VE_PROFILE_VULKAN_FUNCTION();
 
@@ -79,7 +79,7 @@ void VulkanCommandBuffer::SetIndexBuffer(Buffer& inIndexBuffer)
     vkCmdBindIndexBuffer(CommandBufferHandle, *Buf.GetBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
 }
 
-void VulkanCommandBuffer::BeginRenderPass(const RenderPassBeginInfo& inRenderPassBeginInfo)
+void VulkanCommandBuffer::BeginRenderPass(const RenderPassBeginInfo& inRenderPassBeginInfo) const
 {
     VE_PROFILE_VULKAN_FUNCTION();
 
@@ -101,7 +101,7 @@ void VulkanCommandBuffer::BeginRenderPass(const RenderPassBeginInfo& inRenderPas
     vkCmdBeginRenderPass(CommandBufferHandle, &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 
-void VulkanCommandBuffer::EndRenderPass()
+void VulkanCommandBuffer::EndRenderPass() const
 {
     VE_PROFILE_VULKAN_FUNCTION();
     
@@ -191,13 +191,13 @@ void VulkanCommandBuffer::FreeCommandBuffer()
     CommandPool->EraseCommandBuffer(this);
 }
 
-void VulkanCommandBuffer::BeginCommandBuffer()
+void VulkanCommandBuffer::BeginCommandBuffer() const
 {
 	VkCommandBufferBeginInfo CommandBufferBeginInfo = VulkanUtils::Initializers::CommandBufferBeginInfo(nullptr);
 	VK_CHECK_RESULT(vkBeginCommandBuffer(CommandBufferHandle, &CommandBufferBeginInfo), "[VulkanCommandBuffer]: Failed to begin a command buffer!");
 }
 
-void VulkanCommandBuffer::EndCommandBuffer()
+void VulkanCommandBuffer::EndCommandBuffer() const
 {
 	VK_CHECK_RESULT(vkEndCommandBuffer(CommandBufferHandle), "[VulkanCommandBuffer]: Failed to end a command buffer!");
 }

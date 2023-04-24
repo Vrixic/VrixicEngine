@@ -401,19 +401,38 @@ VkDescriptorType VulkanTypeConverter::ConvertPipelineBDToVk(const PipelineBindin
     case EResourceType::Buffer:
         if (inDesc.BindFlags & ResourceBindFlags::ConstantBuffer)
         {
+            if (inDesc.BindFlags & ResourceBindFlags::TexelBuffer)
+            {
+                return VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+            }
+
+            if (inDesc.BindFlags & ResourceBindFlags::Dynamic)
+            {
+                return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+            }
             return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         }
 
         if (inDesc.BindFlags & (ResourceBindFlags::StorageBuffer))
         {
+            if (inDesc.BindFlags & ResourceBindFlags::TexelBuffer)
+            {
+                return VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+            }
+            
+            if (inDesc.BindFlags & ResourceBindFlags::Dynamic)
+            {
+                return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+            }
             return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         }
 
         break;
-    case EResourceType::Texture:
-        return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-    case EResourceType::Sampler:
-        return VK_DESCRIPTOR_TYPE_SAMPLER;
+    case EResourceType::Texture:                    return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    case EResourceType::Sampler:                    return VK_DESCRIPTOR_TYPE_SAMPLER;
+    case EResourceType::CombinedTextureSampler:     return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    case EResourceType::StorageTexture:             return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+    case EResourceType::InputAttachment:            return VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
     default:
         break;
     }
@@ -745,4 +764,34 @@ VkImageViewType VulkanTypeConverter::ConvertTextureViewTypeToVk(ETextureType inT
     ConversionFailed("VkImageViewType", "ETextureType");
 
     return (VkImageViewType)0;
+}
+
+VkAccessFlags VulkanTypeConverter::ConvertSubpassAccessFlagsToVk(uint32 inFlags)
+{
+    VkAccessFlags AccessFlags = 0;
+    if(inFlags & SubpassAssessFlags::ColorAttachmentRead)
+    {
+        AccessFlags |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    }
+    if (inFlags & SubpassAssessFlags::ColorAttachmentWrite)
+    {
+        AccessFlags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    }
+
+    return AccessFlags;
+}
+
+VkSubpassDependency VulkanTypeConverter::ConvertSubpassDependencyDescToVk(const SubpassDependencyDescription& inDesc)
+{
+    // Sub pass Dependency
+    VkSubpassDependency SubpassDependency = { };
+    SubpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    SubpassDependency.dstSubpass = 0;
+    SubpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    SubpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    SubpassDependency.srcAccessMask = ConvertSubpassAccessFlagsToVk(inDesc.SrcAccessMaskFlags);
+    SubpassDependency.dstAccessMask = ConvertSubpassAccessFlagsToVk(inDesc.DstAccessMaskFlags);
+    SubpassDependency.dependencyFlags = 0;
+
+    return SubpassDependency;
 }
