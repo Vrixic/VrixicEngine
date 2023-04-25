@@ -13,10 +13,6 @@
 template<typename ListType, typename ListNode, typename ListNodeType>
 class VRIXIC_API TGenericNonIntrusiveSingleListIterator
 {
-private:
-	ListType&  List;
-	ListNode** CurrentNode;
-
 public:
 	TGenericNonIntrusiveSingleListIterator(ListType& inListType)
 		: List(inListType)
@@ -38,9 +34,8 @@ public:
 	TGenericNonIntrusiveSingleListIterator& operator++()
 	{
 		// Check to see if we reached the end of the array, if so, break as they should not be allowed to go further! (Maybe should add a safe case)
-#if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		ASSERT(CurrentNode != List.Tail || CurrentNode != nullptr);
-#endif
+		VE_ASSERT(CurrentNode != List.Tail || CurrentNode != nullptr);
+
 		CurrentNode = (*CurrentNode)->GetNextNode();
 		return *this;
 	}
@@ -137,6 +132,10 @@ public:
 	{
 		return CurrentNode;
 	}
+
+private:
+	ListType& List;
+	ListNode** CurrentNode;
 };
 
 /**
@@ -147,73 +146,6 @@ public:
 template<class NodeType>
 class VRIXIC_API TLinkedList
 {
-public:
-	template<typename ListType, typename ListNode, typename ListNodeType>
-	friend class TGenericNonIntrusiveSingleListIterator;
-
-	class TLinkedListNode
-	{
-	public:
-		template<class NodeType>
-		friend class TLinkedList;
-
-	protected:
-		/** Current node value*/
-		NodeType Value;
-
-		/** A pointer pointing to the next node in the list */
-		TLinkedListNode** NextNode;
-
-	public:
-		TLinkedListNode(const NodeType& inNodeType)
-			: Value(inNodeType), NextNode(nullptr) { }
-
-	public:
-		/**
-		* @returns TLinkedListNode* - the next node this node is pointing to
-		*/
-		const TLinkedListNode** GetNextNode() const
-		{
-			return NextNode;
-		}
-
-		/**
-		* @returns TLinkedListNode* - the next node this node is pointing to
-		*/
-		TLinkedListNode** GetNextNode()
-		{
-			return NextNode;
-		}
-
-		/**
-		* @returns NodeType& - value of the node
-		*/
-		const NodeType& GetValue() const
-		{
-			return Value;
-		}
-
-		/**
-		* @returns NodeType& - value of the node
-		*/
-		NodeType& GetValue()
-		{
-			return Value;
-		}
-	};
-
-	typedef TGenericNonIntrusiveSingleListIterator<TLinkedList, TLinkedListNode, NodeType> TSingleListIterator;
-	typedef TGenericNonIntrusiveSingleListIterator<const TLinkedList, const TLinkedListNode, const NodeType> TConstSingleListIterator;
-private:
-	/** The head node pointing to the first element in the list */
-	TLinkedListNode** Head;
-
-	/** The tail node pointing to the last element in the list */
-	TLinkedListNode** Tail;
-
-	/** Count of nodes in the list */
-	uint32 Size;
-
 public:
 	TLinkedList()
 		: Head(nullptr), Tail(nullptr), Size(0) { }
@@ -519,5 +451,72 @@ public:
 	{
 		return Size;
 	}
-};
 
+public:
+	template<typename ListType, typename ListNode, typename ListNodeType>
+	friend class TGenericNonIntrusiveSingleListIterator;
+
+	class TLinkedListNode
+	{
+	public:
+		TLinkedListNode(const NodeType& inNodeType)
+			: Value(inNodeType), NextNode(nullptr) { }
+
+	public:
+		/**
+		* @returns TLinkedListNode* - the next node this node is pointing to
+		*/
+		const TLinkedListNode** GetNextNode() const
+		{
+			return NextNode;
+		}
+
+		/**
+		* @returns TLinkedListNode* - the next node this node is pointing to
+		*/
+		TLinkedListNode** GetNextNode()
+		{
+			return NextNode;
+		}
+
+		/**
+		* @returns NodeType& - value of the node
+		*/
+		const NodeType& GetValue() const
+		{
+			return Value;
+		}
+
+		/**
+		* @returns NodeType& - value of the node
+		*/
+		NodeType& GetValue()
+		{
+			return Value;
+		}
+
+	public:
+		template<class NodeType>
+		friend class TLinkedList;
+
+	protected:
+		/** Current node value*/
+		NodeType Value;
+
+		/** A pointer pointing to the next node in the list */
+		TLinkedListNode** NextNode;
+	};
+
+	typedef TGenericNonIntrusiveSingleListIterator<TLinkedList, TLinkedListNode, NodeType> TSingleListIterator;
+	typedef TGenericNonIntrusiveSingleListIterator<const TLinkedList, const TLinkedListNode, const NodeType> TConstSingleListIterator;
+
+private:
+	/** The head node pointing to the first element in the list */
+	TLinkedListNode** Head;
+
+	/** The tail node pointing to the last element in the list */
+	TLinkedListNode** Tail;
+
+	/** Count of nodes in the list */
+	uint32 Size;
+};

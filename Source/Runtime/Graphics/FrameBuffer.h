@@ -17,7 +17,7 @@ public:
     /**
     * @returns Extend2D the extent of the framebuffer in screen space 
     */
-    virtual Extent2D GetResolution() const = 0;
+    virtual FExtent2D GetResolution() const = 0;
 
     /**
     * @return uint32 the number of attachments that are attached to this frame buffer

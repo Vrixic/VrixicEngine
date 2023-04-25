@@ -13,10 +13,7 @@
 */
 class VRIXIC_API FileManager
 {
-private:
-	static std::string ProjectPath;
 public:
-
 	static FileManager GetInstance()
 	{
 		static FileManager Instance;
@@ -45,4 +42,7 @@ public:
 	{
 		return &ProjectPath;
 	}
+
+private:
+    static std::string ProjectPath;
 };

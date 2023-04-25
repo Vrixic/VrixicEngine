@@ -21,81 +21,13 @@ class VulkanRenderPass;
 */
 class VRIXIC_API VulkanRenderInterface final : public IRenderInterface
 {
-private:
-    /** The vulkan instance */
-    VkInstance VulkanInstance;
-
-    /** The physical device the renderer will use (GPU) */
-    VulkanPhysicalDevice* PhysicalDevice;
-
-    /** The logical and physical device will be contained int here */
-    VulkanDevice* Device;
-
-    /** All of the supported instance extensions */
-    std::vector<std::string> SupportedInstanceExtensions;
-
-    /** All of the supported instance layers */
-    std::vector<std::string> SupportedInstanceLayers;
-
-    /** contains information about vulkan renderer */
-    RendererInfo RendererInformation;
-
-    /* ---------------------------------@TODO---------------------------------------- */
-    /*
-    * Maybe not create the resource management inside here instead allow the client to create them and use them 
-    * how ever they like, and use the one the client might provide 
-    */
-    /* ---------------------------------@TODO---------------------------------------- */
-    /** Vulkan Resource Management (DEPRECATED) */ 
-    //IResourceManager* MainVulkanResourceManager;
-    //ResourceManager* GraphicsResourceManager;
-
-    // Used to create shaders 
-    VulkanShaderFactory* ShaderFactoryMain;
-
-    // Used by shader factories to allocate shader modules 
-    VulkanShaderPool* ShaderPoolMain;
-
-    /** Main memory heap for all vulkan allocation, (Index, Vertex, storage buffers, etc...) */
-    VulkanMemoryHeap* VulkanMemoryHeapMain;
-
-    /** - ImGui - **/
-
-    /**
-    * Helper struct that consists of all objects in use by the imgui render system
-    */
-    struct HImGuiData
-    {
-        VkAllocationCallbacks*   AllocatorCallback  = nullptr;
-        VkInstance               Instance           = VK_NULL_HANDLE;
-        VkPhysicalDevice         PhysicalDevice     = VK_NULL_HANDLE;
-        VkDevice                 Device             = VK_NULL_HANDLE;
-        uint32_t                 QueueFamily        = (uint32_t)-1;
-        VkQueue                  Queue              = VK_NULL_HANDLE;
-        VkDebugReportCallbackEXT DebugReport        = VK_NULL_HANDLE;
-        VkPipelineCache          PipelineCache      = VK_NULL_HANDLE;
-        VkDescriptorPool         DescriptorPool     = VK_NULL_HANDLE;
-
-        VulkanRenderLayout*      RenderLayout       = nullptr;
-        VulkanRenderPass*        RenderPass         = nullptr;
-
-        std::vector<VulkanFrameBuffer*> FrameBuffers;
-
-        ImGui_ImplVulkanH_Window MainWindowData;
-        int                      MinImageCount      = 2;
-        bool                     SwapChainRebuild   = false;
-    };
-    static HImGuiData ImGuiData;
-
-    /** - ImGui - **/
-
 public:
     /**
     * Creates the vulkan interface, initializes it by creation the vulkan instance and picking the best physical device, then used to create the logical device
     *
     * @param inVulkanRendererConfig the configuration used to create and setup the renderer
     */
-    VulkanRenderInterface(const VulkanRendererConfig& inVulkanRendererConfig);
+    VulkanRenderInterface(const FVulkanRendererConfig& inVulkanRendererConfig);
 
     ~VulkanRenderInterface();
 
@@ -124,7 +56,7 @@ public:
     *
     * @remarks multi-swapchains not supported yet
     */
-    virtual SwapChain* CreateSwapChain(const SwapChainConfig& inSwapChainConfig, Surface* inSurface) override;
+    virtual SwapChain* CreateSwapChain(const FSwapChainConfig& inSwapChainConfig, Surface* inSurface) override;
 
     /* ------------------------------------------------------------------------------- */
     /* -------------                 Command Buffers               ------------------- */
@@ -135,7 +67,7 @@ public:
     *
     * @param inCmdBufferConfig specifies the Configription of the command buffers (if empty, it'll create one command buffer that is level Primary)
     */
-    virtual ICommandBuffer* CreateCommandBuffer(const CommandBufferConfig& inCmdBufferConfig) override;
+    virtual ICommandBuffer* CreateCommandBuffer(const FCommandBufferConfig& inCmdBufferConfig) override;
 
     /**
     * Releases/Destroys the command buffer passed in
@@ -162,7 +94,7 @@ public:
     *
     * @param inBufferConfig info used to create the buffer
     */
-    virtual Buffer* CreateBuffer(const BufferConfig& inBufferConfig) override;
+    virtual Buffer* CreateBuffer(const FBufferConfig& inBufferConfig) override;
 
     /**
     * Writes/Update data to the specified buffer (if data already exist, this will update)
@@ -200,7 +132,7 @@ public:
     *
     * @param inTextureConfig  info used to create the texture
     */
-    virtual Texture* CreateTexture(const TextureConfig& inTextureConfig) override;
+    virtual Texture* CreateTexture(const FTextureConfig& inTextureConfig) override;
 
     /**
     * Releases/Destroys the texture passed in
@@ -218,7 +150,7 @@ public:
     *
     * @param inFrameBufferConfig  info used to create the frame buffer
     */
-    virtual IFrameBuffer* CreateFrameBuffer(const FrameBufferConfig& inFrameBufferConfig) override;
+    virtual IFrameBuffer* CreateFrameBuffer(const FFrameBufferConfig& inFrameBufferConfig) override;
 
     /**
     * Releases/Destroys the frame buffer passed in
@@ -243,7 +175,7 @@ public:
     *
     * @param inRenderPassConfig  info used to create the render pass
     */
-    virtual IRenderPass* CreateRenderPass(const RenderPassConfig& inRenderPassConfig) override;
+    virtual IRenderPass* CreateRenderPass(const FRenderPassConfig& inRenderPassConfig) override;
 
     /**
     * Releases/Destroys the renderpass passed in
@@ -261,7 +193,7 @@ public:
     *
     * @param inPipelineLayoutConfig info used to create the render pass
     */
-    virtual PipelineLayout* CreatePipelineLayout(const PipelineLayoutConfig& inPipelineLayoutConfig) override;
+    virtual PipelineLayout* CreatePipelineLayout(const FPipelineLayoutConfig& inPipelineLayoutConfig) override;
 
     /**
     * Releases/Destroys the pipeline layout passed in
@@ -278,7 +210,7 @@ public:
     *
     * @param inGraphicsPipelineConfig info used to create the graphics pipeline
     */
-    virtual IPipeline* CreatePipeline(const GraphicsPipelineConfig& inGraphicsPipelineConfig) override;
+    virtual IPipeline* CreatePipeline(const FGraphicsPipelineConfig& inGraphicsPipelineConfig) override;
 
     /**
     * Releases/Destroys the pipeline passed in
@@ -296,7 +228,7 @@ public:
     *
     * @param inSemaphoreConfig contains info on how to create the semaphore
     */
-    virtual ISemaphore* CreateRenderSemaphore(const SemaphoreConfig& inSemaphoreConfig) override;
+    virtual ISemaphore* CreateRenderSemaphore(const FSemaphoreConfig& inSemaphoreConfig) override;
 
     /**
     * Releases/Destroys the semaphore passed in
@@ -330,7 +262,7 @@ public:
   *
   * @param inShaderConfig info used to create the shader
   */
-    virtual Shader* CreateShader(const ShaderConfig& inShaderConfig) override;
+    virtual Shader* CreateShader(const FShaderConfig& inShaderConfig) override;
 
     /**
     * Releases/Destroys the shader passed in
@@ -348,7 +280,7 @@ public:
     *
      * @param inSamplerConfig info used to create the sampler
     */
-    virtual Sampler* CreateSampler(const SamplerConfig& inSamplerConfig) override;
+    virtual Sampler* CreateSampler(const FSamplerConfig& inSamplerConfig) override;
 
     /**
     * Releases/Destroys the sampler passed in
@@ -405,7 +337,7 @@ public:
     /**
     * @returns RendererInfo& information about the renderer in use and what its using
     */
-    virtual const RendererInfo& GetRendererInfo() const override
+    virtual const FRendererInfo& GetRendererInfo() const override
     {
         return RendererInformation;
     }
@@ -437,7 +369,7 @@ private:
     * @param inVulkanRendererConfig uses some of the configurations for instance creation to create the instance
     * @returns bool true if the creation of vulkan instance was successfull, false otherwise
     */
-    bool CreateVulkanInstance(const VulkanRendererConfig& inVulkanRendererConfig);
+    bool CreateVulkanInstance(const FVulkanRendererConfig& inVulkanRendererConfig);
 
     /**
     * Converts the passed in enabled features struct to the vulkan specific physical device features struct
@@ -445,5 +377,73 @@ private:
     * @param inFeatures the features to convert
     * @returns VkPhysicalDeviceFeatures the converted features
     */
-    VkPhysicalDeviceFeatures Convert(const PhysicalDeviceFeatures& inFeatures);
+    VkPhysicalDeviceFeatures Convert(const FPhysicalDeviceFeatures& inFeatures);
+
+private:
+    /** The vulkan instance */
+    VkInstance VulkanInstance;
+
+    /** The physical device the renderer will use (GPU) */
+    VulkanPhysicalDevice* PhysicalDevice;
+
+    /** The logical and physical device will be contained int here */
+    VulkanDevice* Device;
+
+    /** All of the supported instance extensions */
+    std::vector<std::string> SupportedInstanceExtensions;
+
+    /** All of the supported instance layers */
+    std::vector<std::string> SupportedInstanceLayers;
+
+    /** contains information about vulkan renderer */
+    FRendererInfo RendererInformation;
+
+    /* ---------------------------------@TODO---------------------------------------- */
+    /*
+    * Maybe not create the resource management inside here instead allow the client to create them and use them
+    * how ever they like, and use the one the client might provide
+    */
+    /* ---------------------------------@TODO---------------------------------------- */
+    /** Vulkan Resource Management (DEPRECATED) */
+    //IResourceManager* MainVulkanResourceManager;
+    //ResourceManager* GraphicsResourceManager;
+
+    /** Used to create shaders */
+    VulkanShaderFactory* ShaderFactoryMain;
+
+    /** Used by shader factories to allocate shader modules */
+    VulkanShaderPool* ShaderPoolMain;
+
+    /** Main memory heap for all vulkan allocation, (Index, Vertex, storage buffers, etc...) */
+    VulkanMemoryHeap* VulkanMemoryHeapMain;
+
+    /** - ImGui - **/
+
+    /**
+    * Helper struct that consists of all objects in use by the imgui render system
+    */
+    struct HImGuiData
+    {
+        VkAllocationCallbacks* AllocatorCallback = nullptr;
+        VkInstance               Instance = VK_NULL_HANDLE;
+        VkPhysicalDevice         PhysicalDevice = VK_NULL_HANDLE;
+        VkDevice                 Device = VK_NULL_HANDLE;
+        uint32_t                 QueueFamily = (uint32_t)-1;
+        VkQueue                  Queue = VK_NULL_HANDLE;
+        VkDebugReportCallbackEXT DebugReport = VK_NULL_HANDLE;
+        VkPipelineCache          PipelineCache = VK_NULL_HANDLE;
+        VkDescriptorPool         DescriptorPool = VK_NULL_HANDLE;
+
+        VulkanRenderLayout* RenderLayout = nullptr;
+        VulkanRenderPass* RenderPass = nullptr;
+
+        std::vector<VulkanFrameBuffer*> FrameBuffers;
+
+        ImGui_ImplVulkanH_Window MainWindowData;
+        int                      MinImageCount = 2;
+        bool                     SwapChainRebuild = false;
+    };
+    static HImGuiData ImGuiData;
+
+    /** - ImGui - **/
 };

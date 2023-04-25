@@ -11,7 +11,7 @@
 /**
  * Defines a vertex input attribute used to define vertex attribute for vertex shaders
 */
-struct VRIXIC_API VertexInputAttribute
+struct VRIXIC_API FVertexInputAttribute
 {
 public:
     /**
@@ -21,27 +21,29 @@ public:
     */
     uint32          Location;
 
-    // The binding number which this attribute takes its data from; 
-    // its the binding slot, this correlates with the binding num from vertex input description
+    /**
+    * The binding number which this attribute takes its data from; 
+    * its the binding slot, this correlates with the binding num from vertex input description
+    */
     uint32          BindingNum;
 
-    // Vertex Attribute format, Ex: RGBA32Float which basically means a Vector4D  
+    /** Vertex Attribute format, Ex: RGBA32Float which basically means a Vector4D */
     EPixelFormat    Format;
 
-    // The byte offset of this attribute relative from the start of an element in the vertex binding
+    /** The byte offset of this attribute relative from the start of an element in the vertex binding */
     uint32          Offset;
 
 public:
-    inline VertexInputAttribute() = default;
-    inline VertexInputAttribute(const VertexInputAttribute&) = default;
-    inline VertexInputAttribute& operator=(const VertexInputAttribute&) = default;
+    inline FVertexInputAttribute() = default;
+    inline FVertexInputAttribute(const FVertexInputAttribute&) = default;
+    inline FVertexInputAttribute& operator=(const FVertexInputAttribute&) = default;
 
-    inline bool operator==(const VertexInputAttribute& inRhs) const;
+    inline bool operator==(const FVertexInputAttribute& inRhs) const;
 
-    inline bool operator!=(const VertexInputAttribute& inRhs) const;
+    inline bool operator!=(const FVertexInputAttribute& inRhs) const;
 };
 
-bool VertexInputAttribute::operator==(const VertexInputAttribute& inRhs) const
+bool FVertexInputAttribute::operator==(const FVertexInputAttribute& inRhs) const
 {
     return
         (
@@ -52,7 +54,7 @@ bool VertexInputAttribute::operator==(const VertexInputAttribute& inRhs) const
             );
 }
 
-bool VertexInputAttribute::operator!=(const VertexInputAttribute& inRhs) const
+bool FVertexInputAttribute::operator!=(const FVertexInputAttribute& inRhs) const
 {
     return !(*this == inRhs);
 }

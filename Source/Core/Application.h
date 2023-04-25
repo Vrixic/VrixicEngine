@@ -13,18 +13,6 @@
 
 class VRIXIC_API Application
 {
-private:
-	static Application* ApplicationPtr; // The application pointer
-
-	TUniquePtr<IWindow> WindowPtr; // Pointer to window
-
-	TSharedPtr<VGameEngine> GameEngine;
-
-//#ifdef _EDITOR
-//	TUniquePtr<VGameEditor> GameEditor;
-//#endif
-
-	bool bIsRunning;
 public:
 	Application();
 	virtual ~Application();
@@ -44,5 +32,20 @@ public:
 	{
 		return *WindowPtr;
 	}
+
+private:
+	/** The application pointer */
+	static Application* ApplicationPtr; 
+
+	/** Pointer to window */
+	TUniquePtr<IWindow> WindowPtr; 
+
+	TSharedPtr<VGameEngine> GameEngine;
+
+	//#ifdef _EDITOR
+	//	TUniquePtr<VGameEditor> GameEditor;
+	//#endif
+
+	bool bIsRunning;
 };
 

@@ -22,7 +22,7 @@ class VRIXIC_API IRenderPass : public Interface
 /**
 * Clear values used for rendering
 */
-struct VRIXIC_API RenderClearValues
+struct VRIXIC_API FRenderClearValues
 {
 public:
     typedef Vector4D LinearColor;
@@ -32,29 +32,30 @@ public:
     uint32 Stencil;
 
 public:
-    RenderClearValues()
+    FRenderClearValues()
         : Color(0.0f, 0.0f, 0.0f, 1.0f), Depth(0.0f), Stencil(0u) { }
 };
 
 /**
 * Helper struct that contains information of begininning a render pass
 */
-struct VRIXIC_API RenderPassBeginInfo
+struct VRIXIC_API FRenderPassBeginInfo
 {
 public:
-    // Render pass pointer 
+    /** Render pass pointer */
     IRenderPass* RenderPassPtr;
 
-    // The frame buffer to attach
+    // 
+    /** The frame buffer to attach */
     IFrameBuffer* FrameBuffer;
 
-    // Clear values array (Could also be one)
-    RenderClearValues* ClearValues;
+    /** Clear values array (Could also be one) */
+    FRenderClearValues* ClearValues;
 
-    // Number of clear values
+    /** Number of clear values */
     uint32 NumClearValues;
 
 public:
-    RenderPassBeginInfo()
+    FRenderPassBeginInfo()
         : RenderPassPtr(nullptr), FrameBuffer(nullptr), ClearValues(nullptr), NumClearValues(0) { }
 };

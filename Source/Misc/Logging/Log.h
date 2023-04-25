@@ -22,10 +22,6 @@ enum class ELogSeverity
 
 class VRIXIC_API Log
 {
-private:
-	static std::shared_ptr<spdlog::logger> CoreLogger;
-	static std::shared_ptr<spdlog::logger> ClientLogger;
-
 public:
 	/**
 	* Initializes both the core and client loggers 
@@ -53,6 +49,11 @@ public:
 	{
 		return ClientLogger;
 	}
+
+private:
+	static std::shared_ptr<spdlog::logger> CoreLogger;
+	static std::shared_ptr<spdlog::logger> ClientLogger;
+
 };
 
 

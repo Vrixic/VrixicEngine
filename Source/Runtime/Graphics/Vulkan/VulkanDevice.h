@@ -30,38 +30,6 @@ class VulkanTextureView;
 */
 class VRIXIC_API VulkanDevice
 {
-private:
-    /* Representation of GPU */
-    VkDevice LogicalDeviceHandle;
-
-    /* All Enabled Validation layers */
-    std::vector<std::string> ValidationLayers;
-
-    /* GPU */
-    VkPhysicalDevice PhysicalDeviceHandle;
-
-    /* All Enabled Device Extensions */
-    std::vector<std::string> PhysicalDeviceExtensions;
-
-    VkPhysicalDeviceProperties PhysicalDeviceProperties;
-    VkPhysicalDeviceFeatures PhysicalDeviceFeatures;
-    VkPhysicalDeviceMemoryProperties PhysicalDeviceMemProperties;
-
-    /*
-    * All Queue family properties
-    */
-    uint32 QueueFamilyCount;
-    std::vector<VkQueueFamilyProperties> QueueFamilyProperties;
-
-    /*
-    * Graphics queue used to submit graphics primitive/info
-    * Compute queue used to submut compute info
-    * Transfer queue used for transferring data
-    */
-    VulkanQueue* GraphicsQueue;
-    VulkanQueue* ComputeQueue;
-    VulkanQueue* TransferQueue;
-
 public:
     /**
     * @param inGPU - The GPU to be used for device creation
@@ -154,6 +122,36 @@ public:
     * @throw Throws an exception if memTypeFound is null and no memory type could be found that supports the requested properties
     */
     uint32_t GetMemoryTypeIndex(uint32_t inTypeBits, VkMemoryPropertyFlags inProperties, VkBool32* outMemTypeFound) const;
+
+private:
+    /** Representation of GPU */
+    VkDevice LogicalDeviceHandle;
+
+    /** All Enabled Validation layers */
+    std::vector<std::string> ValidationLayers;
+
+    /** (GPU) */
+    VkPhysicalDevice PhysicalDeviceHandle;
+
+    /** All Enabled Device Extensions */
+    std::vector<std::string> PhysicalDeviceExtensions;
+
+    VkPhysicalDeviceProperties PhysicalDeviceProperties;
+    VkPhysicalDeviceFeatures PhysicalDeviceFeatures;
+    VkPhysicalDeviceMemoryProperties PhysicalDeviceMemProperties;
+
+    /** All Queue family properties */
+    uint32 QueueFamilyCount;
+    std::vector<VkQueueFamilyProperties> QueueFamilyProperties;
+
+    /**
+    * Graphics queue used to submit graphics primitive/info
+    * Compute queue used to submut compute info
+    * Transfer queue used for transferring data
+    */
+    VulkanQueue* GraphicsQueue;
+    VulkanQueue* ComputeQueue;
+    VulkanQueue* TransferQueue;
 };
 
 /**
@@ -164,20 +162,6 @@ public:
 */
 class VRIXIC_API VulkanQueue : public ICommandQueue
 {
-private:
-    /* The Device this queue belongs to */
-    VulkanDevice* Device;
-    VkQueue Queue;
-
-    /* The queue index into the family of queue queues of this device */
-    uint32 QueueIndex;
-
-    /* The family index into the family of queues */
-    uint32 FamilyIndex;
-
-    /* The command pool associated with this queue */
-    VulkanCommandPool* CommandPool;
-
 public:
     /**
     * @param inQueueFamilyIndex - The queue family index this queue belongs to
@@ -259,6 +243,20 @@ public:
     inline uint32 GetFamilyIndex() const { return FamilyIndex; }
 
     inline VulkanCommandPool* GetCommandPool() const { return CommandPool; }
+
+private:
+    /** The Device this queue belongs to */
+    VulkanDevice* Device;
+    VkQueue Queue;
+
+    /** The queue index into the family of queue queues of this device */
+    uint32 QueueIndex;
+
+    /** The family index into the family of queues */
+    uint32 FamilyIndex;
+
+    /** The command pool associated with this queue */
+    VulkanCommandPool* CommandPool;
 };
 
 /**
@@ -266,27 +264,6 @@ public:
 */
 class VRIXIC_API VulkanSurface : public Surface
 {
-private:
-    VkInstance InstanceHandle;
-    VulkanDevice* Device;
-
-    VkSurfaceKHR SurfaceHandle;
-
-    VkFormat ColorFormat;
-    VkColorSpaceKHR ColorSpace;
-
-    VkSurfaceFormatKHR SurfaceFormat;
-
-    //uint32 GraphicsQueueNodeIndex;
-
-    //std::vector<VkQueueFamilyProperties> QueueFamilyProperties;
-
-public:
-    PFN_vkGetPhysicalDeviceSurfaceSupportKHR fpGetPhysicalDeviceSurfaceSupportKHR;
-    PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR fpGetPhysicalDeviceSurfaceCapabilitiesKHR;
-    PFN_vkGetPhysicalDeviceSurfaceFormatsKHR fpGetPhysicalDeviceSurfaceFormatsKHR;
-    PFN_vkGetPhysicalDeviceSurfacePresentModesKHR fpGetPhysicalDeviceSurfacePresentModesKHR;
-
 public:
     /**
     * @param inInstance - The vulkan instance this surfance will use
@@ -341,46 +318,26 @@ public:
 
     /** Surface Interface End */
 
-    //inline const std::vector<VkQueueFamilyProperties>* GetQueueFamilyProperties() const
-    //{
-        //return &QueueFamilyProperties;
-    //}
+public:
+    PFN_vkGetPhysicalDeviceSurfaceSupportKHR fpGetPhysicalDeviceSurfaceSupportKHR;
+    PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR fpGetPhysicalDeviceSurfaceCapabilitiesKHR;
+    PFN_vkGetPhysicalDeviceSurfaceFormatsKHR fpGetPhysicalDeviceSurfaceFormatsKHR;
+    PFN_vkGetPhysicalDeviceSurfacePresentModesKHR fpGetPhysicalDeviceSurfacePresentModesKHR;
+
+private:
+    VkInstance InstanceHandle;
+    VulkanDevice* Device;
+
+    VkSurfaceKHR SurfaceHandle;
+
+    VkFormat ColorFormat;
+    VkColorSpaceKHR ColorSpace;
+
+    VkSurfaceFormatKHR SurfaceFormat;
 };
 
 class VRIXIC_API VulkanSwapChain : public SwapChain
 {
-private:
-    VulkanDevice* Device;
-    VulkanSurface* SurfacePtr;
-    VkSwapchainKHR SwapChainHandle;
-
-    uint32 ImageWidth;
-    uint32 ImageHeight;
-
-    uint32 MinImageCount;
-    uint32 ImageCount;
-
-    /* Swapchain Images */
-    std::vector<VkImage> Images;
-    std::vector<VulkanTextureView*> ImageViews;
-
-    //struct SwapChainBuffer
-    //{
-    //    VkImage Image;
-    //    VkImageView View;
-    //};
-    ///* Swap chain buffers */
-    //std::vector<SwapChainBuffer> Buffers;
-
-    VkPresentModeKHR SwapchainPresentMode;
-
-public:
-    PFN_vkCreateSwapchainKHR fpCreateSwapchainKHR;
-    PFN_vkDestroySwapchainKHR fpDestroySwapchainKHR;
-    PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR;
-    PFN_vkAcquireNextImageKHR fpAcquireNextImageKHR;
-    PFN_vkQueuePresentKHR fpQueuePresentKHR;
-
 public:
     /**
     * Creates the swapchain
@@ -388,7 +345,7 @@ public:
     * @param inSurface - the surface that will be used to create the swapchain
     * @param inConfig - the configuration information containing how the swapchain should be made
     */
-    VulkanSwapChain(VulkanDevice* inDevice, VulkanSurface* inSurface, const SwapChainConfig& inConfig);
+    VulkanSwapChain(VulkanDevice* inDevice, VulkanSurface* inSurface, const FSwapChainConfig& inConfig);
 
     ~VulkanSwapChain();
 
@@ -412,7 +369,7 @@ public:
     * @returns bool true if it resized, false otherwise
     * @remarks use cases is on window resize or what ever render target its rendering to resized
     */
-    virtual bool ResizeSwapChain(const Extent2D& inNewResolution) override;
+    virtual bool ResizeSwapChain(const FExtent2D& inNewResolution) override;
 
     /**
     * Sets the vsync interval for this swapchain (vertical synchronization), 0 to disable, and 1 or more halfs the refresh rate
@@ -434,63 +391,6 @@ public:
     * @return VkResult of the image acquisition
     */
     //VkResult AcquireNextImage(VulkanCommandBuffer* inLastCommandBuffer, uint32* inImageIndex);
-
-private:
-    /**
-    * Queue an image for presentation
-    *
-    * @param queue Presentation queue for presenting the image
-    * @param imageIndex Index of the swapchain image to queue for presentation
-    * @param waitSemaphore (Optional) Semaphore that is waited on before the image is presented (only used if != VK_NULL_HANDLE)
-    *
-    * @return VkResult of the queue presentation
-    */
-    VkResult QueuePresent(VulkanQueue* inQueue, VkSemaphore* inWaitSemaphore, uint32 inImageIndex);
-
-    /**
-    * Creates a new swapchain
-    *
-    * @param inConfig - the configuration information containing how the swapchain should be made
-    * @param inOldSwapChain - old swapchain that was in use..
-    *
-    * @remarks if 'inOldSwapChain' is not VK_NULL_HANDLE, then that swapchain will be used to recreate the new one being created
-    */
-    void Create(const SwapChainConfig& inConfig, VkSwapchainKHR inOldSwapChain);
-
-    /**
-    * Creates a swapchain
-    *
-    * @param inResolution the size of the swapchain images
-    * @param bEnableVSync true if vsync is enabled, false otherwise
-    */
-    void CreateSwapChain(VkSwapchainKHR inOldSwapChain, const Extent2D inResolution, bool bEnableVSync);
-
-    /**
-    * Creates all of the image views for the swapchain images
-    */
-    void CreateSwapChainImageViews();
-
-    /**
-    * Selects or picks the swapchain resolution
-    *
-    * @param outWidth desired width of the images of the swapchain, can get changed depending on device capabilities
-    * @param outHeight desired height of the images of the swapchain, can get changed depending on device capabilities
-    */
-    void SelectSwapChainResolution(uint32* outWidth, uint32* outHeight);
-
-    /**
-    * Selects or picks the number of images to get from the surface to be used by the swapchain
-    *
-    * @param inNumDesiredImages number of images (buffers) desired to get from surface for use by the swapchain
-    */
-    uint32 SelectSwapChainImageCount(uint32 inNumDesiredImages);
-
-    /**
-    * Selects or picks the swapchain present mode
-    *
-    * @param inEnableVSync true to enable vsync, false otherwise
-    */
-    VkPresentModeKHR SelectSwapChainPresentMode(bool inEnableVSync);
 
 public:
     /** - ISwapchain Interface Start - */
@@ -550,5 +450,94 @@ public:
     virtual EPixelFormat GetDepthStencilFormat() const override;
 
     /** SwapChain Interface End */
+
+private:
+    /**
+    * Queue an image for presentation
+    *
+    * @param queue Presentation queue for presenting the image
+    * @param imageIndex Index of the swapchain image to queue for presentation
+    * @param waitSemaphore (Optional) Semaphore that is waited on before the image is presented (only used if != VK_NULL_HANDLE)
+    *
+    * @return VkResult of the queue presentation
+    */
+    VkResult QueuePresent(VulkanQueue* inQueue, VkSemaphore* inWaitSemaphore, uint32 inImageIndex);
+
+    /**
+    * Creates a new swapchain
+    *
+    * @param inConfig - the configuration information containing how the swapchain should be made
+    * @param inOldSwapChain - old swapchain that was in use..
+    *
+    * @remarks if 'inOldSwapChain' is not VK_NULL_HANDLE, then that swapchain will be used to recreate the new one being created
+    */
+    void Create(const FSwapChainConfig& inConfig, VkSwapchainKHR inOldSwapChain);
+
+    /**
+    * Creates a swapchain
+    *
+    * @param inResolution the size of the swapchain images
+    * @param bEnableVSync true if vsync is enabled, false otherwise
+    */
+    void CreateSwapChain(VkSwapchainKHR inOldSwapChain, const FExtent2D inResolution, bool bEnableVSync);
+
+    /**
+    * Creates all of the image views for the swapchain images
+    */
+    void CreateSwapChainImageViews();
+
+    /**
+    * Selects or picks the swapchain resolution
+    *
+    * @param outWidth desired width of the images of the swapchain, can get changed depending on device capabilities
+    * @param outHeight desired height of the images of the swapchain, can get changed depending on device capabilities
+    */
+    void SelectSwapChainResolution(uint32* outWidth, uint32* outHeight);
+
+    /**
+    * Selects or picks the number of images to get from the surface to be used by the swapchain
+    *
+    * @param inNumDesiredImages number of images (buffers) desired to get from surface for use by the swapchain
+    */
+    uint32 SelectSwapChainImageCount(uint32 inNumDesiredImages);
+
+    /**
+    * Selects or picks the swapchain present mode
+    *
+    * @param inEnableVSync true to enable vsync, false otherwise
+    */
+    VkPresentModeKHR SelectSwapChainPresentMode(bool inEnableVSync);
+
+private:
+    VulkanDevice* Device;
+    VulkanSurface* SurfacePtr;
+    VkSwapchainKHR SwapChainHandle;
+
+    uint32 ImageWidth;
+    uint32 ImageHeight;
+
+    uint32 MinImageCount;
+    uint32 ImageCount;
+
+    /* Swapchain Images */
+    std::vector<VkImage> Images;
+    std::vector<VulkanTextureView*> ImageViews;
+
+    //struct SwapChainBuffer
+    //{
+    //    VkImage Image;
+    //    VkImageView View;
+    //};
+    ///* Swap chain buffers */
+    //std::vector<SwapChainBuffer> Buffers;
+
+    VkPresentModeKHR SwapchainPresentMode;
+
+public:
+    PFN_vkCreateSwapchainKHR fpCreateSwapchainKHR;
+    PFN_vkDestroySwapchainKHR fpDestroySwapchainKHR;
+    PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR;
+    PFN_vkAcquireNextImageKHR fpAcquireNextImageKHR;
+    PFN_vkQueuePresentKHR fpQueuePresentKHR;
 };
 

@@ -15,11 +15,6 @@
 */
 class VulkanSemaphore : public ISemaphore
 {
-private:
-    VkSemaphore* SemaphoreHandles;
-    VulkanDevice* Device;
-
-    uint32 SemaphoreCount;
 public:
     /**
     * @remarks does not create a sempahore by default (manual creation required)
@@ -30,7 +25,7 @@ public:
     /**
     * Creates the semaphore 
     */
-    void Create(const SemaphoreConfig& inConfig);
+    void Create(const FSemaphoreConfig& inConfig);
 
     /**
     * Destroys the semaphore
@@ -47,5 +42,11 @@ public:
     {
         return SemaphoreCount;
     }
+
+private:
+    VkSemaphore* SemaphoreHandles;
+    VulkanDevice* Device;
+
+    uint32 SemaphoreCount;
 };
 

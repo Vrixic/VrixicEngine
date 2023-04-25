@@ -23,6 +23,3 @@ if (VE_PROFILE_VULKAN) \
 #define VE_PROFILE_VULKAN_FUNCTION(...)
 
 #endif // VE_PROFILE_VULKAN
-
-
-

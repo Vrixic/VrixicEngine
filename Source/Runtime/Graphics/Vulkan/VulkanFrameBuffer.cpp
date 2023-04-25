@@ -41,7 +41,7 @@ void VulkanFrameBuffer::Create(uint32 numAttachments, const VkImageView* attachm
 	VK_CHECK_RESULT(vkCreateFramebuffer(*Device->GetDeviceHandle(), &FrameBufferCreateInfo, nullptr, &FrameBufferHandle), "[VulkanFrameBuffer]: Failed to create a frame buffer!");
 }
 
-void VulkanFrameBuffer::Create(const FrameBufferConfig& inFrameBufferConfig)
+void VulkanFrameBuffer::Create(const FFrameBufferConfig& inFrameBufferConfig)
 {
     VE_ASSERT(FrameBufferHandle == VK_NULL_HANDLE, VE_TEXT("[VulkanFrameBuffer]: Cannot create another framebuffer when this one already exists!!"));
 
@@ -78,7 +78,7 @@ void VulkanFrameBuffer::DestroyBuffer()
 	vkDestroyFramebuffer(*Device->GetDeviceHandle(), FrameBufferHandle, nullptr);
 }
 
-Extent2D VulkanFrameBuffer::GetResolution() const
+FExtent2D VulkanFrameBuffer::GetResolution() const
 {
 	return Extent;
 }

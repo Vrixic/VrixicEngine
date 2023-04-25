@@ -12,29 +12,27 @@
 /**
 * The binding slot or binding point of a resource or descriptor
 */
-struct VRIXIC_API PipelineBindingSlot
+struct VRIXIC_API FPipelineBindingSlot
 {
 public:
-    PipelineBindingSlot() = default;
-    PipelineBindingSlot(const PipelineBindingSlot&) = default;
-
-public:
-    // a zero based index that specifies the binding number 
+    /** a zero based index that specifies the binding number */
     uint32 Index;
 
-    // a zero based index that specifies the descriptor set this binding slot belongs to 
+    /** a zero based index that specifies the descriptor set this binding slot belongs to */
     uint32 SetIndex;
+
+public:
+    FPipelineBindingSlot()
+        : Index(UINT32_MAX), SetIndex(UINT32_MAX) { }
+
+    FPipelineBindingSlot(const FPipelineBindingSlot&) = default;
 };
 
 /**
 * Defines a layout for a single binding of a resource that can get bound to a pipeline layout
 */
-struct VRIXIC_API PipelineBindingDescriptor
+struct VRIXIC_API FPipelineBindingDescriptor
 {
-public:
-    PipelineBindingDescriptor() = default;
-    PipelineBindingDescriptor(const PipelineBindingDescriptor&) = default;
-
 public:
     /** Resource type of this binding: buffer, texture, etc... */
     EResourceType ResourceType;
@@ -49,17 +47,23 @@ public:
     uint32 StageFlags;
 
     /** Specifies the binding slot / binding point for this descriptor */
-    PipelineBindingSlot BindingSlot;
+    FPipelineBindingSlot BindingSlot;
+
+public:
+    FPipelineBindingDescriptor()
+        : ResourceType(EResourceType::Undefined), NumResources(0), BindFlags(0), StageFlags(0) { }
+
+    FPipelineBindingDescriptor(const FPipelineBindingDescriptor&) = default;
 };
 
 /**
 * Defines a pipeline layout 
 */
-struct VRIXIC_API PipelineLayoutConfig
+struct VRIXIC_API FPipelineLayoutConfig
 {
 public:
     /** Consists of all the bindings */
-    std::vector<PipelineBindingDescriptor> Bindings;
+    std::vector<FPipelineBindingDescriptor> Bindings;
 };
 
 /**
@@ -67,15 +71,11 @@ public:
 */
 class VRIXIC_API PipelineLayout : public Interface
 {
-private:
-    /** All of the bindings associated with this Pipeline Layout */
-    std::vector<PipelineBindingDescriptor> Bindings;
-
 public:
     /**
     * @remarks creates a pipeline layout with the descriptor passed in
     */
-    PipelineLayout(const PipelineLayoutConfig& inPipelineLayoutDescriptor)
+    PipelineLayout(const FPipelineLayoutConfig& inPipelineLayoutDescriptor)
         : Bindings (inPipelineLayoutDescriptor.Bindings) { }
 
 public:
@@ -90,8 +90,13 @@ public:
     /**
     * @returns const std::vector<PipelineBindingDescriptor>& the binding that are associated with this layout
     */
-    inline const std::vector<PipelineBindingDescriptor>& GetBindings() const
+    inline const std::vector<FPipelineBindingDescriptor>& GetBindings() const
     {
         return Bindings;
     }
+
+private:
+    /** All of the bindings associated with this Pipeline Layout */
+    std::vector<FPipelineBindingDescriptor> Bindings;
+
 };

@@ -11,34 +11,6 @@
 */
 class VRIXIC_API VulkanRenderLayout
 {
-private:
-	VulkanDevice* Device;
-
-protected:
-	//uint32 NumAttachments;
-	std::vector<VkAttachmentDescription> Attachments;
-
-	uint32 NumColorAttachments;
-
-	VkAttachmentReference ColorReference;
-	VkAttachmentReference DepthReference;
-
-	//uint32 NumInputAttachments;
-	std::vector<VkAttachmentReference> InputAttachments;
-
-	//uint32 NumPreserveAttachments;
-	std::vector<uint32> PreserveAttachments;
-
-	std::vector<VkAttachmentReference> ResolveAttachments;
-
-	//uint32 NumClearValues;
-	std::vector<VkClearValue> ClearValues;
-
-	VkExtent2D Extent2D;
-	//VkExtent3D Extent3D;
-
-	VkRect2D RenderArea;
-
 public:
 	/**
 	* @param inNumColorAttachments - Number of color attachments for this render layout
@@ -173,6 +145,33 @@ public:
 		return &RenderArea;
 	}
 
+protected:
+    //uint32 NumAttachments;
+    std::vector<VkAttachmentDescription> Attachments;
+
+    uint32 NumColorAttachments;
+
+    VkAttachmentReference ColorReference;
+    VkAttachmentReference DepthReference;
+
+    //uint32 NumInputAttachments;
+    std::vector<VkAttachmentReference> InputAttachments;
+
+    //uint32 NumPreserveAttachments;
+    std::vector<uint32> PreserveAttachments;
+
+    std::vector<VkAttachmentReference> ResolveAttachments;
+
+    //uint32 NumClearValues;
+    std::vector<VkClearValue> ClearValues;
+
+    VkExtent2D Extent2D;
+    //VkExtent3D Extent3D;
+
+    VkRect2D RenderArea;
+
+private:
+    VulkanDevice* Device;
 };
 
 

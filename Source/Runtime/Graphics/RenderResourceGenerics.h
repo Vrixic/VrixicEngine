@@ -23,8 +23,9 @@ enum class EResourceType
 /**
 * Binding flags for resources - describes the resources 
 */
-struct VRIXIC_API ResourceBindFlags
+struct VRIXIC_API FResourceBindFlags
 {
+public:
 #define BIT(x) (1 << x)
 
     enum

@@ -31,9 +31,7 @@ public:
 	*/
 	void Init(ulong32 inSizeInBytes, ulong32 inAlignment = 16)
 	{
-#if VE_PROFILE_MEMORY_ALLOCATERS
-		VE_PROFILE_FUNCTION();
-#endif // VE_PROFILE_MEMORY_ALLOCATERS
+        VE_PROFILE_MEMORY_ALLOCATERS();
 
 		MemoryAllocater::Init(inSizeInBytes, inAlignment);
 	}
@@ -47,13 +45,10 @@ public:
 	template<typename T>
 	T* Alloc(ulong32 inSizeInBytesToAllocate)
 	{
-#if VE_PROFILE_MEMORY_ALLOCATERS
-		VE_PROFILE_FUNCTION();
-#endif // VE_PROFILE_MEMORY_ALLOCATERS
+        VE_PROFILE_MEMORY_ALLOCATERS();
 
-#if _DEBUG | _DEBUG_EDITOR
-		ASSERT(MemoryUsed + inSizeInBytesToAllocate < (MemorySize + 1), "[Stack Memory Allocater]: Trying to allocate more bytes then have on allocater heap!");
-#endif
+        VE_ASSERT(MemoryUsed + inSizeInBytesToAllocate < (MemorySize + 1), VE_TEXT("[Stack Memory Allocater]: Trying to allocate more bytes then have on allocater heap!"));
+
 		uint8* RawMemoryPtr = ((*MemoryHandle) + MemoryUsed);
 		MemoryUsed += inSizeInBytesToAllocate;
 
@@ -73,13 +68,10 @@ public:
 	template<class T>
 	T* AllocConstruct(ulong32 inSizeInBytesToAllocate)
 	{
-#if VE_PROFILE_MEMORY_ALLOCATERS
-		VE_PROFILE_FUNCTION();
-#endif // VE_PROFILE_MEMORY_ALLOCATERS
+        VE_PROFILE_MEMORY_ALLOCATERS();
 
-#if _DEBUG | _DEBUG_EDITOR
-		ASSERT(MemoryUsed + inSizeInBytesToAllocate < (MemorySize + 1), "[Stack Memory Allocater]: Trying to allocate more bytes then have on allocater heap!");
-#endif
+        VE_ASSERT(MemoryUsed + inSizeInBytesToAllocate < (MemorySize + 1), VE_TEXT("[Stack Memory Allocater]: Trying to allocate more bytes then have on allocater heap!"));
+
 		uint8* RawMemPtr = (*MemoryHandle + MemoryUsed);
 		T* MemHandle = (new (RawMemPtr) T()); // placement-new
 
@@ -99,13 +91,10 @@ public:
 	*/
 	virtual void FreeToMarker(Marker inMarker)
 	{
-#if VE_PROFILE_MEMORY_ALLOCATERS
-		VE_PROFILE_FUNCTION();
-#endif // VE_PROFILE_MEMORY_ALLOCATERS
+        VE_PROFILE_MEMORY_ALLOCATERS();
 
-#if _DEBUG | _DEBUG_EDITOR
-		ASSERT(MemoryUsed != 0 && inMarker < (MemoryUsed + 1), "[Stack Memory Allocater]: Invalid marker being freed");
-#endif
+        VE_ASSERT(MemoryUsed != 0 && inMarker < (MemoryUsed + 1), VE_TEXT("[Stack Memory Allocater]: Invalid marker being freed"));
+
 		MemoryUsed = inMarker;
 	}
 
@@ -115,9 +104,7 @@ public:
 	*/
 	virtual void Flush() override
 	{
-#if VE_PROFILE_MEMORY_ALLOCATERS
-		VE_PROFILE_FUNCTION();
-#endif // VE_PROFILE_MEMORY_ALLOCATERS
+        VE_PROFILE_MEMORY_ALLOCATERS();
 
 		MemoryAllocater::Flush();
 	}

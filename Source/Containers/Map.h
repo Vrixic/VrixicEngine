@@ -21,12 +21,6 @@
 template<typename KeyType, typename ValueType>
 class VRIXIC_API TMap
 {
-private:
-	std::unordered_map<KeyType, ValueType> Map;
-
-	// Count of pair values stored in the map 
-	int32 Size;
-
 public:
 	TMap() = default;
 	TMap(TMap&&) = default;
@@ -107,4 +101,10 @@ public:
 	{
 		return Map.end();
 	}
+
+private:
+	std::unordered_map<KeyType, ValueType> Map;
+
+	/** Count of pair values stored in the map */
+	int32 Size;
 };

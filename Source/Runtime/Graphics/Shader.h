@@ -12,9 +12,6 @@
 */
 class VRIXIC_API Shader : public Interface
 {
-protected:
-    EShaderType ShaderType;
-
 public:
     /**
     * @returns EShaderType the shader type for this shader 
@@ -23,4 +20,7 @@ public:
     {
         return ShaderType;
     }
+
+protected:
+    EShaderType ShaderType;
 };

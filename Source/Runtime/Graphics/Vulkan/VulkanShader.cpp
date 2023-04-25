@@ -29,14 +29,14 @@ VulkanShader::VulkanShader(VulkanDevice* inDevice, EShaderType inShaderType)
 
 VulkanShader::~VulkanShader() { }
 
-void VulkanShader::BuildInputLayout(uint32 inNumVertexDescriptions, const VertexInputDescription* inVertexDescriptions)
+void VulkanShader::BuildInputLayout(uint32 inNumVertexDescriptions, const FVertexInputDescription* inVertexDescriptions)
 {
     if (inNumVertexDescriptions == 0 || inVertexDescriptions == nullptr) return;
 
     std::vector<VkVertexInputBindingDescription> BindingDescriptions;
     for (uint32 i = 0; i < inNumVertexDescriptions; ++i)
     {
-        const VertexInputDescription& Description = inVertexDescriptions[i];
+        const FVertexInputDescription& Description = inVertexDescriptions[i];
 
         VkVertexInputBindingDescription InputBindingDescription = { };
         InputBindingDescription.binding = Description.BindingNum;
@@ -47,7 +47,7 @@ void VulkanShader::BuildInputLayout(uint32 inNumVertexDescriptions, const Vertex
 
         for (uint32 j = 0; j < Description.GetVertexAttributes().size(); j++)
         {
-            const VertexInputAttribute& Attribute = Description.GetVertexAttributes()[j];
+            const FVertexInputAttribute& Attribute = Description.GetVertexAttributes()[j];
 
             VkVertexInputAttributeDescription InputAttributeDescription = { };
             InputAttributeDescription.binding = Attribute.BindingNum;
@@ -91,7 +91,7 @@ VulkanShaderFactory::VulkanShaderFactory(VulkanDevice* inDevice/*, ResourceManag
 
 VulkanShaderFactory::~VulkanShaderFactory() { }
 
-VulkanShader* VulkanShaderFactory::CreateShader(VulkanShaderPool* inShaderPool, const ShaderConfig& inConfig) const
+VulkanShader* VulkanShaderFactory::CreateShader(VulkanShaderPool* inShaderPool, const FShaderConfig& inConfig) const
 {
     switch (inConfig.Type)
     {
@@ -113,7 +113,7 @@ VulkanShader* VulkanShaderFactory::CreateShader(VulkanShaderPool* inShaderPool, 
     return nullptr;
 }
 
-VulkanVertexShader* VulkanShaderFactory::CreateVertexShader(VulkanShaderPool* inShaderPool, const ShaderConfig& inConfig) const
+VulkanVertexShader* VulkanShaderFactory::CreateVertexShader(VulkanShaderPool* inShaderPool, const FShaderConfig& inConfig) const
 {
     VulkanVertexShader* VertexShader = nullptr;
 
@@ -142,7 +142,7 @@ VulkanVertexShader* VulkanShaderFactory::CreateVertexShader(VulkanShaderPool* in
     return VertexShader;
 }
 
-VulkanFragmentShader* VulkanShaderFactory::CreateFragmentShader(VulkanShaderPool* inShaderPool, const ShaderConfig& inConfig) const
+VulkanFragmentShader* VulkanShaderFactory::CreateFragmentShader(VulkanShaderPool* inShaderPool, const FShaderConfig& inConfig) const
 {
     VulkanFragmentShader* FragmentShader = nullptr;
 
@@ -169,14 +169,14 @@ VulkanFragmentShader* VulkanShaderFactory::CreateFragmentShader(VulkanShaderPool
 }
 
 
-void VulkanShaderFactory::CompileSourceCode(const ShaderConfig& inConfig, const uint32*& outCode, uint32* outCodeSize) const
+void VulkanShaderFactory::CompileSourceCode(const FShaderConfig& inConfig, const uint32*& outCode, uint32* outCodeSize) const
 {
     // Intialize runtime shader compiler HLSL -> SPIRV
     shaderc_compiler_t Compiler = shaderc_compiler_initialize();
     shaderc_compile_options_t CompilerOptions = shaderc_compile_options_initialize();
     shaderc_compile_options_set_source_language(CompilerOptions, shaderc_source_language_hlsl);
     // TODO: Part 3C
-    shaderc_compile_options_set_invert_y(CompilerOptions, (inConfig.CompileFlags & ShaderCompileFlags::InvertY));
+    shaderc_compile_options_set_invert_y(CompilerOptions, (inConfig.CompileFlags & FShaderCompileFlags::InvertY));
 #ifdef _DEBUG
     shaderc_compile_options_set_generate_debug_info(CompilerOptions);
 #endif

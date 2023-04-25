@@ -17,10 +17,6 @@
 
 class VRIXIC_API VulkanResourceManager : public IResourceManager
 {
-private:
-	VulkanDevice* Device;
-	std::vector<VkShaderModule> ShaderModules;
-
 public:
 	VulkanResourceManager(VulkanDevice* inDevice); 
 	virtual ~VulkanResourceManager();
@@ -46,4 +42,8 @@ private:
 
 	VkResult LoadShaderModuleFromString(const VString* inShaderCode, uint32 inShaderKind,
 		const shaderc_compiler_t& inCompiler, const shaderc_compile_options_t& inOptions);
+
+private:
+    VulkanDevice* Device;
+    std::vector<VkShaderModule> ShaderModules;
 };

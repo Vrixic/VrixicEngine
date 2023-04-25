@@ -15,8 +15,9 @@
 /**
 * Information on how the memory block is spliced
 */
-struct VRIXIC_API MemoryPage
+struct VRIXIC_API FMemoryPage
 {
+public:
 	/** The size of the memory, used as offset to the end of memory */
 	ulong32 MemorySize;
 
@@ -34,41 +35,14 @@ struct VRIXIC_API MemoryPage
 template<typename T>
 class VRIXIC_API TMemoryHeap
 {
-	/** Pointer/Handle to the memory */
-	uint8* MemoryHandle;
-
-	/** Pointer to the end of Used memory */
-	uint8* MemoryUsedPtr;
-
-	/** The size of the allocated memory in bytes */
-	uint64 HeapSize;
-
-	/** Amount of memory in use in bytes */
-	uint64 MemoryUsed;
-
-	/** Amount of memory used on the Heap, from start to end (MemoryHandle to MemoryUsedPtr) */
-	uint64 HeapUsed;
-
-	/** Count of all allocations made to this heap */
-	uint64 MemoryAllocationCount;
-
-	/** Alignment added to the MemoryHandle Pointer */
-	uint64 Alignment;
-
 public:
 	TMemoryHeap()
 		: MemoryHandle(nullptr), MemoryUsedPtr(nullptr), MemoryUsed(0), MemoryAllocationCount(0),
-		HeapUsed(0), Alignment(0), HeapSize(0)
-	{
-
-	}
+		HeapUsed(0), Alignment(0), HeapSize(0) { }
 
 	~TMemoryHeap()
 	{
-#if VE_PROFILE_MEMORY_HEAP
-		VE_PROFILE_FUNCTION();
-#endif // VE_PROFILE_MEMORY_HEAP
-
+        VE_PROFILE_MEMORY_HEAP();
 
 		Flush();
 	}
@@ -82,9 +56,7 @@ public:
 	*/
 	void AllocateByCount(ulong32 inCount, uint64 inAlignment = sizeof(T))
 	{
-#if VE_PROFILE_MEMORY_HEAP
-		VE_PROFILE_FUNCTION();
-#endif // VE_PROFILE_MEMORY_HEAP
+        VE_PROFILE_MEMORY_HEAP();
 
 		uint64 SizeInBytes = sizeof(T) * inCount;
 		AllocateByBytes(SizeInBytes);
@@ -99,9 +71,7 @@ public:
 	*/
 	void AllocateByBytes(uint64 inSizeInBytes, uint64 inAlignment = sizeof(T))
 	{
-#if VE_PROFILE_MEMORY_HEAP
-		VE_PROFILE_FUNCTION();
-#endif // VE_PROFILE_MEMORY_HEAP
+        VE_PROFILE_MEMORY_HEAP();
 
 		HeapSize = inSizeInBytes;
 
@@ -122,9 +92,7 @@ public:
 	*/
 	uint8* AlignPointerAndShift(uint8* inPtrToAlign, uint64 inAlignment)
 	{
-#if VE_PROFILE_MEMORY_HEAP
-		VE_PROFILE_FUNCTION();
-#endif // VE_PROFILE_MEMORY_HEAP
+        VE_PROFILE_MEMORY_HEAP();
 
 		// Align the block, if their isn't alignment, shift it up the full 'align' bytes, so we always 
 		// have room to store the shift 
@@ -137,9 +105,8 @@ public:
 		// Determine the shift, and store it for later when freeing
 		// (This works for up to 256-byte alignment.)
 		intptr Shift = AlignedPtr - inPtrToAlign;
-#if _DEBUG || _DEBUG_EDITOR
-		ASSERT(Shift > 0 && Shift <= 256, "[MemoryHeap]: Invalid shift amount for memory address alignment!");
-#endif
+
+        VE_ASSERT(Shift > 0 && Shift <= 256, VE_TEXT("[MemoryHeap]: Invalid shift amount for memory address alignment!"));
 
 		AlignedPtr[-1] = static_cast<uint8>(Shift & 0xff);
 		Alignment = Shift;
@@ -157,16 +124,12 @@ public:
 	*/
 	T* Malloc(ulong32 inCountToAllocate)
 	{
-#if VE_PROFILE_MEMORY_HEAP
-		VE_PROFILE_FUNCTION();
-#endif // VE_PROFILE_MEMORY_HEAP
+        VE_PROFILE_MEMORY_HEAP();
 
 		uint64 SizeInBytes = sizeof(T) * inCountToAllocate;
 
 		// Check if we can allocate enough memory
-#if _DEBUG | _DEBUG_EDITOR
-		ASSERT((HeapUsed + SizeInBytes) < HeapSize, "[MemoryHeap]: Out of memory; Memory OverFlow!");
-#endif
+        VE_ASSERT((HeapUsed + SizeInBytes) < HeapSize, VE_TEXT("[MemoryHeap]: Out of memory; Memory OverFlow!"));
 
 		uint8* PointerToMemory = MemoryUsedPtr;
 
@@ -187,18 +150,14 @@ public:
 	*/
 	T* ResizeAndFlushByBytes(uint64 inSizeInBytes, uint64 inAlignment = sizeof(T))
 	{
-#if VE_PROFILE_MEMORY_HEAP
-		VE_PROFILE_FUNCTION();
-#endif // VE_PROFILE_MEMORY_HEAP
+        VE_PROFILE_MEMORY_HEAP();
 
 		uint64 LastHeapSize = HeapSize;
 		HeapSize = inSizeInBytes;
 
 		inSizeInBytes += inAlignment;
 
-#if _DEBUG | _DEBUG_EDITOR
-		ASSERT(HeapSize > LastHeapSize, "[MemoryHeap]: Cannot shrink a memory heap; Memory heaps can only grow!");
-#endif // _DEBUG | _EDITOR
+        VE_ASSERT(HeapSize > LastHeapSize, VE_TEXT("[MemoryHeap]: Cannot shrink a memory heap; Memory heaps can only grow!"));
 
 		// Shift alignment to get the start of heap 
 		uint8* ActualMemoryHandle = MemoryHandle - Alignment;
@@ -221,9 +180,7 @@ public:
 	*/
 	void Free(ulong32 inSize)
 	{
-#if VE_PROFILE_MEMORY_HEAP
-		VE_PROFILE_FUNCTION();
-#endif // VE_PROFILE_MEMORY_HEAP
+        VE_PROFILE_MEMORY_HEAP();
 
 		MemoryUsed -= inSize;
 	}
@@ -233,9 +190,7 @@ public:
 	*/
 	void FlushNoDelete()
 	{
-#if VE_PROFILE_MEMORY_HEAP
-		VE_PROFILE_FUNCTION();
-#endif // VE_PROFILE_MEMORY_HEAP
+        VE_PROFILE_MEMORY_HEAP();
 
 		MemoryUsed = 0;
 		HeapUsed = 0;
@@ -248,9 +203,7 @@ public:
 	*/
 	void Flush()
 	{
-#if VE_PROFILE_MEMORY_HEAP
-		VE_PROFILE_FUNCTION();
-#endif // VE_PROFILE_MEMORY_HEAP
+        VE_PROFILE_MEMORY_HEAP();
 
 		if (MemoryHandle != nullptr)
 		{
@@ -293,4 +246,26 @@ public:
 	{
 		return MemoryAllocationCount;
 	}
+
+private:
+    /** Pointer/Handle to the memory */
+    uint8* MemoryHandle;
+
+    /** Pointer to the end of Used memory */
+    uint8* MemoryUsedPtr;
+
+    /** The size of the allocated memory in bytes */
+    uint64 HeapSize;
+
+    /** Amount of memory in use in bytes */
+    uint64 MemoryUsed;
+
+    /** Amount of memory used on the Heap, from start to end (MemoryHandle to MemoryUsedPtr) */
+    uint64 HeapUsed;
+
+    /** Count of all allocations made to this heap */
+    uint64 MemoryAllocationCount;
+
+    /** Alignment added to the MemoryHandle Pointer */
+    uint64 Alignment;
 };

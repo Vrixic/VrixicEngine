@@ -27,7 +27,7 @@
 //	VK_CHECK_RESULT(vkBindImageMemory(*device->GetDeviceHandle(), ImageHandle, ImageMemory, 0), "[VulkanTextureView]: Failed to bind memory for an image!");
 //}
 
-VulkanTextureView::VulkanTextureView(VulkanDevice* inDevice, const TextureConfig& inTextureConfig)
+VulkanTextureView::VulkanTextureView(VulkanDevice* inDevice, const FTextureConfig& inTextureConfig)
     : Texture(inTextureConfig.Type, inTextureConfig.BindFlags), Device(inDevice), ImageHandle(VK_NULL_HANDLE),
     ImageMemory(VK_NULL_HANDLE), ViewHandle(VK_NULL_HANDLE)
 {
@@ -78,7 +78,7 @@ void VulkanTextureView::CreateImageView(VkImageViewType
     VK_CHECK_RESULT(vkCreateImageView(*Device->GetDeviceHandle(), &imageViewCI, nullptr, &ViewHandle), "[VulkanTextureView]: Failed to create an image view!");
 }
 
-void VulkanTextureView::CreateImageView(const TextureViewConfig& inTextureViewConfig)
+void VulkanTextureView::CreateImageView(const FTextureViewConfig& inTextureViewConfig)
 {
     VE_ASSERT(ViewHandle == VK_NULL_HANDLE, VE_TEXT("[VulkanTextureView]: Cannot replace a texture view..."));
 
@@ -102,7 +102,7 @@ void VulkanTextureView::CreateDefaultImageView()
     );
 }
 
-void VulkanTextureView::CreateImage(const TextureConfig& inTextureConfig)
+void VulkanTextureView::CreateImage(const FTextureConfig& inTextureConfig)
 {
     VkImageCreateInfo ImageCreateInfo = VulkanUtils::Initializers::ImageCreateInfo();
     ImageCreateInfo.imageType = VulkanTypeConverter::ConvertTextureTypeToVk(inTextureConfig.Type);

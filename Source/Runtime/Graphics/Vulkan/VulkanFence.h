@@ -12,10 +12,6 @@
 */
 class VulkanFence : public IFence
 {
-private:
-    VulkanDevice* Device;
-    VkFence FenceHandle;
-
 public:
     /**
     * Creates the fence 
@@ -43,4 +39,8 @@ public:
     {
         return FenceHandle;
     }
+
+private:
+    VulkanDevice* Device;
+    VkFence FenceHandle;
 };

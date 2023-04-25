@@ -39,7 +39,7 @@ enum class EShaderType
 /**
 * All shader stages flags 
 */
-struct VRIXIC_API ShaderStageFlags
+struct VRIXIC_API FShaderStageFlags
 {
 #define BIT(x) (1 << x)
 
@@ -81,8 +81,9 @@ struct VRIXIC_API ShaderStageFlags
 /**
 * Flags that define how to compile a shader 
 */
-struct VRIXIC_API ShaderCompileFlags
+struct VRIXIC_API FShaderCompileFlags
 {
+public:
 #define BIT(x) (1 << x)
     enum
     {
@@ -93,38 +94,39 @@ struct VRIXIC_API ShaderCompileFlags
 /**
 * All attributes needed for a vertex shader 
 */
-struct VRIXIC_API VertexShaderAttributes
+struct VRIXIC_API FVertexShaderAttributes
 {
+public:
     /** All of the input attributes for Vertex Shader*/
-    std::vector<VertexInputAttribute> InputAttributes;
+    std::vector<FVertexInputAttribute> InputAttributes;
 };
 
 /**
 * Used to configure settings for a shader 
 */
-struct VRIXIC_API ShaderConfig
+struct VRIXIC_API FShaderConfig
 {
 public:
-    // Defines the type of shader it is 
+    /** Defines the type of shader it is */
     EShaderType Type;
 
-    // The souce code of the shader as a string 
+    /** The souce code of the shader as a string */
     std::string SourceCode;
 
-    // defines the type of source it is, is it a string, filename, or a full file path 
+    /** defines the type of source it is, is it a string, filename, or a full file path */
     EShaderSourceType SourceType;
 
-    // the entrypoint function name 
+    /** the entrypoint function name */
     std::string EntryPoint;
 
-    // Shader compilation flags 
+    /** Shader compilation flags */
     uint32 CompileFlags;
 
-    // All of the vertex shader bindings 
-    VertexInputDescription VertexBindings;
+    /** All of the vertex shader bindings */
+    FVertexInputDescription VertexBindings;
 
 public:
-    ShaderConfig()
+    FShaderConfig()
         : Type(EShaderType::Undefined), SourceType(EShaderSourceType::String), CompileFlags(0u) { }
 };
 

@@ -12,8 +12,8 @@
 class VulkanCommandPool;
 class VulkanFence;
 
-/*
-*  @TODO: State Checking maybe?.... -> Should add some skind of states check, like if its currently in command buffer begins state or in render pass state
+/**
+* @TODO: State Checking maybe?.... -> Should add some skind of states check, like if its currently in command buffer begins state or in render pass state
 */
 
 /**
@@ -21,18 +21,6 @@ class VulkanFence;
 */
 class VRIXIC_API VulkanCommandBuffer : public ICommandBuffer
 {
-private:
-    VulkanDevice* Device;
-    VulkanCommandPool* CommandPool;
-    VkCommandBuffer CommandBufferHandle;
-
-    std::vector<VkSemaphore> WaitSemaphores;
-    VulkanFence* WaitFence;
-
-    uint32 ImageIndex;
-
-    uint32 AllocatedBufferCount;
-
 public:
     /**
     * @param inCommandPool - The command pool used to create this command buffer
@@ -79,7 +67,7 @@ public:
     * @param inRenderViewport this viewport information will be set for the command buffer
     * @param inNumRenderViewport the number of (inRenderViewport) viewports being submitted
     */
-    virtual void SetRenderViewports(const RenderViewport* inRenderViewports, uint32 inNumRenderViewports) override;
+    virtual void SetRenderViewports(const FRenderViewport* inRenderViewports, uint32 inNumRenderViewports) override;
 
     /**
     * Sets scissors ( Rectangles ) for the command buffers
@@ -87,7 +75,7 @@ public:
     * @param inRenderScissors render scissors that will be set to this command buffer
     * @param inNumRenderScissors the number of (inRenderScissors) scissors being submitted
     */
-    virtual void SetRenderScissors(const RenderScissor* inRenderScissors, uint32 inNumRenderScissors) override;
+    virtual void SetRenderScissors(const FRenderScissor* inRenderScissors, uint32 inNumRenderScissors) override;
 
     /* ------------------------------------------------------------------------------- */
     /* ---------------               Input Assembly                ------------------- */
@@ -118,7 +106,7 @@ public:
     * @param inRenderPassBeginInfo the information used to begin the render pass
     * @info render pass are just steps (subpasses) drawing commands are divided into for allowing things like attachments, etc.. to happen (also keeps relationships between the commands)
     */
-    virtual void BeginRenderPass(const RenderPassBeginInfo& inRenderPassBeginInfo) const override;
+    virtual void BeginRenderPass(const FRenderPassBeginInfo& inRenderPassBeginInfo) const override;
 
     /**
     * Ends the current render pass
@@ -195,7 +183,7 @@ public:
     * 
     * @param inConfig the configuration used to allocate this command buffer 
     */
-    void AllocateCommandBuffer(const CommandBufferConfig& inConfig);
+    void AllocateCommandBuffer(const FCommandBufferConfig& inConfig);
 
     /**
     * Frees the command buffer | This command buffer cannot be usable again 
@@ -279,6 +267,17 @@ public:
         return AllocatedBufferCount;
     }
 
+private:
+    VulkanDevice* Device;
+    VulkanCommandPool* CommandPool;
+    VkCommandBuffer CommandBufferHandle;
+
+    std::vector<VkSemaphore> WaitSemaphores;
+    VulkanFence* WaitFence;
+
+    uint32 ImageIndex;
+
+    uint32 AllocatedBufferCount;
 };
 
 /**
@@ -286,13 +285,6 @@ public:
 */
 class VRIXIC_API VulkanCommandPool
 {
-private:
-    VulkanDevice* Device;
-    VkCommandPool CommandPoolHandle;
-
-    /* All of the Command buffers associated with this pool */
-    std::vector<VulkanCommandBuffer*> CommandBuffers;
-
 public:
     VulkanCommandPool(VulkanDevice* inDevice);
     ~VulkanCommandPool();
@@ -341,5 +333,11 @@ public:
     {
         return CommandBuffers[bufferIndex];
     }
-};
 
+private:
+    VulkanDevice* Device;
+    VkCommandPool CommandPoolHandle;
+
+    /** All of the Command buffers associated with this pool */
+    std::vector<VulkanCommandBuffer*> CommandBuffers;
+};

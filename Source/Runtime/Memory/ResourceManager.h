@@ -11,10 +11,6 @@
 */
 class VRIXIC_API ResourceManager
 {
-protected: 
-	/* Implementation of the resource manager */
-	IResourceManager* ResourceManagerImp;
-
 public:
 	ResourceManager(IResourceManager* inResourceManagerImp);
 
@@ -54,4 +50,8 @@ public:
 	* Frees all memory used by the device 
 	*/
 	void FreeAllMemory() const;
+
+protected:
+    /* Implementation of the resource manager */
+    IResourceManager* ResourceManagerImp;
 };

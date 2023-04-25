@@ -11,6 +11,7 @@
 */
 class VRIXIC_API Sampler : public RenderResource
 {
+public:
     /**
     * @returns EResourceType the type of resource this object is
     * @remarks this cannot be inherited anymore as there is no need 

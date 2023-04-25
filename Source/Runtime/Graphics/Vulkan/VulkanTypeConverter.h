@@ -65,7 +65,7 @@ public:
     /**
     * Converts attachment descriptions to vulkan specific attachment descriptions
     */
-    static VkAttachmentDescription ConvertAttachmentDescToVk(const AttachmentDescription& inDesc, VkSampleCountFlagBits inSamples);
+    static VkAttachmentDescription ConvertAttachmentDescToVk(const FAttachmentDescription& inDesc, VkSampleCountFlagBits inSamples);
 
     /**
     * Converts attachment load op to vulkan specific attachment load operation
@@ -80,7 +80,7 @@ public:
     /**
     * Converts a resource type to vulkan specific descriptor type
     */
-    static VkDescriptorType ConvertPipelineBDToVk(const PipelineBindingDescriptor inDesc);
+    static VkDescriptorType ConvertPipelineBDToVk(const FPipelineBindingDescriptor inDesc);
 
     /**
     * Converts a shader flags to vulkan specific shader flags
@@ -95,12 +95,12 @@ public:
     /**
     * Converts render viewport to vulkan specific viewport
     */
-    static VkViewport ConvertViewportToVk(const RenderViewport& inViewport);
+    static VkViewport ConvertViewportToVk(const FRenderViewport& inViewport);
 
     /**
     * Converts render scissor to vulkan specific scissor (VkRect2D)
     */
-    static VkRect2D ConvertScissorToVk(const RenderScissor& inViewport);
+    static VkRect2D ConvertScissorToVk(const FRenderScissor& inViewport);
 
     /**
     * Converts polygon mode to vulkan specific polygon mode
@@ -175,5 +175,5 @@ public:
     /**
     * Converts SubpassDependencyDescription to vulkan specific VkSubpassDependency
     */
-    static VkSubpassDependency ConvertSubpassDependencyDescToVk(const SubpassDependencyDescription& inDesc);
+    static VkSubpassDependency ConvertSubpassDependencyDescToVk(const FSubpassDependencyDescription& inDesc);
 };

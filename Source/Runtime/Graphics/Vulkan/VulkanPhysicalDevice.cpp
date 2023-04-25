@@ -14,7 +14,7 @@ VulkanPhysicalDevice::VulkanPhysicalDevice()
 
 VulkanPhysicalDevice::~VulkanPhysicalDevice() { }
 
-void VulkanPhysicalDevice::QueryDeviceProperties(RendererInfo& outRendererInfo)
+void VulkanPhysicalDevice::QueryDeviceProperties(FRendererInfo& outRendererInfo)
 {
     VE_ASSERT(PhysicalDeviceHandle != VK_NULL_HANDLE, "[VulkanPhysicalDevice]: Cannot querying device properties as there is no device selected.. Call PickBestPhysicalDevice() first!");
 

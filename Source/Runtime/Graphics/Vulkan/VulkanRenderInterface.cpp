@@ -13,7 +13,6 @@
 #include <Runtime/Graphics/Vulkan/VulkanRenderPass.h>
 #include <Runtime/Graphics/Vulkan/VulkanSemaphore.h>
 #include <Runtime/Graphics/Vulkan/VulkanTextureView.h>
-//#include <Runtime/Memory/Vulkan/VulkanResourceManager.h>
 
 #include <External/imgui/Includes/imgui.h>
 #include <External/imgui/Includes/imgui_impl_glfw.h>
@@ -22,7 +21,7 @@
 
 VulkanRenderInterface::HImGuiData VulkanRenderInterface::ImGuiData = { };
 
-VulkanRenderInterface::VulkanRenderInterface(const VulkanRendererConfig& inVulkanRendererConfig)
+VulkanRenderInterface::VulkanRenderInterface(const FVulkanRendererConfig& inVulkanRendererConfig)
 {
     VE_FUNC_ASSERT(CreateVulkanInstance(inVulkanRendererConfig), true, "[VulkanRenderInterface]: failed to create a vulkan instance object..");
 
@@ -90,7 +89,7 @@ void VulkanRenderInterface::Shutdown()
     delete PhysicalDevice;
 }
 
-SwapChain* VulkanRenderInterface::CreateSwapChain(const SwapChainConfig& inSwapChainConfig, Surface* inSurface)
+SwapChain* VulkanRenderInterface::CreateSwapChain(const FSwapChainConfig& inSwapChainConfig, Surface* inSurface)
 {
     VulkanSurface* SurfacePtr = (VulkanSurface*)inSurface;
     VulkanSwapChain* SwapChain = new VulkanSwapChain(Device, SurfacePtr, inSwapChainConfig);
@@ -98,7 +97,7 @@ SwapChain* VulkanRenderInterface::CreateSwapChain(const SwapChainConfig& inSwapC
     return SwapChain;
 }
 
-ICommandBuffer* VulkanRenderInterface::CreateCommandBuffer(const CommandBufferConfig& inCmdBufferConfig)
+ICommandBuffer* VulkanRenderInterface::CreateCommandBuffer(const FCommandBufferConfig& inCmdBufferConfig)
 {
     VulkanQueue* CmdBufferQueue = (VulkanQueue*)inCmdBufferConfig.CommandQueue;
     VulkanCommandBuffer* CommandBufferPtr = CmdBufferQueue->GetCommandPool()->CreateCommandBuffer(0);
@@ -113,7 +112,7 @@ void VulkanRenderInterface::Free(ICommandBuffer* inCommandBufferToFree)
     CmdBufferPtr->FreeCommandBuffer();
 }
 
-Buffer* VulkanRenderInterface::CreateBuffer(const BufferConfig& inBufferConfig)
+Buffer* VulkanRenderInterface::CreateBuffer(const FBufferConfig& inBufferConfig)
 {
     Buffer* Buff = VulkanMemoryHeapMain->AllocateBuffer(inBufferConfig);
     return Buff;
@@ -148,7 +147,7 @@ void VulkanRenderInterface::Free(Buffer* inBuffer)
     delete inBuffer;
 }
 
-Texture* VulkanRenderInterface::CreateTexture(const TextureConfig& inTextureConfig)
+Texture* VulkanRenderInterface::CreateTexture(const FTextureConfig& inTextureConfig)
 {
     VulkanTextureView* Texture = new VulkanTextureView(Device, inTextureConfig);
     Texture->CreateDefaultImageView();
@@ -161,7 +160,7 @@ void VulkanRenderInterface::Free(Texture* inTexture)
     delete inTexture;
 }
 
-IFrameBuffer* VulkanRenderInterface::CreateFrameBuffer(const FrameBufferConfig& inFrameBufferConfig)
+IFrameBuffer* VulkanRenderInterface::CreateFrameBuffer(const FFrameBufferConfig& inFrameBufferConfig)
 {
     VulkanFrameBuffer* FrameBuffer = new VulkanFrameBuffer(Device);
     FrameBuffer->Create(inFrameBufferConfig);
@@ -174,7 +173,7 @@ void VulkanRenderInterface::Free(IFrameBuffer* inFrameBuffer)
     delete inFrameBuffer;
 }
 
-IRenderPass* VulkanRenderInterface::CreateRenderPass(const RenderPassConfig& inRenderPassConfig)
+IRenderPass* VulkanRenderInterface::CreateRenderPass(const FRenderPassConfig& inRenderPassConfig)
 {
     // This is not a great usage of how the render pass system was created to be used,
     // for now this works but change later for better and original use 
@@ -195,7 +194,7 @@ void VulkanRenderInterface::Free(IRenderPass* inRenderPass)
     delete inRenderPass;
 }
 
-PipelineLayout* VulkanRenderInterface::CreatePipelineLayout(const PipelineLayoutConfig& inPipelineLayoutConfig)
+PipelineLayout* VulkanRenderInterface::CreatePipelineLayout(const FPipelineLayoutConfig& inPipelineLayoutConfig)
 {
     VulkanPipelineLayout* Layout = new VulkanPipelineLayout(Device, inPipelineLayoutConfig);
     Layout->Create(nullptr);
@@ -209,7 +208,7 @@ void VulkanRenderInterface::Free(PipelineLayout* inPipelineLayout)
     delete inPipelineLayout;
 }
 
-IPipeline* VulkanRenderInterface::CreatePipeline(const GraphicsPipelineConfig& inGraphicsPipelineConfig)
+IPipeline* VulkanRenderInterface::CreatePipeline(const FGraphicsPipelineConfig& inGraphicsPipelineConfig)
 {
     VulkanGraphicsPipeline* Pipeline = new VulkanGraphicsPipeline(Device);
     Pipeline->Create(inGraphicsPipelineConfig);
@@ -222,7 +221,7 @@ void VulkanRenderInterface::Free(IPipeline* inPipeline)
     delete inPipeline;
 }
 
-ISemaphore* VulkanRenderInterface::CreateRenderSemaphore(const SemaphoreConfig& inSemaphoreConfig)
+ISemaphore* VulkanRenderInterface::CreateRenderSemaphore(const FSemaphoreConfig& inSemaphoreConfig)
 {
     VulkanSemaphore* Semaphore = new VulkanSemaphore(Device);
     Semaphore->Create(inSemaphoreConfig);
@@ -247,7 +246,7 @@ void VulkanRenderInterface::Free(IFence* inFence)
     delete inFence;
 }
 
-Shader* VulkanRenderInterface::CreateShader(const ShaderConfig& inShaderConfig)
+Shader* VulkanRenderInterface::CreateShader(const FShaderConfig& inShaderConfig)
 {
     VulkanShader* ShaderPtr = ShaderFactoryMain->CreateShader(ShaderPoolMain, inShaderConfig);
     return ShaderPtr;
@@ -259,7 +258,7 @@ void VulkanRenderInterface::Free(Shader* inShader)
     delete inShader;
 }
 
-Sampler* VulkanRenderInterface::CreateSampler(const SamplerConfig& inSamplerConfig)
+Sampler* VulkanRenderInterface::CreateSampler(const FSamplerConfig& inSamplerConfig)
 {
     VE_ASSERT(false, "[VulkanRenderInterface]: Creation of samplers still need to be implemented...!");
     return nullptr;
@@ -465,7 +464,7 @@ void VulkanRenderInterface::RenderImGui(const ICommandBuffer* inCommandBuffer, u
     {
         //VulkanRenderer::Get()->BeginImguiRenderPass(&ImguiWindowData);
 
-        RenderPassBeginInfo RPBeginInfo = { };
+        FRenderPassBeginInfo RPBeginInfo = { };
 
         RPBeginInfo.ClearValues = nullptr;
         RPBeginInfo.NumClearValues = 0;
@@ -513,7 +512,7 @@ void VulkanRenderInterface::ShutdownImGui()
     vkDestroyDescriptorPool(*Device->GetDeviceHandle(), ImGuiData.DescriptorPool, nullptr);
 }
 
-bool VulkanRenderInterface::CreateVulkanInstance(const VulkanRendererConfig& inVulkanRendererConfig)
+bool VulkanRenderInterface::CreateVulkanInstance(const FVulkanRendererConfig& inVulkanRendererConfig)
 {
     VkApplicationInfo ApplicationInfo = VulkanUtils::Initializers::ApplicationInfo();
     ApplicationInfo.pApplicationName = inVulkanRendererConfig.AppInstanceInfo.ApplicationName.c_str();
@@ -616,7 +615,7 @@ bool VulkanRenderInterface::CreateVulkanInstance(const VulkanRendererConfig& inV
     return vkCreateInstance(&InstanceCreateInfo, nullptr, &VulkanInstance) == VK_SUCCESS;
 }
 
-VkPhysicalDeviceFeatures VulkanRenderInterface::Convert(const PhysicalDeviceFeatures& inFeatures)
+VkPhysicalDeviceFeatures VulkanRenderInterface::Convert(const FPhysicalDeviceFeatures& inFeatures)
 {
 #define BOOL(x) (VkBool32)(x)
 

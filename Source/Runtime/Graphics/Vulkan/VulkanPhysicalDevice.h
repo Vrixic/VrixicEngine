@@ -12,15 +12,6 @@
 */
 class VulkanPhysicalDevice
 {
-private:
-    VkPhysicalDevice PhysicalDeviceHandle;
-
-    // The physical device properties used for querying 
-    VkPhysicalDeviceProperties PhysicalDeviceProperties;
-
-    // all of the supported features on the physical device 
-    VkPhysicalDeviceFeatures PhysicalDeviceFeatures;
-
 public:
     VulkanPhysicalDevice(); 
     ~VulkanPhysicalDevice();
@@ -30,7 +21,7 @@ public:
     * 
     * @param outRendererInfo gets filled up with information about the physical device 
     */
-    void QueryDeviceProperties(RendererInfo& outRendererInfo);
+    void QueryDeviceProperties(FRendererInfo& outRendererInfo);
 
 public:
     /**
@@ -65,4 +56,14 @@ public:
     {
         return PhysicalDeviceFeatures;
     }
+
+private:
+    /** (GPU) */
+    VkPhysicalDevice PhysicalDeviceHandle;
+
+    /** The physical device properties used for querying */
+    VkPhysicalDeviceProperties PhysicalDeviceProperties;
+
+    /** all of the supported features on the physical device */
+    VkPhysicalDeviceFeatures PhysicalDeviceFeatures;
 };

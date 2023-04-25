@@ -10,24 +10,24 @@
 /**
 * Used to speficy an extent, mainly used for screen (Framebuffers)
 */
-struct VRIXIC_API Extent2D
+struct VRIXIC_API FExtent2D
 {
 public:
     uint32 Width;
     uint32 Height;
 
 public:
-    Extent2D()
+    FExtent2D()
         : Width(0), Height(0) { }
 
-    Extent2D(uint32 inWidth, uint32 inHeight)
+    FExtent2D(uint32 inWidth, uint32 inHeight)
         : Width(inWidth), Height(inHeight) { }
 };
 
 /**
 * Defines an extent 3d which contains a depth with width and height 
 */
-struct VRIXIC_API Extent3D
+struct VRIXIC_API FExtent3D
 {
 public:
     uint32 Width;
@@ -35,10 +35,10 @@ public:
     uint32 Depth;
 
 public:
-    Extent3D()
+    FExtent3D()
         : Width(0), Height(0), Depth(0) { }
 
-    Extent3D(uint32 inWidth, uint32 inHeight, uint32 inDepth)
+    FExtent3D(uint32 inWidth, uint32 inHeight, uint32 inDepth)
         : Width(inWidth), Height(inHeight), Depth(inDepth) { }
 };
 

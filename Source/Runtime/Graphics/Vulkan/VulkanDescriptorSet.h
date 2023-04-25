@@ -43,7 +43,7 @@ public:
 	*
 	* @return the id to where the layout is located
 	*/
-	uint32 CreateDescriptorSetLayout(VulkanUtils::Descriptions::DescriptorSetLayoutBinding& inLayoutBinding, VulkanUtils::Descriptions::DescriptorSetLayoutCreateInfo& inDescriptorSetLayoutCreateInfo)
+	uint32 CreateDescriptorSetLayout(VulkanUtils::Descriptions::FDescriptorSetLayoutBinding& inLayoutBinding, VulkanUtils::Descriptions::FDescriptorSetLayoutCreateInfo& inDescriptorSetLayoutCreateInfo)
 	{
 		VkDescriptorSetLayoutBinding DescriptorSetLayoutBinding;
 		DescriptorSetLayoutBinding.pImmutableSamplers = nullptr;
@@ -72,7 +72,7 @@ public:
     *
     * @return the id to where the layout is located
     */
-    uint32 CreateDescriptorSetLayout(VulkanUtils::Descriptions::DescriptorSetLayoutBinding* inLayoutBindings, uint32 inBindingCount, VulkanUtils::Descriptions::DescriptorSetLayoutCreateInfo& inDescriptorSetLayoutCreateInfo)
+    uint32 CreateDescriptorSetLayout(VulkanUtils::Descriptions::FDescriptorSetLayoutBinding* inLayoutBindings, uint32 inBindingCount, VulkanUtils::Descriptions::FDescriptorSetLayoutCreateInfo& inDescriptorSetLayoutCreateInfo)
     {
         VkDescriptorSetLayoutBinding* DescriptorSetLayoutBindings = new VkDescriptorSetLayoutBinding[inBindingCount];
         
@@ -173,7 +173,7 @@ public:
 	* @param inBuffer The buffer the descriptor set will get bound to
 	* @param inWriteDescriptorSet Information about where/what to bind
 	*/
-	void BindDescriptorSetToBuffer(const VulkanBuffer* inBuffer, const VulkanUtils::Descriptions::WriteDescriptorSet& inWriteDescriptorSet)
+	void BindDescriptorSetToBuffer(const VulkanBuffer* inBuffer, const VulkanUtils::Descriptions::FWriteDescriptorSet& inWriteDescriptorSet)
 	{
 		VkDescriptorBufferInfo DescriptorBufferInfo = { 0 };
 		DescriptorBufferInfo.buffer = *inBuffer->GetBufferHandle();
@@ -194,7 +194,7 @@ public:
 	* @param inDescriptorImageInfo - Information about the image binding 
 	* @param inWriteDescriptorSet Information about where/what to bind
 	*/
-	void BindDescriptorSetToTexture(const VulkanUtils::Descriptions::DescriptorImageInfo& inDescriptorImageInfo, const VulkanUtils::Descriptions::WriteDescriptorSet& inWriteDescriptorSet)
+	void BindDescriptorSetToTexture(const VulkanUtils::Descriptions::FDescriptorImageInfo& inDescriptorImageInfo, const VulkanUtils::Descriptions::FWriteDescriptorSet& inWriteDescriptorSet)
 	{
 		VkDescriptorImageInfo DescriptorImageInfo = { 0 };
 		inDescriptorImageInfo.WriteTo(DescriptorImageInfo);

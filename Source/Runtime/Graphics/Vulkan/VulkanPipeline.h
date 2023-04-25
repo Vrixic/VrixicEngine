@@ -21,36 +21,16 @@
 */
 class VRIXIC_API VulkanPipelineLayout : public PipelineLayout
 {
-private:
-    VulkanDevice* Device;
-    VkPipelineLayout PipelineLayoutHandle;
-
-    // Vulkan Descriptor pool - main pool used for all descriptor set creations
-    VulkanDescriptorPool* DescriptorPool;
-
-    // Layout of descriptor sets 
-    VulkanDescriptorSetsLayout* DescriptorSetsLayout;
-    uint32 DescriptorSetLayoutIndex;
-
-    struct VRIXIC_API VulkanLayoutBinding
-    {
-        uint32 DstBinding;
-        uint32 StageFlags;
-        VkDescriptorType DescriptorType;
-    };
-    // all of the pipeline layout bindings 
-    std::vector<VulkanLayoutBinding> LayoutBindings;
-
 public:
-    VulkanPipelineLayout(VulkanDevice* inDevice, const PipelineLayoutConfig& inPipelineLayoutConfig)
+    VulkanPipelineLayout(VulkanDevice* inDevice, const FPipelineLayoutConfig& inPipelineLayoutConfig)
         : PipelineLayout(inPipelineLayoutConfig), Device(inDevice), PipelineLayoutHandle(VK_NULL_HANDLE)
     {
         DescriptorSetsLayout = new VulkanDescriptorSetsLayout(Device);
 
-        VulkanUtils::Descriptions::DescriptorSetLayoutCreateInfo LayoutCreateInfo = { };
+        VulkanUtils::Descriptions::FDescriptorSetLayoutCreateInfo LayoutCreateInfo = { };
         LayoutCreateInfo.Flags = 0;
 
-        VulkanUtils::Descriptions::DescriptorSetLayoutBinding* LayoutBinding = new VulkanUtils::Descriptions::DescriptorSetLayoutBinding[inPipelineLayoutConfig.Bindings.size()];
+        VulkanUtils::Descriptions::FDescriptorSetLayoutBinding* LayoutBinding = new VulkanUtils::Descriptions::FDescriptorSetLayoutBinding[inPipelineLayoutConfig.Bindings.size()];
         for (uint32 i = 0; i < inPipelineLayoutConfig.Bindings.size(); i++)
         {
             Convert(LayoutBinding[i], inPipelineLayoutConfig.Bindings[i]);
@@ -160,7 +140,7 @@ public:
     }
 
     // helpers
-    static void Convert(VulkanUtils::Descriptions::DescriptorSetLayoutBinding& outDst, const PipelineBindingDescriptor& inSrc)
+    static void Convert(VulkanUtils::Descriptions::FDescriptorSetLayoutBinding& outDst, const FPipelineBindingDescriptor& inSrc)
     {
         outDst.Binding = inSrc.BindingSlot.Index;
         outDst.DescriptorType = VulkanTypeConverter::ConvertPipelineBDToVk(inSrc);
@@ -178,6 +158,26 @@ public:
     {
         return DescriptorPool;
     }
+
+private:
+    VulkanDevice* Device;
+    VkPipelineLayout PipelineLayoutHandle;
+
+    /** Vulkan Descriptor pool - main pool used for all descriptor set creations */
+    VulkanDescriptorPool* DescriptorPool;
+
+    /** Layout of descriptor sets */
+    VulkanDescriptorSetsLayout* DescriptorSetsLayout;
+    uint32 DescriptorSetLayoutIndex;
+
+    struct VRIXIC_API VulkanLayoutBinding
+    {
+        uint32 DstBinding;
+        uint32 StageFlags;
+        VkDescriptorType DescriptorType;
+    };
+    /** all of the pipeline layout bindings */ 
+    std::vector<VulkanLayoutBinding> LayoutBindings;
 };
 
 /**
@@ -186,16 +186,6 @@ public:
 */
 class VRIXIC_API VulkanPipeline : public IPipeline
 {
-protected:
-    VulkanDevice* Device;
-    VkPipeline PipelineHandle;
-
-    VulkanPipelineLayout* PipelineLayoutPtr;
-
-protected:
-    VulkanPipeline(VulkanDevice* inDevice)
-        : Device(inDevice), PipelineLayoutPtr(VK_NULL_HANDLE), PipelineHandle(VK_NULL_HANDLE) {}
-
 public:
     ~VulkanPipeline()
     {
@@ -224,6 +214,16 @@ public:
     {
         return PipelineLayoutPtr;
     }
+
+protected:
+    VulkanDevice* Device;
+    VkPipeline PipelineHandle;
+
+    VulkanPipelineLayout* PipelineLayoutPtr;
+
+protected:
+    VulkanPipeline(VulkanDevice* inDevice)
+        : Device(inDevice), PipelineLayoutPtr(VK_NULL_HANDLE), PipelineHandle(VK_NULL_HANDLE) {}
 };
 
 /**
@@ -246,7 +246,7 @@ public:
         vkCreateGraphicsPipelines(*Device->GetDeviceHandle(), VK_NULL_HANDLE, 1, &inCreateInfo, nullptr, &PipelineHandle);
     }
 
-    void Create(const GraphicsPipelineConfig& inConfig)
+    void Create(const FGraphicsPipelineConfig& inConfig)
     {
         // Only allow this to be called once
         VE_ASSERT(PipelineHandle == VK_NULL_HANDLE, VE_TEXT("[VulkanGraphicsPipeline]: cannot create another pipeline when one already exists!!!"));
@@ -323,6 +323,12 @@ public:
         VK_CHECK_RESULT(vkCreateGraphicsPipelines(*Device->GetDeviceHandle(), VK_NULL_HANDLE, 1, &GraphicsPipelineCreateInfo, nullptr, &PipelineHandle), VE_TEXT("[VulkanGraphicsPipeline]: Failed to create a vulkan graphics pipeline!!"));
     }
 
+public:
+    inline virtual EPipelineBindPoint GetBindPoint() const override final
+    {
+        return EPipelineBindPoint::Graphics;
+    }
+
 private:
     /**
     * Creates an input assembly state from the graphics pipeline configuration passed in
@@ -330,7 +336,7 @@ private:
     * @param inConfig the pipeline configuration
     * @param outIACreateInfo gets filled with the input assembly information from 'inConfig'
     */
-    static void CreateInputAssemblyState(const GraphicsPipelineConfig& inConfig, VkPipelineInputAssemblyStateCreateInfo& outIACreateInfo)
+    static void CreateInputAssemblyState(const FGraphicsPipelineConfig& inConfig, VkPipelineInputAssemblyStateCreateInfo& outIACreateInfo)
     {
         outIACreateInfo = VulkanUtils::Initializers::PipelineInputAssemblyStateCreateInfo();
         outIACreateInfo.topology = VulkanTypeConverter::ConvertTopologyToVk(inConfig.PrimitiveTopology);
@@ -343,7 +349,7 @@ private:
     * @param inConfig the pipeline configuration
     * @param outVSCreateInfo gets filled with the viewport state information from 'inConfig'
     */
-    static void CreateViewportState(const GraphicsPipelineConfig& inConfig, std::vector<VkViewport>& outViewports, std::vector<VkRect2D>& outScissors, VkPipelineViewportStateCreateInfo& outVSCreateInfo)
+    static void CreateViewportState(const FGraphicsPipelineConfig& inConfig, std::vector<VkViewport>& outViewports, std::vector<VkRect2D>& outScissors, VkPipelineViewportStateCreateInfo& outVSCreateInfo)
     {
         outVSCreateInfo = VulkanUtils::Initializers::PipelineViewportStateCreateInfo();
 
@@ -391,7 +397,7 @@ private:
     * @param inConfig the rasterizer configuration
     * @param outRSCreateInfo gets filled with the rasterizer state information from 'inConfig'
     */
-    static void CreateRasterizerState(const RasterizerConfig& inConfig, VkPipelineRasterizationStateCreateInfo& outRSCreateInfo)
+    static void CreateRasterizerState(const FRasterizerConfig& inConfig, VkPipelineRasterizationStateCreateInfo& outRSCreateInfo)
     {
         outRSCreateInfo = VulkanUtils::Initializers::PipelineRasterizationStateCreateInfo();
 
@@ -415,7 +421,7 @@ private:
     * @param inBlendConfig the blend state configuration
     * @param outMSSCreateInfo gets filled with the multi sample state information from 'inBlendConfig'
     */
-    static void CreateMultisampleState(const VkSampleCountFlagBits inSampleCountBits, const BlendStateConfig& inBlendConfig, VkPipelineMultisampleStateCreateInfo& outMSSCreateInfo)
+    static void CreateMultisampleState(const VkSampleCountFlagBits inSampleCountBits, const FBlendStateConfig& inBlendConfig, VkPipelineMultisampleStateCreateInfo& outMSSCreateInfo)
     {
         outMSSCreateInfo = VulkanUtils::Initializers::PipelineMultisampleStateCreateInfo();
 
@@ -433,17 +439,17 @@ private:
     * @param inConfig the stencil op state configuration
     * @param outSOCreateInfo gets filled with the stencil op state information from 'inConfig'
     */
-    static void CreateStencilOpState(const StencilOpConfig& inConfig, VkStencilOpState& outSOCreateInfo)
+    static void CreateStencilOpState(const FStencilOpConfig& inConfig, VkStencilOpState& outSOCreateInfo)
     {
-       outSOCreateInfo = { };
+        outSOCreateInfo = { };
 
-       outSOCreateInfo.failOp = VulkanTypeConverter::ConvertStencilOpToVk(inConfig.StencilFailOp);
-       outSOCreateInfo.passOp = VulkanTypeConverter::ConvertStencilOpToVk(inConfig.StencilPassOp);
-       outSOCreateInfo.depthFailOp = VulkanTypeConverter::ConvertStencilOpToVk(inConfig.DepthFailOp);
-       outSOCreateInfo.compareOp = VulkanTypeConverter::ConvertCompareOpToVk(inConfig.CompareOp);
-       outSOCreateInfo.compareMask = inConfig.CompareMask;
-       outSOCreateInfo.writeMask = inConfig.WriteMask;
-       outSOCreateInfo.reference = inConfig.ReferenceValue;
+        outSOCreateInfo.failOp = VulkanTypeConverter::ConvertStencilOpToVk(inConfig.StencilFailOp);
+        outSOCreateInfo.passOp = VulkanTypeConverter::ConvertStencilOpToVk(inConfig.StencilPassOp);
+        outSOCreateInfo.depthFailOp = VulkanTypeConverter::ConvertStencilOpToVk(inConfig.DepthFailOp);
+        outSOCreateInfo.compareOp = VulkanTypeConverter::ConvertCompareOpToVk(inConfig.CompareOp);
+        outSOCreateInfo.compareMask = inConfig.CompareMask;
+        outSOCreateInfo.writeMask = inConfig.WriteMask;
+        outSOCreateInfo.reference = inConfig.ReferenceValue;
     }
 
     /**
@@ -452,7 +458,7 @@ private:
     * @param inConfig the pipeline configuration
     * @param outSOCreateInfo gets filled with the depth stencil state information from 'inConfig'
     */
-    static void CreateDepthStencilState(const GraphicsPipelineConfig& inConfig, VkPipelineDepthStencilStateCreateInfo& outDPSCreateInfo)
+    static void CreateDepthStencilState(const FGraphicsPipelineConfig& inConfig, VkPipelineDepthStencilStateCreateInfo& outDPSCreateInfo)
     {
         outDPSCreateInfo = VulkanUtils::Initializers::PipelineDepthStencilStateCreateInfo();
 
@@ -473,7 +479,7 @@ private:
     * @param inConfig the blend op configuration
     * @param outCBAState gets filled with the blend op information from 'inConfig'
     */
-    static void CreateColorBlendAttachmentState(const BlendOpConfig& inConfig, VkPipelineColorBlendAttachmentState& outCBAState)
+    static void CreateColorBlendAttachmentState(const FBlendOpConfig& inConfig, VkPipelineColorBlendAttachmentState& outCBAState)
     {
         outCBAState.blendEnable = inConfig.bIsBlendEnabled;
         outCBAState.srcColorBlendFactor = VulkanTypeConverter::ConvertBlendFactorToVk(inConfig.SrcColorBlendFactor);
@@ -490,10 +496,10 @@ private:
     *
     * @param inConfig the blend op configuration
     * @param inNumColorAttachments number of blend ops/color attachments
-    * @param outColorBlendAttachmentStates converted blend states that are specific to vulkan 
+    * @param outColorBlendAttachmentStates converted blend states that are specific to vulkan
     * @param outCBSCreateInfo gets filled with the blend state information from 'inConfig'
     */
-    static void CreateColorBlendState(const BlendStateConfig& inConfig, std::uint32_t inNumColorAttachments, std::vector<VkPipelineColorBlendAttachmentState>& outColorBlendAttachmentStates, VkPipelineColorBlendStateCreateInfo& outCBSCreateInfo)
+    static void CreateColorBlendState(const FBlendStateConfig& inConfig, std::uint32_t inNumColorAttachments, std::vector<VkPipelineColorBlendAttachmentState>& outColorBlendAttachmentStates, VkPipelineColorBlendStateCreateInfo& outCBSCreateInfo)
     {
         outCBSCreateInfo = VulkanUtils::Initializers::PipelineColorBlendStateCreateInfo();
 
@@ -508,7 +514,7 @@ private:
 
         // Convert blend ops to vulkan specific ones 
         outColorBlendAttachmentStates.resize(inNumColorAttachments);
-        for(uint32 i = 0; i < inNumColorAttachments; i++)
+        for (uint32 i = 0; i < inNumColorAttachments; i++)
         {
             uint32 Index = inConfig.bIndependentBlendEnabled ? i : 0;
             CreateColorBlendAttachmentState(inConfig.BlendOpConfigs[Index], outColorBlendAttachmentStates[i]);
@@ -529,7 +535,7 @@ private:
     * @param outDynamicStates the converted dynamic states that are vulkan specific
     * @param outPDSCreateInfo gets filled with the dynamic state information from 'inConfig'
     */
-    static void CreateDynamicState(const GraphicsPipelineConfig& inConfig, std::vector<VkDynamicState>& outDynamicStates, VkPipelineDynamicStateCreateInfo& outPDSCreateInfo)
+    static void CreateDynamicState(const FGraphicsPipelineConfig& inConfig, std::vector<VkDynamicState>& outDynamicStates, VkPipelineDynamicStateCreateInfo& outPDSCreateInfo)
     {
         outPDSCreateInfo = VulkanUtils::Initializers::PipelineDynamicStateCreateInfo();
 
@@ -547,7 +553,7 @@ private:
         {
             outDynamicStates.push_back(VK_DYNAMIC_STATE_BLEND_CONSTANTS);
         }
-            
+
         if (inConfig.StencilState.bIsReferenceValueDynamic)
         {
             outDynamicStates.push_back(VK_DYNAMIC_STATE_STENCIL_REFERENCE);
@@ -555,11 +561,5 @@ private:
 
         outPDSCreateInfo.dynamicStateCount = outDynamicStates.size();
         outPDSCreateInfo.pDynamicStates = outDynamicStates.empty() ? nullptr : outDynamicStates.data();
-    }
-
-public:
-    inline virtual EPipelineBindPoint GetBindPoint() const override final
-    {
-        return EPipelineBindPoint::Graphics;
     }
 };

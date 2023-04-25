@@ -14,7 +14,7 @@ VulkanSemaphore::~VulkanSemaphore()
     Destroy();
 }
 
-void VulkanSemaphore::Create(const SemaphoreConfig& inConfig)
+void VulkanSemaphore::Create(const FSemaphoreConfig& inConfig)
 {
     VE_ASSERT(SemaphoreCount == 0, VE_TEXT("[VulkanSemaphore]: Memory Leak!! Cannot create another sempahore while a valid handle exists!!"));
 

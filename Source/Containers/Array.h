@@ -6,16 +6,13 @@
 #pragma once
 #include "IteratorGenerics.h"
 #include <Runtime/Memory/Core/MemoryManager.h>
+
 /**
 * A Generic iterator for all indexed based container types
 */
 template<typename ContainerType, typename ContainerElementType>
 class VRIXIC_API TGenericIndexedContainerIterator
 {
-private:
-	ContainerType& Container;
-	uint32 Index;
-
 public:
 	TGenericIndexedContainerIterator(ContainerType& inContainer, EIteratorPointer inIteratorPointer = EIteratorPointer::Begin)
 		: Container(inContainer)
@@ -47,9 +44,8 @@ public:
 	TGenericIndexedContainerIterator& operator++()
 	{
 		// Check to see if we reached the end of the array, if so, break as they should not be allowed to go further! (Maybe should add a safe case)
-#if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		ASSERT(Index != Container.Count());
-#endif
+		VE_ASSERT(Index != Container.Count());
+
 		++Index;
 		return *this;
 	}
@@ -61,9 +57,8 @@ public:
 	TGenericIndexedContainerIterator& operator--()
 	{
 		// Check to see if the start is reached, if it is, why go further? (Maybe should add a safe case)
-#if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		ASSERT(Index != 0);
-#endif
+		VE_ASSERT(Index != 0);
+
 		--Index;
 		return *this;
 	}
@@ -158,6 +153,10 @@ public:
 	{
 		return Index;
 	}
+
+private:
+	ContainerType& Container;
+	uint32 Index;
 };
 
 /**
@@ -170,19 +169,6 @@ public:
 template <typename ElementType>
 class VRIXIC_API TArray
 {
-public:
-	typedef TGenericIndexedContainerIterator<TArray, ElementType> TArrayIterator;
-	typedef TGenericIndexedContainerIterator<const TArray, const ElementType> TConstArrayIterator;
-
-private:
-	/** Amount of elements in the array currently */
-	uint32 Size;
-
-	/** Total amount of elements that array can fit */
-	uint32 Capacity;
-
-	/** Handle to the memory of the array */
-	ElementType** MemoryHandle;
 public:
 	TArray()
 		: Size(0), Capacity(0), MemoryHandle(nullptr) {  }
@@ -216,9 +202,7 @@ public:
 	{
 		// Check to see if the index passed in is < our max elements we can have and its lower than the amount of 
 		// elements currently stored
-#if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		ASSERT(inIndex < Capacity && Size > inIndex);
-#endif
+		VE_ASSERT(inIndex < Capacity && Size > inIndex);
 
 		return (*MemoryHandle) + inIndex;
 	}
@@ -231,9 +215,7 @@ public:
 	{
 		// Check to see if the index passed in is < our max elements we can have and its lower than the amount of 
 		// elements currently stored
-#if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		ASSERT(inIndex < Capacity && Size > inIndex); 
-#endif
+		VE_ASSERT(inIndex < Capacity && Size > inIndex); 
 
 		return (*MemoryHandle)[inIndex];
 	}
@@ -261,9 +243,7 @@ public:
 	{
 		// Check to see if the index passed in is < our max elements we can have and its lower than the amount of 
 		// elements currently stored,also not a negative index 
-#if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		ASSERT(inIndexToRemove < Capacity && Size > inIndexToRemove && inIndexToRemove > 0);
-#endif
+		VE_ASSERT(inIndexToRemove < Capacity && Size > inIndexToRemove && inIndexToRemove > 0);
 
 		// Instead of deallocating the memory, we can just lower the size and shift all of the element from right to left 
 		for (int32 i = inIndexToRemove; i < Size - 1; ++i)
@@ -338,9 +318,8 @@ public:
 		}
 
 		// Check to see if the resize if growing the array not shrinking, as it is not allowed 
-#if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		ASSERT(inNewCapacity < Capacity);
-#endif
+		VE_ASSERT(inNewCapacity < Capacity);
+
 		// Calculate new size in bytes for the array 
 		uint32 SizeInBytes = sizeof(ElementType) * Capacity;
 
@@ -378,9 +357,7 @@ public:
 	void Flush()
 	{
 		// If it memory is already freed, why free again?
-#if _DEBUG || _DEBUG_EDITOR || _EDITOR
-		ASSERT(MemoryHandle != nullptr);
-#endif 
+		VE_ASSERT(MemoryHandle != nullptr);
 
 		Size = 0;
 		Capacity = 0;
@@ -445,4 +422,18 @@ public:
 	{
 		return (*MemoryHandle);
 	}
+
+public:
+	typedef TGenericIndexedContainerIterator<TArray, ElementType> TArrayIterator;
+	typedef TGenericIndexedContainerIterator<const TArray, const ElementType> TConstArrayIterator;
+
+private:
+	/** Amount of elements in the array currently */
+	uint32 Size;
+
+	/** Total amount of elements that array can fit */
+	uint32 Capacity;
+
+	/** Handle to the memory of the array */
+	ElementType** MemoryHandle;
 };

@@ -13,10 +13,10 @@
 class VRIXIC_API Texture : RenderResource
 {
 private:
-    // The texture type
+    /** The texture type */
     ETextureType Type;
 
-    // The bind flags that were used to create this texture 
+    /** The bind flags that were used to create this texture */
     uint32 BindFlags;
 
 protected:

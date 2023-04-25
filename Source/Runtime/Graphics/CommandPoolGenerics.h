@@ -10,14 +10,16 @@
 /**
 * Contains configuration information for creating a Command Pool 
 */
-struct VRIXIC_API CommandPoolConfig
+struct VRIXIC_API FCommandPoolConfig
 {
 public:
-    /* The queue family index to use to create the command pool */
+    /** The queue family index to use to create the command pool */
     uint32 QueueFamilyIndex;
 
 public:
-    CommandPoolConfig() = default;
-    CommandPoolConfig(const CommandPoolConfig&) = default;
-    CommandPoolConfig& operator = (const CommandPoolConfig&) = default;
+    FCommandPoolConfig()
+        : QueueFamilyIndex(UINT32_MAX) { }
+
+    FCommandPoolConfig(const FCommandPoolConfig&) = default;
+    FCommandPoolConfig& operator = (const FCommandPoolConfig&) = default;
 };

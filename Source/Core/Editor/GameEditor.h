@@ -20,20 +20,6 @@ class VulkanRenderPass;
 */
 class VRIXIC_API VGameEditor
 {
-private:
-	TSharedPtr<VGameEngine> GameEngine;
-
-	/** Create Imgui specific render pass which enables imgui to draw into our command buffer */
-	VulkanRenderLayout* ImguiRenderLayout;
-	VulkanRenderPass* ImguiRenderPassHandle;
-
-	/** Since the renderpass is different for imgui, also create unqiue frame buffers for it as well */
-	std::vector<VulkanFrameBuffer*> ImguiFrameBuffers;
-
-	/** Descriptor layout and pool for imgui */
-	VulkanDescriptorSetsLayout* ImguiDescriptorSetsLayout;
-	VulkanDescriptorPool* ImguiDescriptorPool;
-
 public:
 	VGameEditor();
 
@@ -73,4 +59,17 @@ public:
 	*/
 	bool OnWindowResized(WindowResizeEvent& inWindowResizeEvent);
 
+private:
+	TSharedPtr<VGameEngine> GameEngine;
+
+	/** Create Imgui specific render pass which enables imgui to draw into our command buffer */
+	VulkanRenderLayout* ImguiRenderLayout;
+	VulkanRenderPass* ImguiRenderPassHandle;
+
+	/** Since the renderpass is different for imgui, also create unqiue frame buffers for it as well */
+	std::vector<VulkanFrameBuffer*> ImguiFrameBuffers;
+
+	/** Descriptor layout and pool for imgui */
+	VulkanDescriptorSetsLayout* ImguiDescriptorSetsLayout;
+	VulkanDescriptorPool* ImguiDescriptorPool;
 };

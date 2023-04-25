@@ -53,8 +53,9 @@ enum class ETextureLayout
 /**
 * All flags in use by the subpass dependencies
 */
-struct SubpassAssessFlags
+struct FSubpassAssessFlags
 {
+public:
     enum
     {
 #define BIT(x) (1 << x)
@@ -67,66 +68,69 @@ struct SubpassAssessFlags
 /**
 * Defines description for an attachment, the format, load and store operations
 */
-struct VRIXIC_API AttachmentDescription
+struct VRIXIC_API FAttachmentDescription
 {
 public:
-    // Attachment format 
+    /** Attachment format */
     EPixelFormat Format;
 
-    // The load operation of the pervious attachment 
+    /** The load operation of the pervious attachment */
     EAttachmentLoadOp LoadOp;
 
-    // The store operation of the ouput for the attachment 
+    /** The store operation of the ouput for the attachment */
     EAttachmentStoreOp StoreOp;
 
-    // layout the attachment image subresource will be (For when the render pass begins)
+    /** layout the attachment image subresource will be (For when the render pass begins) */
     ETextureLayout InitialLayout;
 
-    // layout the attachment image subresource will be transitioned to when render pass ends 
+    /** layout the attachment image subresource will be transitioned to when render pass ends */
     ETextureLayout FinalLayout;
+
+public:
+    FAttachmentDescription()
+        : Format(EPixelFormat::Undefined), LoadOp(EAttachmentLoadOp::Undefined), StoreOp(EAttachmentStoreOp::Undefined), InitialLayout(ETextureLayout::Undefined), FinalLayout(ETextureLayout::Undefined) { }
 };
 
 /**
 * It is a subpass dependency which states the flow of the renderpass and how the src and dst mask are in use 
 */
-struct VRIXIC_API SubpassDependencyDescription
+struct VRIXIC_API FSubpassDependencyDescription
 {
 public:
-
-    // Source Access Mask 
+    /** Source Access Mask */
     uint32 SrcAccessMaskFlags;
 
-    // Destination Access Mask 
+    /** Destination Access Mask */
     uint32 DstAccessMaskFlags;
 
 public:
-    SubpassDependencyDescription()
+    FSubpassDependencyDescription()
         : SrcAccessMaskFlags(0), DstAccessMaskFlags(0) { }
 };
 
 /**
 * Contain information for configuring a render pass creation 
 */
-struct VRIXIC_API RenderPassConfig
+struct VRIXIC_API FRenderPassConfig
 {
 public:
-    // Color attachments for the render pass
-    std::vector<AttachmentDescription> ColorAttachments;
+    /** Color attachments for the render pass */
+    std::vector<FAttachmentDescription> ColorAttachments;
 
-    // List of subpass dependencies
-    std::vector<SubpassDependencyDescription> SubpassDependencies;
+    /** List of subpass dependencies */
+    std::vector<FSubpassDependencyDescription> SubpassDependencies;
 
-    // Depth and stencil attachment used by the render pass
-    AttachmentDescription DepthStencilAttachment;
+    /** Depth and stencil attachment used by the render pass */
+    FAttachmentDescription DepthStencilAttachment;
 
-    // Number of samples for the attachment, CANNOT BE ZERO (Default = 1, which indicated multisampling is disabled)
+    /** Number of samples for the attachment, CANNOT BE ZERO (Default = 1, which indicated multisampling is disabled) */
     uint32 NumSamples;
 
-    // The render area that will be in use for the render pass 
-    Extent2D RenderArea;
+    /** The render area that will be in use for the render pass */
+    FExtent2D RenderArea;
 
 public:
-    RenderPassConfig()
+    FRenderPassConfig()
         : NumSamples(1), RenderArea(1280u, 720u) { }
 
 public:

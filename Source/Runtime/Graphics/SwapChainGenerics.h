@@ -11,14 +11,15 @@
 /**
 * Helper struct used for Swap Chain configuration 
 */
-struct VRIXIC_API SwapChainConfig
+struct VRIXIC_API FSwapChainConfig
 {
+public:
     /**
     * The screen resolution in pixels
     * 
     * @remarks the renderer could invalidate the resolution in here
     */
-    Extent2D ScreenResolution;
+    FExtent2D ScreenResolution;
 
     /**
     * The number of bits for each pixel in the color buffer, usually 32 
@@ -52,33 +53,33 @@ struct VRIXIC_API SwapChainConfig
     bool bEnableVSync;
 
 public:
-    SwapChainConfig();
-    ~SwapChainConfig();
+    FSwapChainConfig();
+    ~FSwapChainConfig();
 
-    inline static SwapChainConfig CreateDefaultConfig();
+    inline static FSwapChainConfig CreateDefaultConfig();
 
 private:
     inline void SetDefaultConfig();
 };
 
-inline SwapChainConfig::SwapChainConfig()
+inline FSwapChainConfig::FSwapChainConfig()
 {
     SetDefaultConfig();
 }
 
-inline SwapChainConfig::~SwapChainConfig() { }
+inline FSwapChainConfig::~FSwapChainConfig() { }
 
-inline SwapChainConfig SwapChainConfig::CreateDefaultConfig()
+inline FSwapChainConfig FSwapChainConfig::CreateDefaultConfig()
 {
-    SwapChainConfig Desc = { };
+    FSwapChainConfig Desc = { };
     Desc.SetDefaultConfig();
 
     return Desc;
 }
 
-inline void SwapChainConfig::SetDefaultConfig()
+inline void FSwapChainConfig::SetDefaultConfig()
 {
-    ScreenResolution = Extent2D(1280, 720);
+    ScreenResolution = FExtent2D(1280, 720);
     ColorBits = 32;
     DepthBits = 24;
     StencilBits = 8;

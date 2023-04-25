@@ -12,21 +12,6 @@
 */
 class VRIXIC_API VulkanTextureView final : public Texture
 {
-    friend class VulkanSwapChain;
-private:
-	VulkanDevice* Device;
-
-	VkImage ImageHandle;
-	VkDeviceMemory ImageMemory;
-
-	VkImageView ViewHandle;
-
-    VkFormat ImageFormat;
-
-    uint32 NumMipLevels;
-
-    uint32 NumArrayLayers;
-
 public:
 	/**
 	* @param inImageCreateInfo - Image creation info
@@ -40,7 +25,7 @@ public:
     *
     * @remarks Creates, Allocates, and Binds Image Memory
     */
-    VulkanTextureView(VulkanDevice* inDevice, const TextureConfig& inTextureConfig);
+    VulkanTextureView(VulkanDevice* inDevice, const FTextureConfig& inTextureConfig);
 
 	~VulkanTextureView();
 
@@ -62,7 +47,7 @@ public:
     *
     * @param inTextureViewConfig configuration used for the creation of the image view 
     */
-    void CreateImageView(const TextureViewConfig& inTextureViewConfig);
+    void CreateImageView(const FTextureViewConfig& inTextureViewConfig);
 
     /**
     * Creates a default image view from the image 
@@ -74,15 +59,15 @@ private:
     * Only swapchains should use this version
     */
     VulkanTextureView()
-        : Texture(ETextureType::Texture2D, ResourceBindFlags::ColorAttachment), Device(nullptr), 
-        ImageHandle(VK_NULL_HANDLE), ImageMemory(VK_NULL_HANDLE), ViewHandle(VK_NULL_HANDLE) { } 
+        : Texture(ETextureType::Texture2D, FResourceBindFlags::ColorAttachment), Device(nullptr), 
+        ImageHandle(VK_NULL_HANDLE), ImageMemory(VK_NULL_HANDLE), ViewHandle(VK_NULL_HANDLE), ImageFormat(VK_FORMAT_UNDEFINED), NumArrayLayers(0), NumMipLevels(0) { }
 
     /**
     * Creates a VkImage from the configuration settings passed in
     * 
     * @param inTextureConfig the configuration used to create the image 
     */
-    void CreateImage(const TextureConfig& inTextureConfig);
+    void CreateImage(const FTextureConfig& inTextureConfig);
 
     /**
     * @returns VkImageAspectFlags aspect flags for this texture (from its Image Format)
@@ -99,4 +84,20 @@ public:
 	{
 		return &ViewHandle;
 	}
+
+private:
+    friend class VulkanSwapChain;
+
+    VulkanDevice* Device;
+
+    VkImage ImageHandle;
+    VkDeviceMemory ImageMemory;
+
+    VkImageView ViewHandle;
+
+    VkFormat ImageFormat;
+
+    uint32 NumMipLevels;
+
+    uint32 NumArrayLayers;
 };

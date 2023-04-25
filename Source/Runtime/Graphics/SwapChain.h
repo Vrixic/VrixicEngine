@@ -17,13 +17,6 @@
 */
 class VRIXIC_API SwapChain : public Interface
 {
-protected:
-    // The swap chain configuration
-    SwapChainConfig Configuration;
-
-    // The surface handle that the sawp chain is associated with 
-    Surface* SurfaceHandle;
-
 public:
     /**
     * Presents the current buffer to the screen
@@ -39,7 +32,7 @@ public:
     * @returns bool true if it resized, false otherwise
     * @remarks use cases is on window resize or what ever render target its rendering to resized
     */
-    virtual bool ResizeSwapChain(const Extent2D& inNewResolution) = 0;
+    virtual bool ResizeSwapChain(const FExtent2D& inNewResolution) = 0;
 
     /**
     * Sets the vsync interval for this swapchain (vertical synchronization), 0 to disable, and 1 or more halfs the refresh rate
@@ -87,4 +80,11 @@ public:
     {
         return *SurfaceHandle;
     }
+
+protected:
+    /** The swap chain configuration */
+    FSwapChainConfig Configuration;
+
+    /** The surface handle that the sawp chain is associated with */
+    Surface* SurfaceHandle;
 };

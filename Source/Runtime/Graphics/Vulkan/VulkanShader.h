@@ -8,7 +8,7 @@
 #include "Runtime/Memory/ResourceManager.h"
 #include "VulkanDevice.h"
 
-struct VertexInputDescription;
+struct FVertexInputDescription;
 
 /**
 * A shader pool
@@ -17,13 +17,6 @@ struct VertexInputDescription;
 */
 class VRIXIC_API VulkanShaderPool
 {
-    friend class VulkanShaderFactory;
-private:
-    VulkanDevice* Device;
-
-    // All shader module handles
-    std::vector<VkShaderModule> ShaderModuleHandles;
-
 public:
     VulkanShaderPool(VulkanDevice* inDevice);
 
@@ -37,6 +30,14 @@ public:
     {
         return ShaderModuleHandles[inShaderKey];
     }
+
+private:
+    friend class VulkanShaderFactory;
+
+    VulkanDevice* Device;
+
+    /** All shader module handles */
+    std::vector<VkShaderModule> ShaderModuleHandles;
 };
 
 /**
@@ -45,18 +46,6 @@ public:
 */
 class VRIXIC_API VulkanShader : public Shader
 {
-protected:
-    VulkanDevice* Device;
-
-    /* A Key to the shader module location into the array of shader modules inside of the pool that was used to create this shader  */
-    uint32 ShaderKey;
-
-    /** The shader pool that is used to create this shader */
-    VulkanShaderPool* ShaderPool;
-
-    std::vector<VkVertexInputAttributeDescription> InputAttributes;
-    std::vector<VkVertexInputBindingDescription> InputBindings;
-
 public:
     /**
     * @param EShaderType - The type of shader ex. Vertex, Fragment, etc...
@@ -68,7 +57,7 @@ public:
     VulkanShader(const VulkanShader& other) = delete;
     VulkanShader operator=(const VulkanShader& other) = delete;
 
-    void BuildInputLayout(uint32 inNumVertexDescriptions, const VertexInputDescription* inVertexDescriptions);
+    void BuildInputLayout(uint32 inNumVertexDescriptions, const FVertexInputDescription* inVertexDescriptions);
 
     void CreateVertexInputStateCreateInfo(VkPipelineVertexInputStateCreateInfo& inInputStateCreateInfo) const;
 
@@ -92,6 +81,18 @@ public:
     {
         return ShaderPool->GetShaderModule(ShaderKey);
     }
+
+protected:
+    VulkanDevice* Device;
+
+    /** A Key to the shader module location into the array of shader modules inside of the pool that was used to create this shader  */
+    uint32 ShaderKey;
+
+    /** The shader pool that is used to create this shader */
+    VulkanShaderPool* ShaderPool;
+
+    std::vector<VkVertexInputAttributeDescription> InputAttributes;
+    std::vector<VkVertexInputBindingDescription> InputBindings;
 };
 
 /**
@@ -103,13 +104,14 @@ template<typename EShaderType TShaderType>
 class TVulkanShader : public VulkanShader
 {
 private:
-    friend class VulkanShaderFactory;
-
-private:
     TVulkanShader(VulkanDevice* inDevice);
 
     TVulkanShader(const TVulkanShader& other) = delete;
     TVulkanShader operator=(const TVulkanShader& other) = delete;
+
+private:
+    friend class VulkanShaderFactory;
+
 };
 
 /* Alias for shader variables, makes it easier to create these types of shaders, less verbose */
@@ -122,12 +124,6 @@ typedef TVulkanShader<EShaderType::Fragment> VulkanFragmentShader;
 */
 class VRIXIC_API VulkanShaderFactory
 {
-private:
-    VulkanDevice* Device;
-
-    /* Handle to the resource manager that will be used to create all shaders within this factory */
-    //ResourceManager* ResourceManagerHandle;
-
 public:
     /**
     * @param inResourceManagerHandle - The resource manager that will be in use by this factory to create shader modules/handles
@@ -139,11 +135,17 @@ public:
     VulkanShaderFactory operator=(const VulkanShaderFactory& other) = delete;
 
 public:
-    VulkanShader* CreateShader(VulkanShaderPool* inShaderPool, const ShaderConfig& inConfig) const;
+    VulkanShader* CreateShader(VulkanShaderPool* inShaderPool, const FShaderConfig& inConfig) const;
 
-    VulkanVertexShader* CreateVertexShader(VulkanShaderPool* inShaderPool, const ShaderConfig& inConfig) const;
-    VulkanFragmentShader* CreateFragmentShader(VulkanShaderPool* inShaderPool, const ShaderConfig& inConfig) const;
+    VulkanVertexShader* CreateVertexShader(VulkanShaderPool* inShaderPool, const FShaderConfig& inConfig) const;
+    VulkanFragmentShader* CreateFragmentShader(VulkanShaderPool* inShaderPool, const FShaderConfig& inConfig) const;
 
 private:
-    void CompileSourceCode(const ShaderConfig& inConfig, const uint32*& outCode, uint32* outCodeSize) const;
+    void CompileSourceCode(const FShaderConfig& inConfig, const uint32*& outCode, uint32* outCodeSize) const;
+
+private:
+    VulkanDevice* Device;
+
+    /* Handle to the resource manager that will be used to create all shaders within this factory */
+    //ResourceManager* ResourceManagerHandle;
 };

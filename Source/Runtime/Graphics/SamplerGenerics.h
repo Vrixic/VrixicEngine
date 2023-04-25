@@ -66,48 +66,53 @@ enum class EBorderColor
 /**
 * Helper struct used to configure settings for a sampler (Vulkan-> VkSampler)
 */
-struct VRIXIC_API SamplerConfig
+struct VRIXIC_API FSamplerConfig
 {
 public:
-    // The mag filter to use
+    /** The mag filter to use */
     ESamplerFilter MagFilter;
 
-    // The min filter to used
+    /** The min filter to used */
     ESamplerFilter MinFilter;
 
-    // the filter used for mipmaps 
+    /** the filter used for mipmaps */
     EMipMapMode MipMapMode;
 
-    // the mode in the U direction or the x axis 
+    /** the mode in the U direction or the x axis */
     ESamplerAddressMode AddressModeU;
 
-    // the mode in the V direction or the y axis
+    /** the mode in the V direction or the y axis */
     ESamplerAddressMode AddressModeV;
 
-    // the mode in the W direction or the z axis 
+    /** the mode in the W direction or the z axis */
     ESamplerAddressMode AddressModeW;
 
-    // the LOD bias used for mip-mapping 
+    /** the LOD bias used for mip-mapping */
     float MipMapLodBias;
     
-    // specifies if the sampler should use mip-maps or not
+    /** specifies if the sampler should use mip-maps or not */
     bool bEnableMinMapping;
 
-    // the max anisotrophy used from the range [1, 16], 0 means disabled 
+    /** the max anisotrophy used from the range [1, 16], 0 means disabled */
     uint32 MaxAnisotropy;
 
-    // specifies if it should use a compare operation for depth texture or not
+    /** specifies if it should use a compare operation for depth texture or not */
     bool bEnableCompare;
 
-    // the compare operation for depth textures
+    /** the compare operation for depth textures */
     ECompareOp CompareOp;
 
-    // minimum level of detail
+    /** minimum level of detail */
     float MinLod;
 
-    // maximum level of detail
+    /** maximum level of detail */
     float MaxLod;
 
-    // the border color used for texture lookups
+    /** the border color used for texture lookups */
     EBorderColor BorderColor;
+
+public:
+    FSamplerConfig()
+        : MagFilter(ESamplerFilter::Linear), MinFilter(ESamplerFilter::Linear), MipMapMode(EMipMapMode::Linear), AddressModeU(ESamplerAddressMode::ClampToBorder), AddressModeV(ESamplerAddressMode::ClampToBorder), AddressModeW(ESamplerAddressMode::ClampToBorder),
+        MipMapLodBias(0.0f), bEnableMinMapping(false), MaxAnisotropy(0), bEnableCompare(false), CompareOp(ECompareOp::Less), MinLod(0), MaxLod(0), BorderColor(EBorderColor::FloatOpaqueWhite) { }
 };

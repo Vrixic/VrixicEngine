@@ -114,9 +114,6 @@ constexpr TSharedPtr<T> CreateSharedPointer(Args&& ... inArgs)
 template<typename T>
 class TPointer
 {
-private:
-	T** Pointer;
-
 public:
 	TPointer() : Pointer(nullptr) { }
 	TPointer(T** inPointer) : Pointer(inPointer) { }
@@ -142,4 +139,7 @@ public:
 	{
 		Pointer = nullptr;
 	}
+
+private:
+	T** Pointer;
 };

@@ -13,5 +13,8 @@
 class VRIXIC_API IPipeline : Interface
 { 
 public:
+    /**
+    * @returns EPipelineBindPoint the bindpoint for this pipeline, ex. Graphics, Compute, etc...
+    */
     inline virtual EPipelineBindPoint GetBindPoint() const = 0;
 };

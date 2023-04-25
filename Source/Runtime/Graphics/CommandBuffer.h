@@ -53,7 +53,7 @@ public:
     * @param inRenderViewport this viewport information will be set for the command buffer
     * @param inNumRenderViewport the number of (inRenderViewport) viewports being submitted
     */
-    virtual void SetRenderViewports(const RenderViewport* inRenderViewport, uint32 inNumRenderViewports) = 0;
+    virtual void SetRenderViewports(const FRenderViewport* inRenderViewport, uint32 inNumRenderViewports) = 0;
 
     /**
     * Sets scissors ( Rectangles ) for the command buffers
@@ -61,7 +61,7 @@ public:
     * @param inRenderScissors render scissors that will be set to this command buffer
     * @param inNumRenderScissors the number of (inRenderScissors) scissors being submitted
     */
-    virtual void SetRenderScissors(const RenderScissor* inRenderScissors, uint32 inNumRenderScissors) = 0;
+    virtual void SetRenderScissors(const FRenderScissor* inRenderScissors, uint32 inNumRenderScissors) = 0;
 
     /* ------------------------------------------------------------------------------- */
     /* ---------------               Input Assembly                ------------------- */
@@ -91,7 +91,7 @@ public:
     * @param inRenderPassBeginInfo the information used to begin the render pass
     * @info render pass are just steps (subpasses) drawing commands are divided into for allowing things like attachments, etc.. to happen (also keeps relationships between the commands)
     */
-    virtual void BeginRenderPass(const RenderPassBeginInfo& inRenderPassBeginInfo) const = 0;
+    virtual void BeginRenderPass(const FRenderPassBeginInfo& inRenderPassBeginInfo) const = 0;
 
     /**
     * Ends the current render pass
@@ -152,7 +152,6 @@ public:
     virtual void DrawIndexedInstanced(uint32 inNumIndices, uint32 inNumInstances, uint32 inFirstIndex = 0, uint32 inVertexOffset = 0, uint32 inFirstInstanceIndex = 0) = 0;
 
 public:
-
     /* ------------------------------------------------------------------------------- */
     /* -------------                 Synchronization               ------------------- */
     /* ------------------------------------------------------------------------------- */

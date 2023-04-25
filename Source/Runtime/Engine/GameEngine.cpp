@@ -24,7 +24,7 @@ VGameEngine::VGameEngine()
     : World(nullptr)
 {
     // Configure the render interface
-    VulkanRendererConfig RendererConfig = {};
+    FVulkanRendererConfig RendererConfig = {};
     RendererConfig.AppInstanceInfo.ApplicationName = "Sandbox Project";
     RendererConfig.AppInstanceInfo.EngineName = "Vrixic Engine";
 
@@ -47,7 +47,7 @@ VGameEngine::VGameEngine()
     RendererConfig.EnabledDeviceExtensionCount = DeviceExtensionsCount;
 
     // Select all the feature to enable 
-    PhysicalDeviceFeatures EnabledFeatures = { };
+    FPhysicalDeviceFeatures EnabledFeatures = { };
     EnabledFeatures.TessellationShader = true;
     EnabledFeatures.GeometryShader = true;
     EnabledFeatures.FillModeNonSolid = true;
@@ -77,14 +77,14 @@ VGameEngine::VGameEngine()
     RenderInterface.Get()->Initialize();
 
     // Create the swapchain
-    SwapChainConfig SwapChainConfiguration = SwapChainConfig::CreateDefaultConfig();
+    FSwapChainConfig SwapChainConfiguration = FSwapChainConfig::CreateDefaultConfig();
     SwapChainMain = RenderInterface.Get()->CreateSwapChain(SwapChainConfiguration, SurfacePtr);
 
     // Create command buffers
     {
-        CommandBufferConfig Config = { };
+        FCommandBufferConfig Config = { };
         Config.CommandQueue = RenderInterface.Get()->GetCommandQueue();
-        Config.Flags = CommandBufferLevelFlags::Primary;
+        Config.Flags = FCommandBufferLevelFlags::Primary;
         Config.NumBuffersToAllocate = 1;
 
         CommandBuffers.resize(SwapChainMain->GetImageCount());
@@ -98,21 +98,21 @@ VGameEngine::VGameEngine()
 
     // Create synchronization objects (Semaphores)
     {
-        SemaphoreConfig Config = { 1 };
+        FSemaphoreConfig Config = { 1 };
         PresentationCompleteSemaphore = RenderInterface.Get()->CreateRenderSemaphore(Config);
         RenderCompleteSemaphore = RenderInterface.Get()->CreateRenderSemaphore(Config);
     }
 
     // Setting up depth and stencil buffers
     {
-        TextureConfig Config = { };
+        FTextureConfig Config = { };
         Config.Type = ETextureType::Texture2D;
         Config.Format = EPixelFormat::D32FloatS8X24UInt;
         Config.Extent = { SwapChainConfiguration.ScreenResolution.Width, SwapChainConfiguration.ScreenResolution.Height, 1 };
         Config.MipLevels = 1;
         Config.NumArrayLayers = 1;
         Config.NumSamples = 1;
-        Config.BindFlags |= ResourceBindFlags::DepthStencilAttachment;
+        Config.BindFlags |= FResourceBindFlags::DepthStencilAttachment;
 
         DepthStencilView = RenderInterface.Get()->CreateTexture(Config);
         VE_CORE_LOG_INFO("Successfully created depth stencil buffers...");
@@ -120,12 +120,12 @@ VGameEngine::VGameEngine()
 
     // Setting up render pass
     {
-        RenderPassConfig Config = { };
+        FRenderPassConfig Config = { };
         Config.RenderArea = SwapChainConfiguration.ScreenResolution;
         Config.NumSamples = 1;
 
         // Depth Stencil Attachment
-        AttachmentDescription DepthStencil = { };
+        FAttachmentDescription DepthStencil = { };
         DepthStencil.Format = EPixelFormat::D32FloatS8X24UInt;
         DepthStencil.LoadOp = EAttachmentLoadOp::Clear;
         DepthStencil.StoreOp = EAttachmentStoreOp::Store;
@@ -135,7 +135,7 @@ VGameEngine::VGameEngine()
         Config.DepthStencilAttachment = DepthStencil;
 
         // Color Attachment
-        AttachmentDescription Color = { };
+        FAttachmentDescription Color = { };
         Color.Format = SurfacePtr->GetColorFormat();
         Color.LoadOp = EAttachmentLoadOp::Clear;
         Color.StoreOp = EAttachmentStoreOp::Store;
@@ -144,9 +144,9 @@ VGameEngine::VGameEngine()
 
         Config.ColorAttachments.push_back(Color);
 
-        SubpassDependencyDescription SBDesc = { };
+        FSubpassDependencyDescription SBDesc = { };
         SBDesc.SrcAccessMaskFlags = 0;
-        SBDesc.DstAccessMaskFlags = SubpassAssessFlags::ColorAttachmentRead | SubpassAssessFlags::ColorAttachmentWrite;
+        SBDesc.DstAccessMaskFlags = FSubpassAssessFlags::ColorAttachmentRead | FSubpassAssessFlags::ColorAttachmentWrite;
 
         Config.SubpassDependencies.push_back(SBDesc);
 
@@ -158,12 +158,12 @@ VGameEngine::VGameEngine()
     {
         FrameBuffers.resize(SwapChainMain->GetImageCount());
 
-        FrameBufferAttachment DepthStencilAttachment = { };
+        FFrameBufferAttachment DepthStencilAttachment = { };
         DepthStencilAttachment.Attachment = (Texture*)DepthStencilView;
 
-        FrameBufferAttachment ColorAttachment = { };
+        FFrameBufferAttachment ColorAttachment = { };
 
-        FrameBufferConfig Config = { };
+        FFrameBufferConfig Config = { };
         Config.RenderPass = RenderPass;
         Config.Resolution = SwapChainConfiguration.ScreenResolution;
         Config.Attachments.resize(2);
@@ -183,8 +183,8 @@ VGameEngine::VGameEngine()
     // Prepare the vulkan pipeline
     {
         // Create a generic vertex shader as it is mandatory to have a vertex shader 
-        ShaderConfig VertexSConfig = { };
-        VertexSConfig.CompileFlags |= ShaderCompileFlags::InvertY;
+        FShaderConfig VertexSConfig = { };
+        VertexSConfig.CompileFlags |= FShaderCompileFlags::InvertY;
         VertexSConfig.EntryPoint = "main";
         VertexSConfig.SourceCode = std::string("float4 main(float3 inVertex : POSITION) : SV_POSITION { return float4(inVertex, 1.0f); }");
         VertexSConfig.SourceType = EShaderSourceType::String;
@@ -196,7 +196,7 @@ VGameEngine::VGameEngine()
         VertexSConfig.VertexBindings.InputRate = EInputRate::Vertex;
 
         // Add a vertex attribute to the vertex binding 
-        VertexInputAttribute Attribute = { };
+        FVertexInputAttribute Attribute = { };
         Attribute.BindingNum = 0;
         Attribute.Format = EPixelFormat::RGB32Float;
         Attribute.Location = 0;
@@ -207,8 +207,8 @@ VGameEngine::VGameEngine()
         VertexShader = RenderInterface.Get()->CreateShader(VertexSConfig);
 
         // Create a fragment shader as well
-        ShaderConfig FragmentSConfig = { };
-        FragmentSConfig.CompileFlags |= ShaderCompileFlags::InvertY;
+        FShaderConfig FragmentSConfig = { };
+        FragmentSConfig.CompileFlags |= FShaderCompileFlags::InvertY;
         FragmentSConfig.EntryPoint = "main";
         FragmentSConfig.SourceCode = std::string("float4 main(float4 inPosition : SV_POSITION) : SV_TARGET { return float4(1.0f, 0.0f, 0.0f, 1.0f); }");
         FragmentSConfig.SourceType = EShaderSourceType::String;
@@ -217,11 +217,11 @@ VGameEngine::VGameEngine()
         FragmentShader = RenderInterface.Get()->CreateShader(FragmentSConfig);
 
         // Empty Config, we dont not want to bind any push constants not, descriptors
-        PipelineLayoutConfig PLConfig = { };
+        FPipelineLayoutConfig PLConfig = { };
         GraphicsPipelineLayout = RenderInterface.Get()->CreatePipelineLayout(PLConfig);
 
         // Configuate the graphics pipeline 
-        GraphicsPipelineConfig GPConfig = { };
+        FGraphicsPipelineConfig GPConfig = { };
 
         GPConfig.RenderPassPtr = RenderPass;
         GPConfig.PipelineLayoutPtr = GraphicsPipelineLayout;
@@ -230,7 +230,7 @@ VGameEngine::VGameEngine()
         GPConfig.PrimitiveTopology = EPrimitiveTopology::TriangleList;
 
         // Viewports and scissors 
-        RenderViewport Viewport = { };
+        FRenderViewport Viewport = { };
         Viewport.X = 0.0f;
         Viewport.Y = 0.0f;
 
@@ -242,7 +242,7 @@ VGameEngine::VGameEngine()
 
         GPConfig.Viewports.push_back(Viewport);
 
-        RenderScissor Scissor = {};
+        FRenderScissor Scissor = {};
         Scissor.OffsetX = 0;
         Scissor.OffsetY = 0;
         Scissor.Width = SwapChainConfiguration.ScreenResolution.Width;
@@ -272,7 +272,7 @@ VGameEngine::VGameEngine()
         // Color blend state
         GPConfig.BlendState.LogicOp = ELogicOp::Disabled;
 
-        BlendOpConfig BOConfig = { };
+        FBlendOpConfig BOConfig = { };
         BOConfig.ColorWriteMask = 0xF;
         BOConfig.bIsBlendEnabled = false;
         BOConfig.SrcColorBlendFactor = EBlendFactor::SrcColor;
@@ -291,9 +291,9 @@ VGameEngine::VGameEngine()
 
     // Create Vertex Buffer
     {
-        BufferConfig Config = { };
+        FBufferConfig Config = { };
         Config.UsageFlags = EBufferUsageFlags::Vertex;
-        Config.MemoryFlags |= MemoryFlags::HostCached;
+        Config.MemoryFlags |= FMemoryFlags::HostCached;
 
         uint32 Indices[3] =
         {
@@ -356,8 +356,8 @@ void VGameEngine::Tick()
     CurrentCommandBuffer->Begin();
 
     // Begin Render pass
-    RenderPassBeginInfo RPBeginInfo = { };
-    RenderClearValues ClearValues[2];
+    FRenderPassBeginInfo RPBeginInfo = { };
+    FRenderClearValues ClearValues[2];
     ClearValues[0].Color = { 0.0f, 0.0f, 0.2f,  1.0f };
     ClearValues[0].Depth = { 1.0f };
     ClearValues[0].Stencil = { 0 };

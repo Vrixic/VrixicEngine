@@ -63,7 +63,7 @@ public:
     *
     * @remarks multi-swapchains not supported yet
     */
-    virtual SwapChain* CreateSwapChain(const SwapChainConfig& inSwapChainConfig, Surface* inSurface) = 0;
+    virtual SwapChain* CreateSwapChain(const FSwapChainConfig& inSwapChainConfig, Surface* inSurface) = 0;
 
     /* ------------------------------------------------------------------------------- */
     /* -------------                 Command Buffers               ------------------- */
@@ -74,7 +74,7 @@ public:
     *
     * @param inCmdBufferConfig specifies the configuration of the command buffers (if empty, it'll create one command buffer that is level Primary)
     */
-    virtual ICommandBuffer* CreateCommandBuffer(const CommandBufferConfig& inCmdBufferConfig) = 0;
+    virtual ICommandBuffer* CreateCommandBuffer(const FCommandBufferConfig& inCmdBufferConfig) = 0;
 
     /**
     * Releases/Destroys the command buffer passed in
@@ -92,7 +92,7 @@ public:
     *
     * @param inBufferConfig info used to create the buffer
     */
-    virtual Buffer* CreateBuffer(const BufferConfig& inBufferConfig) = 0;
+    virtual Buffer* CreateBuffer(const FBufferConfig& inBufferConfig) = 0;
 
     /**
     * Writes/Update data to the specified buffer (if data already exist, this will update)
@@ -130,7 +130,7 @@ public:
     *
     * @param inTextureConfig  info used to create the texture
     */
-    virtual Texture* CreateTexture(const TextureConfig& inTextureConfig) = 0;
+    virtual Texture* CreateTexture(const FTextureConfig& inTextureConfig) = 0;
 
     /**
     * Releases/Destroys the texture passed in
@@ -148,7 +148,7 @@ public:
     *
     * @param inFrameBufferConfig  info used to create the frame buffer
     */
-    virtual IFrameBuffer* CreateFrameBuffer(const FrameBufferConfig& inFrameBufferConfig) = 0;
+    virtual IFrameBuffer* CreateFrameBuffer(const FFrameBufferConfig& inFrameBufferConfig) = 0;
 
     /**
     * Releases/Destroys the frame buffer passed in
@@ -166,7 +166,7 @@ public:
     *
     * @param inRenderPassConfig  info used to create the render pass
     */
-    virtual IRenderPass* CreateRenderPass(const RenderPassConfig& inRenderPassConfig) = 0;
+    virtual IRenderPass* CreateRenderPass(const FRenderPassConfig& inRenderPassConfig) = 0;
 
     /**
     * Releases/Destroys the renderpass passed in
@@ -184,7 +184,7 @@ public:
     *
     * @param inPipelineLayoutConfig info used to create the render pass
     */
-    virtual PipelineLayout* CreatePipelineLayout(const PipelineLayoutConfig& inPipelineLayoutConfig) = 0;
+    virtual PipelineLayout* CreatePipelineLayout(const FPipelineLayoutConfig& inPipelineLayoutConfig) = 0;
 
     /**
     * Releases/Destroys the pipeline layout passed in
@@ -202,7 +202,7 @@ public:
     *
     * @param inGraphicsPipelineConfig info used to create the graphics pipeline
     */
-    virtual IPipeline* CreatePipeline(const GraphicsPipelineConfig& inGraphicsPipelineConfig) = 0;
+    virtual IPipeline* CreatePipeline(const FGraphicsPipelineConfig& inGraphicsPipelineConfig) = 0;
 
     /**
     * Releases/Destroys the pipeline passed in
@@ -220,7 +220,7 @@ public:
     *
     * @param inSemaphoreConfig contains info on how to create the semaphore
     */
-    virtual ISemaphore* CreateRenderSemaphore(const SemaphoreConfig& inSemaphoreConfig) = 0;
+    virtual ISemaphore* CreateRenderSemaphore(const FSemaphoreConfig& inSemaphoreConfig) = 0;
 
     /**
     * Releases/Destroys the semaphore passed in
@@ -254,7 +254,7 @@ public:
   *
   * @param inShaderConfig info used to create the shader
   */
-    virtual Shader* CreateShader(const ShaderConfig& inShaderConfig) = 0;
+    virtual Shader* CreateShader(const FShaderConfig& inShaderConfig) = 0;
 
     /**
     * Releases/Destroys the shader passed in
@@ -272,7 +272,7 @@ public:
     *
      * @param inSamplerConfig info used to create the sampler
     */
-    virtual Sampler* CreateSampler(const SamplerConfig& inSamplerConfig) = 0;
+    virtual Sampler* CreateSampler(const FSamplerConfig& inSamplerConfig) = 0;
 
     /**
     * Releases/Destroys the sampler passed in
@@ -316,7 +316,7 @@ public:
     /**
     * @returns RendererInfo& information about the renderer in use and what its using
     */
-    virtual const RendererInfo& GetRendererInfo() const = 0;
+    virtual const FRendererInfo& GetRendererInfo() const = 0;
 
     /**
     * @returns ICommandQueue* the queue used for submission

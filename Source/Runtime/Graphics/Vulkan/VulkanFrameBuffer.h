@@ -12,18 +12,7 @@
 */
 class VRIXIC_API VulkanFrameBuffer : public IFrameBuffer
 {
-private:
-	VulkanDevice* Device;
-	VulkanRenderPass* RenderPass;
-	VkFramebuffer FrameBufferHandle;
-
-    uint32 NumAttachments; // number of attachments 
-    Extent2D Extent; // the extent of the buffer
-
 public:
-	/**
-	* @param inRenderPass - render pass associated with this frame buffer
-	*/
 	VulkanFrameBuffer(VulkanDevice* inDevice);
 	~VulkanFrameBuffer();
 
@@ -44,7 +33,7 @@ public:
     *
     * @param inFrameBufferConfig the configuration used to allocate the frame buffer 
     */
-    void Create(const FrameBufferConfig& inFrameBufferConfig);
+    void Create(const FFrameBufferConfig& inFrameBufferConfig);
 
 	/**
 	* Destroys this frame buffer 
@@ -55,7 +44,7 @@ public:
     /**
     * @returns Extend2D the extent of the framebuffer in screen space
     */
-    virtual Extent2D GetResolution() const override;
+    virtual FExtent2D GetResolution() const override;
 
     /**
     * @return uint32 the number of attachments that are attached to this frame buffer
@@ -74,5 +63,18 @@ public:
 	{
 		return FrameBufferHandle;
 	}
+
+private:
+    VulkanDevice* Device;
+
+    /** The render pass this frame buffer belong to */
+    VulkanRenderPass* RenderPass;
+    VkFramebuffer FrameBufferHandle;
+
+    /** number of attachments  */
+    uint32 NumAttachments; 
+
+    /** the extent of the buffer  */
+    FExtent2D Extent; 
 };
 

@@ -73,7 +73,7 @@ void GLFWWindowsWindow::Init(const FWindowConfig& inWindowConfig)
 	// Set GLFW callbacks
 	glfwSetWindowSizeCallback(WindowPtr, [](GLFWwindow* window, int width, int height)
 		{
-			FWindowData& data = *(FWindowData*)glfwGetWindowUserPointer(window);
+			HWindowData& data = *(HWindowData*)glfwGetWindowUserPointer(window);
 			data.Width = width;
 			data.Height = height;
 
@@ -83,14 +83,14 @@ void GLFWWindowsWindow::Init(const FWindowConfig& inWindowConfig)
 
 	glfwSetWindowCloseCallback(WindowPtr, [](GLFWwindow* window)
 		{
-			FWindowData& data = *(FWindowData*)glfwGetWindowUserPointer(window);
+			HWindowData& data = *(HWindowData*)glfwGetWindowUserPointer(window);
 			WindowCloseEvent event;
 			data.EventCallback(event);
 		});
 
 	glfwSetKeyCallback(WindowPtr, [](GLFWwindow* window, int key, int scancode, int action, int mods)
 		{
-			FWindowData& data = *(FWindowData*)glfwGetWindowUserPointer(window);
+			HWindowData& data = *(HWindowData*)glfwGetWindowUserPointer(window);
 
 			switch (action)
 			{
@@ -125,7 +125,7 @@ void GLFWWindowsWindow::Init(const FWindowConfig& inWindowConfig)
 
 	glfwSetMouseButtonCallback(WindowPtr, [](GLFWwindow* window, int button, int action, int mods)
 		{
-			FWindowData& data = *(FWindowData*)glfwGetWindowUserPointer(window);
+			HWindowData& data = *(HWindowData*)glfwGetWindowUserPointer(window);
 
 			switch (action)
 			{
@@ -146,7 +146,7 @@ void GLFWWindowsWindow::Init(const FWindowConfig& inWindowConfig)
 
 	glfwSetScrollCallback(WindowPtr, [](GLFWwindow* window, double xOffset, double yOffset)
 		{
-			FWindowData& data = *(FWindowData*)glfwGetWindowUserPointer(window);
+			HWindowData& data = *(HWindowData*)glfwGetWindowUserPointer(window);
 
 			MouseScrolledEvent event((float)xOffset, (float)yOffset);
 			data.EventCallback(event);
@@ -154,7 +154,7 @@ void GLFWWindowsWindow::Init(const FWindowConfig& inWindowConfig)
 
 	glfwSetCursorPosCallback(WindowPtr, [](GLFWwindow* window, double xPos, double yPos)
 		{
-			FWindowData& data = *(FWindowData*)glfwGetWindowUserPointer(window);
+			HWindowData& data = *(HWindowData*)glfwGetWindowUserPointer(window);
 
 			MouseMovedEvent event((float)xPos, (float)yPos);
 			data.EventCallback(event);

@@ -16,31 +16,6 @@
 */
 class GLFWWindowsWindow : public IWindow
 {
-private:
-	/**
-	* All data a windows window would need or have
-	*/
-	struct VRIXIC_API FWindowData
-	{
-	public:
-		std::string Name;
-		uint32 Width, Height;
-
-		uint16 MouseX, MouseY;
-
-		EventCallbackFunc EventCallback;
-
-	public:
-		FWindowData()
-			: Width(0), Height(0), MouseX(0), MouseY(0) { }
-	};
-
-	FWindowData WindowsData;
-
-	GLFWwindow* WindowPtr;
-
-	HWND WindowHandle;
-
 public:
 	GLFWWindowsWindow(const FWindowConfig& inWindowConfig);
 
@@ -59,20 +34,6 @@ public:
 		WindowsData.EventCallback = inCallback;
 	}
 
-private:
-	/**
-	* Initializes and creates the window with the configuration passed in
-	* @param inWindowConfig - the configuration of the window to be created
-	*/
-	virtual void Init(const FWindowConfig& inWindowConfig);
-
-	virtual void Shutdown();
-
-	/**
-	* Called when an event happens
-	* @param inEvent - the event to be handled/pushed
-	*/
-	/*void OnInputEvent(WindowEvent& inEvent);*/
 public:
 	virtual uint32 GetWidth() const override { return WindowsData.Width; };
 
@@ -87,4 +48,45 @@ public:
 	virtual void* GetNativeWindowInstanceHandle() const override { return GetModuleHandle(0); };
 
 	virtual void* GetGLFWNativeHandle() const override { return WindowPtr; }
+
+private:
+	/**
+	* Initializes and creates the window with the configuration passed in
+	* @param inWindowConfig - the configuration of the window to be created
+	*/
+	virtual void Init(const FWindowConfig& inWindowConfig);
+
+	virtual void Shutdown();
+
+	/**
+	* Called when an event happens
+	* @param inEvent - the event to be handled/pushed
+	*/
+	/*void OnInputEvent(WindowEvent& inEvent);*/
+
+private:
+	/**
+	* All data a windows window would need or have
+	* Helper Structure for storing window data 
+	*/
+	struct VRIXIC_API HWindowData
+	{
+	public:
+		std::string Name;
+		uint32 Width, Height;
+
+		uint16 MouseX, MouseY;
+
+		EventCallbackFunc EventCallback;
+
+	public:
+		HWindowData()
+			: Width(0), Height(0), MouseX(0), MouseY(0) { }
+	};
+
+	HWindowData WindowsData;
+
+	GLFWwindow* WindowPtr;
+
+	HWND WindowHandle;
 };

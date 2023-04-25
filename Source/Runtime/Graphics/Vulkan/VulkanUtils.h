@@ -33,16 +33,18 @@
 
 namespace VulkanUtils
 {
-	/* Descriptions for vulkan pipeline, and create infos... */
+	/** Descriptions for vulkan pipeline, and create infos... */
 	namespace Descriptions
 	{
-		struct VRIXIC_API VertexAttribute
+		struct VRIXIC_API FVertexAttribute
 		{
+        public:
 			uint32 Location;
 			uint32 Binding;
 			uint32 Format;
 			uint32 Offset;
 
+        public:
 			void WriteTo(VkVertexInputAttributeDescription& outVertexAttribute) const
 			{
 				outVertexAttribute.location = Location;
@@ -52,12 +54,14 @@ namespace VulkanUtils
 			}
 		};
 
-		struct VRIXIC_API VertexBinding
+		struct VRIXIC_API FVertexBinding
 		{
+        public:
 			uint32 Binding;
 			uint32 Stride;
 			uint32 InputRate;
 
+        public:
 			void WriteTo(VkVertexInputBindingDescription& outVertexBinding) const
 			{
 				outVertexBinding.binding = Binding;
@@ -66,8 +70,9 @@ namespace VulkanUtils
 			}
 		};
 
-		struct VRIXIC_API Rasterizer
+		struct VRIXIC_API FRasterizer
 		{
+        public:
 			uint32 RasterizerDiscardEnable;
 			uint32 PolygonMode;
 			float LineWidth;
@@ -79,6 +84,7 @@ namespace VulkanUtils
 			float DepthBiasConstantFactor;
 			float DepthBiasSlopeFactor;
 
+        public:
 			void WriteTo(VkPipelineRasterizationStateCreateInfo& outRasterizer) const
 			{
 				outRasterizer.rasterizerDiscardEnable = RasterizerDiscardEnable;
@@ -94,11 +100,13 @@ namespace VulkanUtils
 			}
 		};
 
-		struct VRIXIC_API AttachmentReference
+		struct VRIXIC_API FAttachmentReference
 		{
+        public:
 			uint32 Attachement;
 			uint32 Layout;
 
+        public:
 			void WriteTo(VkAttachmentReference& outAttachmentReference) const
 			{
 				outAttachmentReference.attachment = Attachement;
@@ -106,8 +114,9 @@ namespace VulkanUtils
 			}
 		};
 
-		struct VRIXIC_API AttachmentDescription
+		struct VRIXIC_API FAttachmentDescription
 		{
+        public:
 			uint32 Format;
 			uint32 Samples;
 			uint32 LoadOp;
@@ -117,6 +126,7 @@ namespace VulkanUtils
 			uint32 InitialLayout;
 			uint32 FinalLayout;
 
+        public:
 			void WriteTo(VkAttachmentDescription& outAttachmentDescription) const
 			{
 				outAttachmentDescription.format = (VkFormat)Format;
@@ -130,13 +140,15 @@ namespace VulkanUtils
 			}
 		};
 
-		struct VRIXIC_API DescriptorSetLayoutBinding
+		struct VRIXIC_API FDescriptorSetLayoutBinding
 		{
+        public:
 			uint32 Binding;
 			uint32 DescriptorType;
 			uint32 DescriptorCount;
 			uint32 StageFlags;
 
+        public:
 			void WriteTo(VkDescriptorSetLayoutBinding& outDescriptorSetLayoutBinding) const
 			{
 				outDescriptorSetLayoutBinding.binding = Binding;
@@ -146,12 +158,14 @@ namespace VulkanUtils
 			}
 		};
 
-		struct VRIXIC_API DescriptorImageInfo
+		struct VRIXIC_API FDescriptorImageInfo
 		{
+        public:
 			VkSampler Sampler;
 			VkImageView ImageView;
 			VkImageLayout ImageLayout;
 
+        public:
 			void WriteTo(VkDescriptorImageInfo& outDescriptorImageInfo) const
 			{
 				outDescriptorImageInfo.sampler = Sampler;
@@ -160,14 +174,16 @@ namespace VulkanUtils
 			}
 		};
 
-		struct VRIXIC_API WriteDescriptorSet
+		struct VRIXIC_API FWriteDescriptorSet
 		{
+        public:
 			uint32 DstBinding;
 			VkDescriptorSet DstSet;
 			uint32 DstArrayElement;
 			uint32 DescriptorCount;
 			VkDescriptorType DescriptorType;
 
+        public:
 			void WriteTo(VkWriteDescriptorSet& outWriteDescriptorSet) const
 			{
 				outWriteDescriptorSet.dstBinding = DstBinding;
@@ -178,18 +194,21 @@ namespace VulkanUtils
 			}
 		};
 
-		struct VRIXIC_API DescriptorSetLayoutCreateInfo
+		struct VRIXIC_API FDescriptorSetLayoutCreateInfo
 		{
+        public:
 			VkDescriptorSetLayoutCreateFlags Flags;
 
+        public:
 			void WriteTo(VkDescriptorSetLayoutCreateInfo& outDescriptorSetLayoutCreateInfo) const
 			{
 				outDescriptorSetLayoutCreateInfo.flags = Flags;
 			}
 		};
 
-		struct VRIXIC_API VulkanBufferCreateInfo
+		struct VRIXIC_API FVulkanBufferCreateInfo
 		{
+        public:
 			VkBufferUsageFlags BufferUsageFlags;
 			VkMemoryPropertyFlags MemoryPropertyFlags;
 			VkDeviceSize DeviceSize;

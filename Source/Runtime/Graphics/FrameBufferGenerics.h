@@ -19,33 +19,33 @@ enum class EAttachmentType
 /**
 * Helper for a frame buffer attachment
 */
-struct VRIXIC_API FrameBufferAttachment
+struct VRIXIC_API FFrameBufferAttachment
 {
 public:
-    // The ouput texture attachment for the frame buffer 
+    /** The ouput texture attachment for the frame buffer */
     Texture* Attachment;
 
 public:
-    FrameBufferAttachment()
+    FFrameBufferAttachment()
         : Attachment(nullptr) { }
 };
 
 /**
 * Contains information for a frame buffer creation 
 */
-struct VRIXIC_API FrameBufferConfig
+struct VRIXIC_API FFrameBufferConfig
 {
 public:
-    // The render pass this frame buffer is associated with 
+    /** The render pass this frame buffer is associated with */
     const IRenderPass* RenderPass;
 
-    // The resolution of the frame buffer 
-    Extent2D Resolution;
+    /** The resolution of the frame buffer */
+    FExtent2D Resolution;
 
-    // all of the attachments for the frame buffer
-    std::vector<FrameBufferAttachment> Attachments;
+    /** all of the attachments for the frame buffer */
+    std::vector<FFrameBufferAttachment> Attachments;
 
 public:
-    FrameBufferConfig()
+    FFrameBufferConfig()
         : RenderPass(nullptr), Resolution() { }
 };

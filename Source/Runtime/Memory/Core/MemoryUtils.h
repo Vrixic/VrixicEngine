@@ -14,6 +14,8 @@
 */
 struct MemoryUtils
 {
+public:
+
 	template<typename T>
 	inline static T* AlignPointer(T* inPtr, uint64 inAlignment)
 	{

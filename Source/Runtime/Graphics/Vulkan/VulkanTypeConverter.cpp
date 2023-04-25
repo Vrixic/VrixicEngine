@@ -248,12 +248,12 @@ EPixelFormat VulkanTypeConverter::Convert(VkFormat inFormat)
 
 VkCommandBufferLevel VulkanTypeConverter::ConvertCmdBuffFlagsToVk(uint32 inFlags)
 {
-    if (inFlags & CommandBufferLevelFlags::Primary)
+    if (inFlags & FCommandBufferLevelFlags::Primary)
     {
         return VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     }
 
-    if (inFlags & CommandBufferLevelFlags::Secondary)
+    if (inFlags & FCommandBufferLevelFlags::Secondary)
     {
         return VK_COMMAND_BUFFER_LEVEL_SECONDARY;
     }
@@ -287,22 +287,22 @@ VkMemoryPropertyFlags VulkanTypeConverter::ConvertMemoryFlagsToVk(uint32 inMemor
 {
     VkMemoryPropertyFlags Flags = (VkMemoryPropertyFlags)0;
 
-    if (inMemoryFlags & MemoryFlags::DeviceLocal)
+    if (inMemoryFlags & FMemoryFlags::DeviceLocal)
     {
         Flags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     }
 
-    if (inMemoryFlags & MemoryFlags::HostCached)
+    if (inMemoryFlags & FMemoryFlags::HostCached)
     {
         Flags |= VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
     }
 
-    if (inMemoryFlags & MemoryFlags::HostCoherent)
+    if (inMemoryFlags & FMemoryFlags::HostCoherent)
     {
         Flags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     }
 
-    if (inMemoryFlags & MemoryFlags::HostVisible)
+    if (inMemoryFlags & FMemoryFlags::HostVisible)
     {
         Flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
     }
@@ -348,7 +348,7 @@ VkImageLayout VulkanTypeConverter::ConvertTextureLayoutToVk(ETextureLayout inLay
     return (VkImageLayout)0;
 }
 
-VkAttachmentDescription VulkanTypeConverter::ConvertAttachmentDescToVk(const AttachmentDescription& inDesc, VkSampleCountFlagBits inSamples)
+VkAttachmentDescription VulkanTypeConverter::ConvertAttachmentDescToVk(const FAttachmentDescription& inDesc, VkSampleCountFlagBits inSamples)
 {
     VkAttachmentDescription Desc;
     Desc.flags = 0;
@@ -394,33 +394,33 @@ VkAttachmentStoreOp VulkanTypeConverter::ConvertAttachmentStoreOpToVk(const EAtt
     return (VkAttachmentStoreOp)0;
 }
 
-VkDescriptorType VulkanTypeConverter::ConvertPipelineBDToVk(const PipelineBindingDescriptor inDesc)
+VkDescriptorType VulkanTypeConverter::ConvertPipelineBDToVk(const FPipelineBindingDescriptor inDesc)
 {
     switch (inDesc.ResourceType)
     {
     case EResourceType::Buffer:
-        if (inDesc.BindFlags & ResourceBindFlags::ConstantBuffer)
+        if (inDesc.BindFlags & FResourceBindFlags::ConstantBuffer)
         {
-            if (inDesc.BindFlags & ResourceBindFlags::TexelBuffer)
+            if (inDesc.BindFlags & FResourceBindFlags::TexelBuffer)
             {
                 return VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
             }
 
-            if (inDesc.BindFlags & ResourceBindFlags::Dynamic)
+            if (inDesc.BindFlags & FResourceBindFlags::Dynamic)
             {
                 return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
             }
             return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         }
 
-        if (inDesc.BindFlags & (ResourceBindFlags::StorageBuffer))
+        if (inDesc.BindFlags & (FResourceBindFlags::StorageBuffer))
         {
-            if (inDesc.BindFlags & ResourceBindFlags::TexelBuffer)
+            if (inDesc.BindFlags & FResourceBindFlags::TexelBuffer)
             {
                 return VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
             }
             
-            if (inDesc.BindFlags & ResourceBindFlags::Dynamic)
+            if (inDesc.BindFlags & FResourceBindFlags::Dynamic)
             {
                 return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
             }
@@ -446,12 +446,12 @@ VkShaderStageFlags VulkanTypeConverter::ConvertShaderFlagsToVk(uint32 inFlags)
 {
     VkShaderStageFlags Flags = 0;
 
-    if (inFlags & ShaderStageFlags::VertexStage)            { Flags |= VK_SHADER_STAGE_VERTEX_BIT; }
-    if (inFlags & ShaderStageFlags::TessControlStage)       { Flags |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT; }
-    if (inFlags & ShaderStageFlags::TessEvaluationStage)    { Flags |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT; }
-    if (inFlags & ShaderStageFlags::GeometryStage)          { Flags |= VK_SHADER_STAGE_GEOMETRY_BIT; }
-    if (inFlags & ShaderStageFlags::FragmentStage)          { Flags |= VK_SHADER_STAGE_FRAGMENT_BIT; }
-    if (inFlags & ShaderStageFlags::ComputeStage)           { Flags |= VK_SHADER_STAGE_COMPUTE_BIT; }
+    if (inFlags & FShaderStageFlags::VertexStage)            { Flags |= VK_SHADER_STAGE_VERTEX_BIT; }
+    if (inFlags & FShaderStageFlags::TessControlStage)       { Flags |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT; }
+    if (inFlags & FShaderStageFlags::TessEvaluationStage)    { Flags |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT; }
+    if (inFlags & FShaderStageFlags::GeometryStage)          { Flags |= VK_SHADER_STAGE_GEOMETRY_BIT; }
+    if (inFlags & FShaderStageFlags::FragmentStage)          { Flags |= VK_SHADER_STAGE_FRAGMENT_BIT; }
+    if (inFlags & FShaderStageFlags::ComputeStage)           { Flags |= VK_SHADER_STAGE_COMPUTE_BIT; }
 
     return Flags;
 }
@@ -478,7 +478,7 @@ VkPrimitiveTopology VulkanTypeConverter::ConvertTopologyToVk(EPrimitiveTopology 
     return (VkPrimitiveTopology)0;
 }
 
-VkViewport VulkanTypeConverter::ConvertViewportToVk(const RenderViewport& inViewport)
+VkViewport VulkanTypeConverter::ConvertViewportToVk(const FRenderViewport& inViewport)
 {
     VkViewport Viewport;
     Viewport.x = inViewport.X;
@@ -493,7 +493,7 @@ VkViewport VulkanTypeConverter::ConvertViewportToVk(const RenderViewport& inView
     return Viewport;
 }
 
-VkRect2D VulkanTypeConverter::ConvertScissorToVk(const RenderScissor& inViewport)
+VkRect2D VulkanTypeConverter::ConvertScissorToVk(const FRenderScissor& inViewport)
 {
     VkRect2D Rect;
 
@@ -651,10 +651,10 @@ VkColorComponentFlags VulkanTypeConverter::ConvertColorComponentMaskToVk(uint8 i
 {
     VkColorComponentFlags Flags = 0;
 
-    if (inColorMask & ColorComponentFlags::R) { Flags |= VK_COLOR_COMPONENT_R_BIT; }
-    if (inColorMask & ColorComponentFlags::G) { Flags |= VK_COLOR_COMPONENT_G_BIT; }
-    if (inColorMask & ColorComponentFlags::B) { Flags |= VK_COLOR_COMPONENT_B_BIT; }
-    if (inColorMask & ColorComponentFlags::A) { Flags |= VK_COLOR_COMPONENT_A_BIT; }
+    if (inColorMask & FColorComponentFlags::R) { Flags |= VK_COLOR_COMPONENT_R_BIT; }
+    if (inColorMask & FColorComponentFlags::G) { Flags |= VK_COLOR_COMPONENT_G_BIT; }
+    if (inColorMask & FColorComponentFlags::B) { Flags |= VK_COLOR_COMPONENT_B_BIT; }
+    if (inColorMask & FColorComponentFlags::A) { Flags |= VK_COLOR_COMPONENT_A_BIT; }
 
     return Flags;
 }
@@ -728,17 +728,17 @@ VkImageUsageFlags VulkanTypeConverter::ConvertTextureUsageFlagsToVk(uint32 inFla
 {
     VkImageUsageFlags Flags = 0;
 
-    if (inFlags & ResourceBindFlags::ColorAttachment)
+    if (inFlags & FResourceBindFlags::ColorAttachment)
     {
         Flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     }
 
-    if (inFlags & ResourceBindFlags::DepthStencilAttachment)
+    if (inFlags & FResourceBindFlags::DepthStencilAttachment)
     {
         Flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     }
 
-    if (inFlags & ResourceBindFlags::StorageBuffer)
+    if (inFlags & FResourceBindFlags::StorageBuffer)
     {
         Flags |= VK_IMAGE_USAGE_STORAGE_BIT;
     }
@@ -769,11 +769,11 @@ VkImageViewType VulkanTypeConverter::ConvertTextureViewTypeToVk(ETextureType inT
 VkAccessFlags VulkanTypeConverter::ConvertSubpassAccessFlagsToVk(uint32 inFlags)
 {
     VkAccessFlags AccessFlags = 0;
-    if(inFlags & SubpassAssessFlags::ColorAttachmentRead)
+    if(inFlags & FSubpassAssessFlags::ColorAttachmentRead)
     {
         AccessFlags |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
     }
-    if (inFlags & SubpassAssessFlags::ColorAttachmentWrite)
+    if (inFlags & FSubpassAssessFlags::ColorAttachmentWrite)
     {
         AccessFlags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     }
@@ -781,7 +781,7 @@ VkAccessFlags VulkanTypeConverter::ConvertSubpassAccessFlagsToVk(uint32 inFlags)
     return AccessFlags;
 }
 
-VkSubpassDependency VulkanTypeConverter::ConvertSubpassDependencyDescToVk(const SubpassDependencyDescription& inDesc)
+VkSubpassDependency VulkanTypeConverter::ConvertSubpassDependencyDescToVk(const FSubpassDependencyDescription& inDesc)
 {
     // Sub pass Dependency
     VkSubpassDependency SubpassDependency = { };

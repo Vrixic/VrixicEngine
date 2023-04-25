@@ -10,23 +10,23 @@
 /**
 * Holds the description of a buffer of any type
 */
-struct VRIXIC_API BufferConfig
+struct VRIXIC_API FBufferConfig
 {
 public:
-    // The size of the buffer in bytes.
+    /** The size of the buffer in bytes. */
     uint64 Size;
 
-    // this are flags that specify the usage of the buffer BufferUsageFlags::Index, etc..
+    /** this are flags that specify the usage of the buffer BufferUsageFlags::Index, etc.. */
     EBufferUsageFlags UsageFlags;
 
-    // this flags are for the memory that the buffer will occupy
+    /** this flags are for the memory that the buffer will occupy */
     uint32 MemoryFlags;
 
-    // Initial data which the buffer will be initialized with (raw pointer to the data)
+    /** Initial data which the buffer will be initialized with (raw pointer to the data) */
     const void* InitialData;
 
 public:
-    BufferConfig()
+    FBufferConfig()
     {
         Size = 0;
         MemoryFlags = 0;
@@ -40,9 +40,6 @@ public:
 */
 class VRIXIC_API Buffer : RenderResource
 {
-protected:
-    BufferConfig BufferConfiguration;
-
 public:
     /**
     * The usage flags of this buffer 
@@ -55,7 +52,7 @@ public:
     /**
     * @returns BufferConfig& a info struct of the buffer configuration, can contain things like size and other flags
     */
-    virtual const BufferConfig& GetBufferConfig() const
+    virtual const FBufferConfig& GetBufferConfig() const
     {
         return BufferConfiguration;
     }
@@ -64,4 +61,7 @@ public:
     * @returns EResourceType the resource type of this object 
     */
     virtual inline EResourceType GetResourceType() const override final;
+
+protected:
+    FBufferConfig BufferConfiguration;
 };

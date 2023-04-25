@@ -9,14 +9,14 @@
 /**
 * Sempahore creation configuration
 */
-struct VRIXIC_API SemaphoreConfig
+struct VRIXIC_API FSemaphoreConfig
 {
 public:
-    // Number of semaphores to create 
+    /** Number of semaphores to create */ 
     uint32 NumSemaphores;
 
 public:
-    SemaphoreConfig(uint32 inNumSemaphores)
+    FSemaphoreConfig(uint32 inNumSemaphores)
         : NumSemaphores(inNumSemaphores) { }
 };
 

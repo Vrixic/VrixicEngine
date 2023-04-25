@@ -14,22 +14,6 @@
 */
 class MemoryPool
 {
-private:
-	/* Pointer to the memory */
-	char* MemoryPtr;
-
-	/* size of the memory pool */
-	uint32 PoolSize;
-
-	/* locates the next memory block which can be given */
-	uint32 MemoryUsed;
-
-	/* total amount of memory being used */
-	uint32 MemoryUsedTotal;
-
-	/* Count of all allocations made to this Pool */
-	uint32 MemoryAllocationsCount;
-
 public:
 	MemoryPool(uint32 inSizeInBytes)
 		: MemoryUsed(0), MemoryUsedTotal(0), MemoryAllocationsCount(0)
@@ -60,9 +44,7 @@ public:
 		uint32 RequestedSize = sizeof(T) * inNumCount;
 
 		// Check if we can allocate enough memory
-#if _DEBUG | _DEBUG_EDITOR
-		ASSERT((MemoryUsed + RequestedSize) < PoolSize);
-#endif
+		VE_ASSERT((MemoryUsed + RequestedSize) < PoolSize);
 
 		char* PtrToMem = MemoryPtr + MemoryUsed;
 		T* MemPtr = (new (PtrToMem) T()); // placement-new, since memory is already allocated
@@ -85,9 +67,7 @@ public:
 	T* Malloc(uint32 inSizeInBytes)
 	{
 		// Check if we can allocate enough memory
-#if _DEBUG | _DEBUG_EDITOR
-		ASSERT((MemoryUsed + inSizeInBytes) < PoolSize);
-#endif
+		VE_ASSERT((MemoryUsed + inSizeInBytes) < PoolSize);
 
 		char* MemPtr = MemoryPtr + MemoryUsed;
 		MemoryUsed += inSizeInBytes;
@@ -109,9 +89,7 @@ public:
 		uint32 LastPoolSize = PoolSize;
 		PoolSize = inSizeInBytes;
 
-#if _DEBUG | _DEBUG_EDITOR
-		ASSERT(PoolSize > LastPoolSize);
-#endif // _DEBUG | _EDITOR
+		VE_ASSERT(PoolSize > LastPoolSize);
 
 		char* NewMemoryPtr = new char[PoolSize];
 		memcpy(NewMemoryPtr, MemoryPtr, MemoryUsed);
@@ -135,9 +113,7 @@ public:
 		uint32 LastPoolSize = PoolSize;
 		PoolSize = inSizeInBytes;
 
-#if _DEBUG | _DEBUG_EDITOR
-		ASSERT(PoolSize > LastPoolSize);
-#endif // _DEBUG | _EDITOR
+		VE_ASSERT(PoolSize > LastPoolSize);
 
 		char* NewMemoryPtr = new char[PoolSize];
 		memcpy(NewMemoryPtr, MemoryPtr, MemoryUsed);
@@ -207,9 +183,8 @@ public:
 		// Determine the shift, and store it for later when freeing
 		// (This works for up to 256-byte alignment.)
 		intptr Shift = AlignedPtr - (uint8*)MemoryPtr;
-#if _DEBUG || _DEBUG_EDITOR
-		ASSERT(Shift > 0 && Shift <= 256);
-#endif
+
+		VE_ASSERT(Shift > 0 && Shift <= 256);
 
 		AlignedPtr[-1] = static_cast<uint8>(Shift & 0xff);
 
@@ -242,5 +217,21 @@ public:
 	{
 		return MemoryUsed;
 	}
+
+private:
+    /** Pointer to the memory */
+    char* MemoryPtr;
+
+    /** size of the memory pool */
+    uint32 PoolSize;
+
+    /** locates the next memory block which can be given */
+    uint32 MemoryUsed;
+
+    /** total amount of memory being used */
+    uint32 MemoryUsedTotal;
+
+    /** Count of all allocations made to this Pool */
+    uint32 MemoryAllocationsCount;
 };
 

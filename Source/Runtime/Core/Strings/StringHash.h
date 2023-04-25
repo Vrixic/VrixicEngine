@@ -16,11 +16,6 @@
 */
 class VRIXIC_API StringHash
 {
-private:
-	static TMap<uint32, const char*> StringMap;
-
-	uint32 StringId; // Id to the current string 
-
 public:
 	StringHash(const char* inString);
 
@@ -41,5 +36,11 @@ public:
 	{
 		return GetStringFromHash(StringId);
 	}
+
+private:
+    static TMap<uint32, const char*> StringMap;
+
+    /** Id to the current string */
+    uint32 StringId; 
 };
 

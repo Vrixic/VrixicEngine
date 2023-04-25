@@ -522,7 +522,7 @@ EPixelFormat VulkanSurface::GetColorFormat() const
 /* -----------------------            Swapchain          ------------------------- */
 /* ------------------------------------------------------------------------------- */
 
-VulkanSwapChain::VulkanSwapChain(VulkanDevice* inDevice, VulkanSurface* inSurface, const SwapChainConfig& inConfig)
+VulkanSwapChain::VulkanSwapChain(VulkanDevice* inDevice, VulkanSurface* inSurface, const FSwapChainConfig& inConfig)
     : Device(inDevice), SurfacePtr(inSurface), SwapChainHandle(VK_NULL_HANDLE), ImageWidth(0), ImageHeight(0), ImageCount(0)
 {
     /* Get the function pointers */
@@ -558,7 +558,7 @@ void VulkanSwapChain::Present(ICommandQueue* inSubmissionQueue, ISemaphore* inWa
     QueuePresent(QueuePtr, SemaphorePtr->GetSemaphoresHandle(), inImageIndex);
 }
 
-bool VulkanSwapChain::ResizeSwapChain(const Extent2D& inNewResolution)
+bool VulkanSwapChain::ResizeSwapChain(const FExtent2D& inNewResolution)
 {
     // Firstly check if there is no change 
     if (ImageWidth == inNewResolution.Width && ImageHeight == inNewResolution.Height)
@@ -601,7 +601,7 @@ VkResult VulkanSwapChain::QueuePresent(VulkanQueue* queue, VkSemaphore* waitSema
     return fpQueuePresentKHR(queue->GetQueueHandle(), &PresentInfo);
 }
 
-void VulkanSwapChain::Create(const SwapChainConfig& inConfig, VkSwapchainKHR inOldSwapChain)
+void VulkanSwapChain::Create(const FSwapChainConfig& inConfig, VkSwapchainKHR inOldSwapChain)
 {
     // Get physical device surface properties and formats
     VkSurfaceCapabilitiesKHR SurfaceCapabilities;
@@ -617,7 +617,7 @@ void VulkanSwapChain::Create(const SwapChainConfig& inConfig, VkSwapchainKHR inO
     CreateSwapChain(inOldSwapChain, inConfig.ScreenResolution, inConfig.bEnableVSync);
 }
 
-void VulkanSwapChain::CreateSwapChain(VkSwapchainKHR inOldSwapChain, const Extent2D inResolution, bool bEnableVSync)
+void VulkanSwapChain::CreateSwapChain(VkSwapchainKHR inOldSwapChain, const FExtent2D inResolution, bool bEnableVSync)
 {
     VE_ASSERT(SurfacePtr != nullptr, VE_TEXT("[VulkanSwapChain]: cannot select resolution if surface is not valid!!"));
 

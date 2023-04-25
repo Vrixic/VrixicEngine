@@ -17,6 +17,7 @@
 */
 struct VRIXIC_API FWindowConfig
 {
+public:
 	std::string Name;
 
 	uint32 Width;

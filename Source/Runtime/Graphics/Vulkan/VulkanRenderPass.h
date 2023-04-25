@@ -13,17 +13,6 @@
 */
 class VRIXIC_API VulkanRenderPass : public IRenderPass
 {
-private:
-	VulkanDevice* Device;
-	VkRenderPass RenderPassHandle;
-
-	VulkanRenderLayout RenderLayout;
-
-    VkSampleCountFlagBits SampleCountFlagBits;
-    uint32 DepthStencilAttachmentIndex;
-
-    uint32 NumColorAttachments;
-
 public:	
 	/**
 	* @param inRenderLayout - the render layout used to create the render pass 
@@ -38,7 +27,7 @@ public:
     *
     * @remarks Creates the RenderPass if bCreateDefault is true (Default = true)
     */
-	VulkanRenderPass(VulkanDevice* inDevice, VulkanRenderLayout& inRenderLayout, const RenderPassConfig& inRenderPassConfig);
+	VulkanRenderPass(VulkanDevice* inDevice, VulkanRenderLayout& inRenderLayout, const FRenderPassConfig& inRenderPassConfig);
 
 	~VulkanRenderPass();
 
@@ -90,5 +79,16 @@ public:
     {
         return NumColorAttachments;
     }
+
+private:
+    VulkanDevice* Device;
+    VkRenderPass RenderPassHandle;
+
+    VulkanRenderLayout RenderLayout;
+
+    VkSampleCountFlagBits SampleCountFlagBits;
+    uint32 DepthStencilAttachmentIndex;
+
+    uint32 NumColorAttachments;
 };
 

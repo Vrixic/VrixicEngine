@@ -13,9 +13,6 @@
 */
 class VRIXIC_API MouseMovedEvent : public WindowEvent
 {
-private:
-	uint16 MouseX, MouseY;
-
 public:
 	MouseMovedEvent(uint16 inMouseX, uint16 inMouseY)
 		: MouseX(inMouseX), MouseY(inMouseY) { }
@@ -32,6 +29,9 @@ public:
 
 	WINDOW_EVENT_CLASS_TYPE(EWindowEventType::MouseMoved)
 	WINDOW_EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
+
+private:
+	uint16 MouseX, MouseY;
 };
 
 /**
@@ -40,9 +40,6 @@ public:
 */
 class VRIXIC_API MouseScrolledEvent : public WindowEvent
 {
-private:
-	float OffsetX, OffsetY;
-
 public:
 	MouseScrolledEvent(float inOffsetX, float inOffsetY)
 		: OffsetX(inOffsetX), OffsetY(inOffsetY) { }
@@ -59,6 +56,9 @@ public:
 
 	WINDOW_EVENT_CLASS_TYPE(EWindowEventType::MouseScrolled)
 	WINDOW_EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
+
+private:
+	float OffsetX, OffsetY;
 };
 
 /**
@@ -66,13 +66,6 @@ public:
 */
 class VRIXIC_API MouseButtonEvent : public WindowEvent
 {
-protected:
-	uint32 Button;
-	uint16 MouseX, MouseY;
-
-	MouseButtonEvent(uint32 inButton, uint16 inMouseX, uint16 inMouseY)
-		: Button(inButton), MouseX(inMouseX), MouseY(inMouseY) { }
-
 public:
 	inline uint32 GetMouseButton() const { return Button; }
 
@@ -80,6 +73,13 @@ public:
 	inline uint16 GetMouseY() const { return MouseY; };
 
 	WINDOW_EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
+
+protected:
+	uint32 Button;
+	uint16 MouseX, MouseY;
+
+	MouseButtonEvent(uint32 inButton, uint16 inMouseX, uint16 inMouseY)
+		: Button(inButton), MouseX(inMouseX), MouseY(inMouseY) { }
 };
 
 /**

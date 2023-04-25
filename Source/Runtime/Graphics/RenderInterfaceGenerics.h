@@ -26,7 +26,7 @@ enum class ERenderInterface
 /**
 * These are features that are available on a physical device (GPU) -> Ex. vulkan -> VkPhysicalDeviceFeatures
 */
-struct VRIXIC_API PhysicalDeviceFeatures
+struct VRIXIC_API FPhysicalDeviceFeatures
 {
     bool TessellationShader             = false;
     bool GeometryShader                 = false;
@@ -38,59 +38,73 @@ struct VRIXIC_API PhysicalDeviceFeatures
 /**
 * Information about the renderer
 */
-struct VRIXIC_API RendererInfo
+struct VRIXIC_API FRendererInfo
 {
-    // Name of the renderer interface, ex: vulkan
+public:
+    /** Name of the renderer interface, ex: vulkan */
     std::string Name;
 
-    // device vendor name, ex: NVIDIA
+    /** device vendor name, ex: NVIDIA */
     std::string DeviceVendorName;
 
-    // device name it self, the GPU, ex: Geforce RTX....
+    /** device name it self, the GPU, ex: Geforce RTX.... */
     std::string DeviceName;
+
+public:
+    FRendererInfo() { }
 };
 
 /**
 * Details about the application instance, for instance: VkInstance needs to know about the version, name, etc..
 */
-struct VRIXIC_API ApplicationInstanceInfo
+struct VRIXIC_API FApplicationInstanceInfo
 {
 public:
-    // The name of the application, ex: Sandbox Project, for game it could be game name
+    /** The name of the application, ex: Sandbox Project, for game it could be game name */
     std::string ApplicationName;
 
-    // The version of the application
+    /** The version of the application */
     uint32 ApplicationVersion;
 
-    // Engine name, for this it'll be "Vrixic Engine" -> Do not set
+    /** Engine name, for this it'll be "Vrixic Engine" -> Do not set */
     std::string EngineName;
-
-    // The engine version -> Do not set as it is not used as of right now (HARD SET)
+     
+    /** The engine version -> Do not set as it is not used as of right now (HARD SET) */
     uint32 EngineVersion;
+
+public:
+    FApplicationInstanceInfo()
+        : ApplicationVersion(UINT32_MAX), EngineVersion(UINT32_MAX) { }
 };
 
 /**
 * Consists of things you can set for vulkan renderer creation
 */
-struct VRIXIC_API VulkanRendererConfig
+struct VRIXIC_API FVulkanRendererConfig
 {
 public:
-    // The application instance info used to create instance 
-    ApplicationInstanceInfo AppInstanceInfo;
+    /** The application instance info used to create instance */
+    FApplicationInstanceInfo AppInstanceInfo;
 
-    // The layers to enable when creating a new vulkan instance 
+    /** The layers to enable when creating a new vulkan instance */
     std::vector<std::string> EnabledInstanceLayers;
 
-    // The extensions to enable when creating a new vulkan instance 
+    /** The extensions to enable when creating a new vulkan instance */
     std::vector<std::string> EnabledInstanceExtensions;
 
-    // All of the enabled extensions on the device in use by the renderer 
-    // ex: for vulkan you can have VK_EXT_multiviewport, etc...
+    /** 
+    * All of the enabled extensions on the device in use by the renderer 
+    * ex: for vulkan you can have VK_EXT_multiviewport, etc...
+    */
     const char** EnabledDeviceExtensions;
 
-    // count of all the enabled device extensions
+    /** count of all the enabled device extensions */
     uint32 EnabledDeviceExtensionCount;
 
-    // contains all of the enabled device features for example: multiViewporting
-    PhysicalDeviceFeatures EnabledDeviceFeatures;
+    /** contains all of the enabled device features for example: multiViewporting */
+    FPhysicalDeviceFeatures EnabledDeviceFeatures;
+
+public:
+    FVulkanRendererConfig()
+        : EnabledDeviceExtensions(nullptr), EnabledDeviceExtensionCount(0) { }
 };

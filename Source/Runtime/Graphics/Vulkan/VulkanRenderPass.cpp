@@ -13,8 +13,8 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, VulkanRenderLayout& ren
 	Create(inSubpassDependencies);
 }
 
-VulkanRenderPass::VulkanRenderPass(VulkanDevice* inDevice, VulkanRenderLayout& inRenderLayout, const RenderPassConfig& inRenderPassConfig)
-    : Device(inDevice), RenderLayout(inRenderLayout), RenderPassHandle(VK_NULL_HANDLE)
+VulkanRenderPass::VulkanRenderPass(VulkanDevice* inDevice, VulkanRenderLayout& inRenderLayout, const FRenderPassConfig& inRenderPassConfig)
+    : Device(inDevice), RenderLayout(inRenderLayout), RenderPassHandle(VK_NULL_HANDLE), DepthStencilAttachmentIndex(UINT32_MAX)
 {
     /*uint32*/ NumColorAttachments = inRenderPassConfig.GetNumColorAttachments();
     uint32 NumAttachments = NumColorAttachments;

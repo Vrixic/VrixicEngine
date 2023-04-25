@@ -27,18 +27,6 @@
 */
 class VRIXIC_API VulkanDeviceMemory
 {
-private:
-	friend class VulkanDeviceMemoryAllocater;
-
-	const VulkanDevice* Device;
-	VkDeviceMemory MemoryHandle;
-	VkDeviceSize Size;
-
-	/* Used to check what memory type this device memory was made from */
-	uint32 MemoryTypeIndex;
-
-	void* MappedDataPtr;
-
 public:
 	VulkanDeviceMemory(const VulkanDevice* inDevice)
 		: Device(inDevice), MemoryHandle(VK_NULL_HANDLE), Size(0), MappedDataPtr(nullptr), MemoryTypeIndex(0) { }
@@ -163,6 +151,18 @@ public:
 	{
 		return Size;
 	}
+
+private:
+    friend class VulkanDeviceMemoryAllocater;
+
+    const VulkanDevice* Device;
+    VkDeviceMemory MemoryHandle;
+    VkDeviceSize Size;
+
+    /** Used to check what memory type this device memory was made from */
+    uint32 MemoryTypeIndex;
+
+    void* MappedDataPtr;
 };
 
 /**
@@ -172,13 +172,6 @@ public:
 */
 class VRIXIC_API VulkanDeviceMemoryAllocater
 {
-private:
-	friend class VulkanMemoryHeap;
-
-	VulkanDevice* Device;
-
-	std::vector<VulkanDeviceMemory*> MemoryAllocations;
-
 public:
 	VulkanDeviceMemoryAllocater(VulkanDevice* inDevice)
 		: Device(inDevice) { }
@@ -276,6 +269,13 @@ private:
 	{
 		return MemoryAllocations[inId];
 	}
+
+private:
+    friend class VulkanMemoryHeap;
+
+    VulkanDevice* Device;
+
+    std::vector<VulkanDeviceMemory*> MemoryAllocations;
 };
 
 /**
@@ -286,24 +286,8 @@ private:
 */
 class VRIXIC_API VulkanBuffer : public Buffer
 {
-private:
-	friend class VulkanMemoryHeap;
-
-	const VulkanDevice* Device;
-	VkBuffer BufferHandle;
-
-	// A ID for the device memory
-	int32 DeviceMemoryID;
-
-	// The device memory that the ID refers to if valid
-	VulkanDeviceMemory* DeviceMemory;
-
-	uint64 Offset;
-
-	VkDeviceSize Alignment;
-
 public:
-	VulkanBuffer(const VulkanDevice* inDevice, const BufferConfig& inBufferConfiguration, int32 inDeviceMemoryID, uint64 inOffset)
+	VulkanBuffer(const VulkanDevice* inDevice, const FBufferConfig& inBufferConfiguration, int32 inDeviceMemoryID, uint64 inOffset)
 		: Device(inDevice), BufferHandle(VK_NULL_HANDLE), DeviceMemoryID(inDeviceMemoryID),
 		Alignment(0), Offset(inOffset), DeviceMemory(nullptr) 
     { 
@@ -327,7 +311,7 @@ public:
 	VulkanBuffer operator=(const VulkanBuffer& other) = delete;
 
 public:
-	/*
+	/**
 	* Invalidate a memory range to make it visible to the host CPU
 	* refer to VulkanDeviceMemory::Invalidate() for in depth overview
 	*/
@@ -389,7 +373,7 @@ private:
     *
     * @return bool Buffer handle creation is successful
     */
-    bool AllocateBuffer(VulkanDeviceMemoryAllocater* const inAllocater, VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
+    bool AllocateBuffer(VulkanDeviceMemoryAllocater* const inAllocater, VulkanUtils::Descriptions::FVulkanBufferCreateInfo& inBufferCreateInfo)
     {
         // Create the Buffer Handle 
         AllocateBuffer(inBufferCreateInfo);
@@ -421,7 +405,7 @@ private:
 	*
 	* @param inBufferCreateInfo Buffer handle creation info
 	*/
-	void AllocateBuffer(VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
+	void AllocateBuffer(VulkanUtils::Descriptions::FVulkanBufferCreateInfo& inBufferCreateInfo)
 	{
 		// Create the buffer handle
 		VkBufferCreateInfo BufferCreateInfo = VulkanUtils::Initializers::BufferCreateInfo();
@@ -486,6 +470,22 @@ private:
 	{
 		return DeviceMemoryID;
 	}
+
+private:
+    friend class VulkanMemoryHeap;
+
+    const VulkanDevice* Device;
+    VkBuffer BufferHandle;
+
+    /** A ID for the device memory */
+    int32 DeviceMemoryID;
+
+    /** The device memory that the ID refers to if valid */
+    VulkanDeviceMemory* DeviceMemory;
+
+    uint64 Offset;
+
+    VkDeviceSize Alignment;
 };
 
 /**
@@ -507,26 +507,6 @@ enum class EBufferType : uint32
 */
 class VRIXIC_API VulkanMemoryHeap
 {
-private:
-	friend class VulkanBuffer;
-
-	const VulkanDevice* Device;
-
-	// Size of the heap in mebibytes
-	uint32 HeapSizeInMebibytes;
-
-	// where the memory is stored in VulkanDeviceMemoryAllocater 
-	uint32 MemoryID;
-
-	// Heap buffer -> the view of the heap memory
-	VulkanBuffer* Buffer;
-	VulkanDeviceMemoryAllocater* DeviceMemoryAllocater;
-
-	// Avoid memory leaking from buffers 
-	std::vector<VulkanBuffer*> AllocatedBuffers;
-
-	uint64 MemoryUsed;
-
 public:
 	/**
 	* Creates the buffer/heap
@@ -543,12 +523,12 @@ public:
 		
 		uint64 HeapSize = MEBIBYTES_TO_BYTES(inHeapSizeInMebibytes);
 
-		VulkanUtils::Descriptions::VulkanBufferCreateInfo BufferCreateInfo = { };
+		VulkanUtils::Descriptions::FVulkanBufferCreateInfo BufferCreateInfo = { };
 		BufferCreateInfo.DeviceSize = (VkDeviceSize)HeapSize;
 		BufferCreateInfo.BufferUsageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 		BufferCreateInfo.MemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 
-        BufferConfig BufferConfg;
+        FBufferConfig BufferConfg;
         BufferConfg.Size = HeapSize;
 
 		Buffer = new VulkanBuffer(Device, BufferConfg, -1, 0);
@@ -588,7 +568,7 @@ public:
 	*
 	* @return VulkanBuffer* A pointer to the buffer that was created
 	*/
-	VulkanBuffer* AllocateBuffer(/*EBufferType inBufferType,*/ const BufferConfig& inBufferConfig)
+	VulkanBuffer* AllocateBuffer(/*EBufferType inBufferType,*/ const FBufferConfig& inBufferConfig)
 	{
 		VE_PROFILE_VULKAN_FUNCTION();
 
@@ -621,7 +601,7 @@ private:
 	/**
 	* Allocated a index buffer
 	*/
-	VulkanBuffer* AllocateIndexBuffer(const BufferConfig& inBufferConfig)
+	VulkanBuffer* AllocateIndexBuffer(const FBufferConfig& inBufferConfig)
 	{
 		return AllocateBufferInternal(inBufferConfig);
 	}
@@ -629,7 +609,7 @@ private:
 	/**
 	* Allocated a vertex buffer
 	*/
-	VulkanBuffer* AllocateVertexBuffer(const BufferConfig& inBufferConfig)
+	VulkanBuffer* AllocateVertexBuffer(const FBufferConfig& inBufferConfig)
     {
         return AllocateBufferInternal(inBufferConfig);
     }
@@ -637,7 +617,7 @@ private:
 	/**
 	* Allocated a storage buffer
 	*/
-	VulkanBuffer* AllocateStorageBuffer(const BufferConfig& inBufferConfig)
+	VulkanBuffer* AllocateStorageBuffer(const FBufferConfig& inBufferConfig)
     {
         return AllocateBufferInternal(inBufferConfig);
     }
@@ -645,7 +625,7 @@ private:
 	/**
 	* Allocated a storage buffer
 	*/
-	VulkanBuffer* AllocateStagingBuffer(const BufferConfig& inBufferConfig)
+	VulkanBuffer* AllocateStagingBuffer(const FBufferConfig& inBufferConfig)
     {
         return AllocateBufferInternal(inBufferConfig);
     }
@@ -657,11 +637,11 @@ private:
 	*
 	* @return VulkanBuffer* The buffer that was created
 	*/
-	VulkanBuffer* AllocateBufferInternal(const BufferConfig& inBufferConfig)
+	VulkanBuffer* AllocateBufferInternal(const FBufferConfig& inBufferConfig)
 	{
 		VE_PROFILE_VULKAN_FUNCTION();
 
-        VulkanUtils::Descriptions::VulkanBufferCreateInfo BufferCreateInfo = { 0 };
+        VulkanUtils::Descriptions::FVulkanBufferCreateInfo BufferCreateInfo = { 0 };
 
         BufferCreateInfo.BufferUsageFlags = VulkanTypeConverter::ConvertBufferUsageFlagsToVk(inBufferConfig.UsageFlags);
         BufferCreateInfo.DeviceSize = inBufferConfig.Size;
@@ -690,4 +670,24 @@ private:
 
 		return AllocBuffer;
 	}
+
+private:
+    friend class VulkanBuffer;
+
+    const VulkanDevice* Device;
+
+    /** Size of the heap in mebibytes */
+    uint32 HeapSizeInMebibytes;
+
+    /** where the memory is stored in VulkanDeviceMemoryAllocater */
+    uint32 MemoryID;
+
+    /** Heap buffer -> the view of the heap memory */
+    VulkanBuffer* Buffer;
+    VulkanDeviceMemoryAllocater* DeviceMemoryAllocater;
+
+    /** Avoid memory leaking from buffers */ 
+    std::vector<VulkanBuffer*> AllocatedBuffers;
+
+    uint64 MemoryUsed;
 };

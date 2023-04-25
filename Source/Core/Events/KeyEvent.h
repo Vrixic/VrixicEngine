@@ -13,16 +13,16 @@
 */
 class VRIXIC_API KeyEvent : public WindowEvent
 {
+public:
+	inline uint32 GetKeyCode() const { return KeyCode; }
+
+	WINDOW_EVENT_CLASS_CATEGORY(EventCategoryKeyboard | EventCategoryInput)
+
 protected:
 	uint32 KeyCode;
 
 	KeyEvent(uint32 inKeyCode)
 		: KeyCode(inKeyCode) { }
-
-public:
-	inline uint32 GetKeyCode() const { return KeyCode; }
-
-	WINDOW_EVENT_CLASS_CATEGORY(EventCategoryKeyboard | EventCategoryInput)
 };
 
 /**
@@ -30,9 +30,6 @@ public:
 */
 class VRIXIC_API KeyPressedEvent : public KeyEvent
 {
-protected:
-	uint32 RepeatCount; // count of how many times they key is repeated, holding key down
-
 public: 
 	KeyPressedEvent(uint32 inKeyCode, uint32 inRepeatCount)
 		: KeyEvent(inKeyCode), RepeatCount(inRepeatCount) { }
@@ -45,6 +42,10 @@ public:
 	}
 
 	WINDOW_EVENT_CLASS_TYPE(EWindowEventType::KeyPressed)
+
+protected:
+	/** count of how many times they key is repeated, holding key down */
+	uint32 RepeatCount; 
 };
 
 /**

@@ -36,10 +36,6 @@ enum class EFileReadResult
 */
 class VRIXIC_API FileReader
 {
-private:
-	std::string Path;
-	std::ifstream Handle;
-
 public:
 	FileReader(std::string inPath)
 	{
@@ -136,4 +132,7 @@ public:
 		return Handle.is_open();
 	}
 
+private:
+    std::string Path;
+    std::ifstream Handle;
 };

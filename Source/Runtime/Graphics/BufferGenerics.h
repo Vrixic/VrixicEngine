@@ -24,10 +24,10 @@ enum class EBufferUsageFlags
 /**
 * Buffer memory flags that are used to for allocating device memory 
 */
-struct VRIXIC_API MemoryFlags
+struct VRIXIC_API FMemoryFlags
 {
+public:
 #define BIT(x) (1 << x)
-
     enum
     {
         // most efficient for device access memory 

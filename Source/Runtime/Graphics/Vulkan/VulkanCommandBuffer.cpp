@@ -46,14 +46,14 @@ void VulkanCommandBuffer::End() const
     EndCommandBuffer();
 }
 
-void VulkanCommandBuffer::SetRenderViewports(const RenderViewport* inRenderViewports, uint32 inNumRenderViewports)
+void VulkanCommandBuffer::SetRenderViewports(const FRenderViewport* inRenderViewports, uint32 inNumRenderViewports)
 {
     VE_PROFILE_VULKAN_FUNCTION();
 
     vkCmdSetViewport(CommandBufferHandle, 0, inNumRenderViewports, (VkViewport*)(inRenderViewports));
 }
 
-void VulkanCommandBuffer::SetRenderScissors(const RenderScissor* inRenderScissors, uint32 inNumRenderScissors)
+void VulkanCommandBuffer::SetRenderScissors(const FRenderScissor* inRenderScissors, uint32 inNumRenderScissors)
 {
     VE_PROFILE_VULKAN_FUNCTION();
 
@@ -79,7 +79,7 @@ void VulkanCommandBuffer::SetIndexBuffer(Buffer& inIndexBuffer)
     vkCmdBindIndexBuffer(CommandBufferHandle, *Buf.GetBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
 }
 
-void VulkanCommandBuffer::BeginRenderPass(const RenderPassBeginInfo& inRenderPassBeginInfo) const
+void VulkanCommandBuffer::BeginRenderPass(const FRenderPassBeginInfo& inRenderPassBeginInfo) const
 {
     VE_PROFILE_VULKAN_FUNCTION();
 
@@ -160,7 +160,7 @@ void VulkanCommandBuffer::AllocateCommandBuffer()
 	VK_CHECK_RESULT(vkAllocateCommandBuffers(*Device->GetDeviceHandle(), &CommandBufferAllocateInfo, &CommandBufferHandle), "[VulkanCommandBuffer]: Failed to create a command buffer!");
 }
 
-void VulkanCommandBuffer::AllocateCommandBuffer(const CommandBufferConfig& inConfig)
+void VulkanCommandBuffer::AllocateCommandBuffer(const FCommandBufferConfig& inConfig)
 {
     VE_ASSERT(CommandBufferHandle == VK_NULL_HANDLE, VE_TEXT("[VulkanCommandBuffer]: Potential GPU Memory Leak!! Cannot create command buffer twice!!"));
     

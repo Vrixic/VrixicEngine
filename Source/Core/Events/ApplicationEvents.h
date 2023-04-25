@@ -14,9 +14,6 @@
 */
 class VRIXIC_API WindowResizeEvent : public WindowEvent
 {
-private:
-	uint32 Width, Height;
-
 public:
 	WindowResizeEvent(uint32 inNewWidth, uint32 inNewHeight)
 		: Width(inNewWidth), Height(inNewHeight) { }
@@ -33,6 +30,9 @@ public:
 
 	WINDOW_EVENT_CLASS_TYPE(EWindowEventType::WindowResize)
 	WINDOW_EVENT_CLASS_CATEGORY(EventCategoryApplication)
+
+private:
+	uint32 Width, Height;
 };
 
 /**

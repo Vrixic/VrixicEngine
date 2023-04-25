@@ -54,21 +54,18 @@ virtual const char* GetName() const override { return #type; }
 class VRIXIC_API WindowEvent
 {
 public:
-	bool bIsHandled = false; // indicates if the event was handled if so will not be passed down in the hierarcy anymore Ex: UI button click, if clicked, should not go to game world 
-
-public:
 	virtual ~WindowEvent() = default;
 
-	/* @returns EWindowEventType - the type of this event */
+	/** @returns EWindowEventType - the type of this event */
 	virtual EWindowEventType GetEventType() const = 0;
 
-	/* @returns const char* - event name */
+	/** @returns const char* - event name */
 	virtual const char* GetName() const = 0;
 
-	/* @returns int32 - all of the category flags for this event */
+	/** @returns int32 - all of the category flags for this event */
 	virtual int32 GetCategoryFlags() const = 0;
 
-	/* @returns std::string - string of the event */
+	/** @returns std::string - string of the event */
 	virtual std::string ToString() const { return GetName(); }
 
 	/**
@@ -80,6 +77,10 @@ public:
 	{
 		return GetCategoryFlags() & inWindowEventCategory;
 	}
+
+public:
+	/** indicates if the event was handled if so will not be passed down in the hierarcy anymore Ex: UI button click, if clicked, should not go to game world */
+	bool bIsHandled = false;  
 };
 
 /**
@@ -89,7 +90,7 @@ class WindowEventDispatcher
 {
 private:
 	template<typename EventType>
-	using EventFunction = std::function<bool(EventType&)> ;
+	using EventFunction = std::function<bool(EventType&)>;
 
 	WindowEvent& Event;
 

@@ -20,23 +20,6 @@
 */
 class VRIXIC_API WindowsWindow : public IWindow
 {
-private:
-	/**
-	* All data a windows window would need or have 
-	*/
-	struct VRIXIC_API FWindowData
-	{
-		std::string Name;
-		uint32 Width, Height;
-
-		EventCallbackFunc EventCallback;
-	};
-	FWindowData WindowsData;
-
-	HWND WindowHandle; // The handle to the window itself 
-
-	// Keeps track if the mouse if currently inside the rect of the window or outside 
-	bool bIsMouseInWindow;
 public:
 	WindowsWindow(const FWindowConfig& inWindowConfig);
 
@@ -55,14 +38,28 @@ public:
 		WindowsData.EventCallback = inCallback; 
 	}
 
+public:
+	virtual uint32 GetWidth() const override { return WindowsData.Width; };
+
+	virtual uint32 GetHeight() const override { return WindowsData.Height; };
+
+	virtual void* GetNativeWindowHandle() override
+	{
+		//return static_cast<void*>((HWND*)&WindowHandle);
+		return static_cast<void*>(&(HWND)WindowHandle);
+	};
+
+	virtual void* GetNativeWindowInstanceHandle() const override { return WindowClass::Get().GetInstance(); };
+
+	/**
+	* @returns void* always equal to nullptr as its not using glfw to create a window
+	*/
+	virtual void* GetGLFWNativeHandle() const override { return nullptr; }
+
 private:
 	/** Singleton class that manages registration and cleanup of window classes */
 	class VRIXIC_API WindowClass
 	{
-	private:
-		std::wstring WindowClassName; 
-		HINSTANCE WindowInstanceHandle;
-
 	public:
 		/**
 		* Returns the one and only Instance 
@@ -92,6 +89,10 @@ private:
 
 		WindowClass(const WindowClass&) = delete;
 		WindowClass& operator=(const WindowClass&) = delete;
+
+	private:
+		std::wstring WindowClassName;
+		HINSTANCE WindowInstanceHandle;
 	};
 
 	/**
@@ -122,21 +123,23 @@ private:
 	* @param inEvent - the event to be handled/pushed
 	*/
 	void OnInputEvent(WindowEvent& inEvent);
-public:
-	virtual uint32 GetWidth() const override { return WindowsData.Width; };
 
-	virtual uint32 GetHeight() const override { return WindowsData.Height; };
-
-	virtual void* GetNativeWindowHandle() override 
-	{ 
-		//return static_cast<void*>((HWND*)&WindowHandle);
-		return static_cast<void*>(&(HWND)WindowHandle); 
-	};
-
-	virtual void* GetNativeWindowInstanceHandle() const override { return WindowClass::Get().GetInstance(); };
-
+private:
 	/**
-	* @returns void* always equal to nullptr as its not using glfw to create a window 
+	* All data a windows window would need or have
 	*/
-	virtual void* GetGLFWNativeHandle() const override { return nullptr; }
+	struct VRIXIC_API FWindowData
+	{
+		std::string Name;
+		uint32 Width, Height;
+
+		EventCallbackFunc EventCallback;
+	};
+	FWindowData WindowsData;
+
+	/** The handle to the window itself */
+	HWND WindowHandle;  
+
+	/** Keeps track if the mouse if currently inside the rect of the window or outside */
+	bool bIsMouseInWindow;
 };
