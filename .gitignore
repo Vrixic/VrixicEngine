@@ -368,3 +368,4 @@ CMake/VrixicEngineBuild/
 AllSourceFiles.txt
 CMake/AllSourceFiles.txt
 AutomatedTests/
+Sandbox/imgui.ini
