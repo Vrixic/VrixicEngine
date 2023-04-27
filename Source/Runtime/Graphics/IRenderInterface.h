@@ -35,7 +35,7 @@
 /**
 * All supported graphics interface, if a graphics interface is supported, it must include a renderer for itself, its resource specific management deriving from IResourceManager;
 */
-static std::vector<ERenderInterface> SupportedGraphicInterfaces = { ERenderInterface::Vulkan };
+static std::vector<ERenderInterfaceType> SupportedGraphicInterfaces = { ERenderInterfaceType::Vulkan };
 
 class VRIXIC_API IRenderInterface : Interface
 {
@@ -311,7 +311,7 @@ public:
     /**
     * @returns ERenderInterface the graphics API in use by this renderer
     */
-    virtual ERenderInterface GetRenderInterface() const = 0;
+    virtual ERenderInterfaceType GetRenderInterface() const = 0;
 
     /**
     * @returns RendererInfo& information about the renderer in use and what its using

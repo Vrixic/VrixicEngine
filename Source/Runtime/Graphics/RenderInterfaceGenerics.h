@@ -17,7 +17,7 @@
 /**
 * Graphics API that could be support by the engine
 */
-enum class ERenderInterface
+enum class ERenderInterfaceType
 {
     Direct3D12,
     Vulkan

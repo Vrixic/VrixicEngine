@@ -329,9 +329,9 @@ public:
     /**
     * @returns ERenderInterface the graphics API in use by this renderer
     */
-    virtual ERenderInterface GetRenderInterface() const override final
+    virtual ERenderInterfaceType GetRenderInterface() const override final
     {
-        return ERenderInterface::Vulkan;
+        return ERenderInterfaceType::Vulkan;
     }
 
     /**
