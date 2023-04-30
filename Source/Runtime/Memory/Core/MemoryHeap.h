@@ -6,7 +6,9 @@
 #pragma once
 
 #include <Core/Core.h>
+#include <Misc/Assert.h>
 #include <Misc/Defines/MemoryProfilerDefines.h>
+#include <Misc/Defines/StringDefines.h>
 
 /**
 * @TODO: Offer heap alignment 

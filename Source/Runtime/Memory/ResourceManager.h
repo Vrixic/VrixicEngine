@@ -64,5 +64,5 @@ private:
     std::unordered_map<std::string, TextureHandle> TexturesMap;
 
     /** Memory Heap for textures */
-    TMemoryHeap<uint8>* TextureMemoryHeap;
+    //TMemoryHeap<uint8>* TextureMemoryHeap;
 };

@@ -4,7 +4,6 @@
 */
 
 #pragma once
-#include <Misc/Defines/StringDefines.h>
 #include <Runtime/Memory/Core/MemoryHeap.h>
 #include <Runtime/Memory/Core/MemoryUtils.h>
 
