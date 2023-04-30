@@ -271,3 +271,71 @@ private:
     /** Alignment added to the MemoryHandle Pointer */
     uint64 Alignment;
 };
+
+/**
+* A memory heap view: basically a way to connect to the memory heap, it uses the memory heap to get memory and allocates it out to users, this way we can have a memory heap, which has many memory view for different kind of things
+* 
+* @note: Flushing a memory heap also flushes all memory views that are using the memory heap...
+* 
+* Simple diagram: 
+* Memory Heap
+*   |
+*   Render Memory View
+*       |            |
+*  Texture View   Vertex Data Memory View 
+*/
+template<typename T>
+class TMemoryHeapView
+{
+public:
+    TMemoryHeapView(const char* inMemoryHeapViewName, TPointer<T> inMemoryHandle, uint64 inHeapSize) 
+        : MemoryHandle(inMemoryHandle), HeapSize(inHeapSize), HeapUsed(0), Name(inMemoryHeapViewName), MemoryAllocationCount(0) { }
+
+    ~TMemoryHeapView() 
+    { 
+        if (MemoryHandle.IsValid())
+        {
+            MemoryHandle.Free();
+        }
+    }
+
+    /**
+    * Allocates memory, Does not call Constructor, sizeof(T) * inCountToAllocate = BytesAllocated
+    *
+    * @param inCountToAllocate - count of how many T objects to allocate
+    * @return T* - pointer pointing to the memory location
+    */
+    T** Malloc(ulong32 inCountToAllocate)
+    {
+        VE_PROFILE_MEMORY_HEAP();
+
+        uint64 SizeInBytes = sizeof(T) * inCountToAllocate;
+
+        // Check if we can allocate enough memory
+        VE_ASSERT((HeapUsed + SizeInBytes) < HeapSize, VE_TEXT("[MemoryHeap]: Out of memory; Memory OverFlow!"));
+        VE_CORE_LOG_INFO(VE_TEXT("[MemoryHeapView({0})]: Allocated {1} bytes of memory..."), Name.c_str(), SizeInBytes);
+
+        uint8* PointerToMemory = MemoryHandle.Get() + HeapUsed;
+
+        HeapUsed += SizeInBytes;
+        MemoryAllocationCount++;
+
+        return (T**)&PointerToMemory;
+    }
+
+private:
+    /** Used for debugging purposes */
+    std::string Name;
+
+    /** Handle to the memory that we are currently viewing */
+    TPointer<T> MemoryHandle;
+
+    /** The size of the memory we are viewing in bytes */
+    uint64 HeapSize;
+
+    /** Amount of memory used on the memory view, from start to end (MemoryHandle to MemoryUsedPtr) */
+    uint64 HeapUsed;
+
+    /** Count of all allocations made to this view */
+    uint64 MemoryAllocationCount;
+};
