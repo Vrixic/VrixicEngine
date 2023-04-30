@@ -11,6 +11,7 @@
 #include <Runtime/Graphics/Vulkan/VulkanFence.h>
 #include <Runtime/Graphics/Vulkan/VulkanPipeline.h>
 #include <Runtime/Graphics/Vulkan/VulkanRenderPass.h>
+#include <Runtime/Graphics/Vulkan/VulkanSampler.h>
 #include <Runtime/Graphics/Vulkan/VulkanSemaphore.h>
 #include <Runtime/Graphics/Vulkan/VulkanTextureView.h>
 
@@ -63,7 +64,7 @@ void VulkanRenderInterface::Initialize()
         ShaderPoolMain = new VulkanShaderPool(Device);
 
         // allocate 1 gibibytes of memory -> 1024 mebibytes = 1 gib
-        VulkanMemoryHeapMain = new VulkanMemoryHeap(Device, 1);
+        VulkanMemoryHeapMain = new VulkanMemoryHeap(Device, 1024);
     }
 
     // we could also create default resources for use???....
@@ -152,6 +153,42 @@ Texture* VulkanRenderInterface::CreateTexture(const FTextureConfig& inTextureCon
     VulkanTextureView* Texture = new VulkanTextureView(Device, inTextureConfig);
     Texture->CreateDefaultImageView();
     return Texture;
+}
+
+void VulkanRenderInterface::WriteToTexture(const Texture* inTexture, const FTextureWriteInfo& inTextureWriteInfo)
+{
+    VE_ASSERT(inTexture != nullptr, VE_TEXT("{VulkanRenderInterface]: cannot write to a invalid texture...its null..."));
+
+    VkCommandBuffer CommandBufferHandle = Device->GetGraphicsQueue()->CreateDefaultCommandBuffer(true);
+
+    HTransitionTextureLayoutInfo TransitionTextureLayoutInfo = { };
+    TransitionTextureLayoutInfo.CommandBufferHandle = CommandBufferHandle;
+    TransitionTextureLayoutInfo.OldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    TransitionTextureLayoutInfo.NewLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    TransitionTextureLayoutInfo.TextureHandle = (VulkanTextureView*)inTexture;
+    TransitionTextureLayoutInfo.Subresource = (FTextureSubresourceRange*)&inTextureWriteInfo.Subresource;
+
+    Device->TransitionTextureLayout(TransitionTextureLayoutInfo);
+
+    HCopyBufferToTextureInfo CopyBufferToTextureInfo = { };
+    CopyBufferToTextureInfo.CommandBufferHandle = CommandBufferHandle;
+    CopyBufferToTextureInfo.TextureHandle = TransitionTextureLayoutInfo.TextureHandle;
+    CopyBufferToTextureInfo.Subresource = TransitionTextureLayoutInfo.Subresource;
+
+    VulkanBuffer* BufferHandle = (VulkanBuffer*)inTextureWriteInfo.BufferHandle;
+    CopyBufferToTextureInfo.BufferHandle = *BufferHandle->GetBufferHandle();
+
+    CopyBufferToTextureInfo.Extent.width = inTextureWriteInfo.Extent.Width;
+    CopyBufferToTextureInfo.Extent.height = inTextureWriteInfo.Extent.Height;
+    CopyBufferToTextureInfo.Extent.depth = inTextureWriteInfo.Extent.Depth;
+
+    Device->CopyBufferToTexture(CopyBufferToTextureInfo);
+
+    TransitionTextureLayoutInfo.OldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    TransitionTextureLayoutInfo.NewLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    Device->TransitionTextureLayout(TransitionTextureLayoutInfo);
+
+    Device->GetGraphicsQueue()->FlushCommandBuffer(CommandBufferHandle, true);
 }
 
 void VulkanRenderInterface::Free(Texture* inTexture)
@@ -260,14 +297,33 @@ void VulkanRenderInterface::Free(Shader* inShader)
 
 Sampler* VulkanRenderInterface::CreateSampler(const FSamplerConfig& inSamplerConfig)
 {
-    VE_ASSERT(false, "[VulkanRenderInterface]: Creation of samplers still need to be implemented...!");
-    return nullptr;
+    VulkanSampler* SamplerVk = new VulkanSampler(Device);
+    SamplerVk->Create(inSamplerConfig);
+
+    return SamplerVk;
 }
 
 void VulkanRenderInterface::Free(Sampler* inSampler)
 {
     // Just delete the sampler
     delete inSampler;
+}
+
+IDescriptorSets* VulkanRenderInterface::CreateDescriptorSet(FDescriptorSetsConfig& inDescriptorSetConfig)
+{
+    VulkanDescriptorSets* DescriptorSet = new VulkanDescriptorSets(Device, inDescriptorSetConfig.NumSets);
+    VulkanPipelineLayout* PipelineLayoutVk = (VulkanPipelineLayout*)inDescriptorSetConfig.PipelineLayoutPtr;
+
+    // Hard code the layout id to be 0
+    PipelineLayoutVk->GetDescriptorPool()->AllocateDescriptorSets(DescriptorSet, 0);
+
+    return DescriptorSet;
+}
+
+void VulkanRenderInterface::Free(IDescriptorSets* inDescriptorSets)
+{
+    // Just delete the descriptor set(s)
+    delete inDescriptorSets;
 }
 
 void VulkanRenderInterface::InitImGui(SwapChain* inMainSwapChain, Surface* inSurface)
@@ -493,6 +549,43 @@ void VulkanRenderInterface::RenderImGui(const ICommandBuffer* inCommandBuffer, u
 
 void VulkanRenderInterface::EndImGuiFrame() const
 {
+}
+
+void VulkanRenderInterface::OnRenderViewportResized(SwapChain* inMainSwapchain, const FExtent2D& inNewRenderViewport)
+{
+    VulkanSwapChain* SwapchainVk = (VulkanSwapChain*)inMainSwapchain;
+    ImGui_ImplVulkan_SetMinImageCount(SwapchainVk->GetMinImageCount());
+    /**
+    * Recreate dear imgui frame buffers and update render area for renderpass
+    */
+    {
+        for (uint32 i = 0; i < ImGuiData.FrameBuffers.size(); i++)
+        {
+            delete ImGuiData.FrameBuffers[i];
+        }
+
+        // Frame Buffers creation
+        VkImageView Attachment[1];
+        VkExtent2D Extent = { Application::Get()->GetWindow().GetWidth(), Application::Get()->GetWindow().GetHeight() };
+
+        ImGuiData.FrameBuffers.resize(inMainSwapchain->GetImageCount());
+        for (uint32_t i = 0; i < inMainSwapchain->GetImageCount(); i++)
+        {
+            VulkanTextureView* TextureView = (VulkanTextureView*)inMainSwapchain->GetTextureAt(i);
+            Attachment[0] = *TextureView->GetImageViewHandle();
+
+            ImGuiData.FrameBuffers[i] = new VulkanFrameBuffer(Device);
+            ImGuiData.FrameBuffers[i]->Create(1, Attachment, &Extent, ImGuiData.RenderPass);
+        }
+
+        FRect2D NewRenderArea = { };
+        NewRenderArea.Width = inNewRenderViewport.Width;
+        NewRenderArea.Height = inNewRenderViewport.Height;
+        ImGuiData.RenderPass->UpdateRenderArea(NewRenderArea);
+    }
+
+    ImGuiIO& IO = ImGui::GetIO();
+    IO.DisplaySize = { (float)inNewRenderViewport.Width, (float)inNewRenderViewport.Height };
 }
 
 void VulkanRenderInterface::ShutdownImGui()

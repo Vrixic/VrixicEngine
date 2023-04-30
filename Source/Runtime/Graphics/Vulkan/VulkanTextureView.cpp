@@ -35,6 +35,8 @@ VulkanTextureView::VulkanTextureView(VulkanDevice* inDevice, const FTextureConfi
     NumMipLevels = inTextureConfig.MipLevels;
     NumArrayLayers = inTextureConfig.NumArrayLayers;
 
+    ImageLayout = VulkanTypeConverter::ConvertTextureLayoutToVk(inTextureConfig.Layout);
+
     // Create Image
     CreateImage(inTextureConfig);
 }
@@ -116,7 +118,7 @@ void VulkanTextureView::CreateImage(const FTextureConfig& inTextureConfig)
 
     VK_CHECK_RESULT(vkCreateImage(*Device->GetDeviceHandle(), &ImageCreateInfo, nullptr, &ImageHandle), "[VulkanTextureView]: Failed to create an image!");
 
-    VkMemoryRequirements MemoryRequirements{};
+    VkMemoryRequirements MemoryRequirements = { };
     vkGetImageMemoryRequirements(*Device->GetDeviceHandle(), ImageHandle, &MemoryRequirements);
 
     uint32 MemoryTypeIndex = Device->GetMemoryTypeIndex(MemoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, nullptr);

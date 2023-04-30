@@ -174,7 +174,16 @@ void VulkanShaderFactory::CompileSourceCode(const FShaderConfig& inConfig, const
     // Intialize runtime shader compiler HLSL -> SPIRV
     shaderc_compiler_t Compiler = shaderc_compiler_initialize();
     shaderc_compile_options_t CompilerOptions = shaderc_compile_options_initialize();
-    shaderc_compile_options_set_source_language(CompilerOptions, shaderc_source_language_hlsl);
+
+    if (inConfig.CompileFlags & FShaderCompileFlags::GLSL)
+    {
+        shaderc_compile_options_set_source_language(CompilerOptions, shaderc_source_language_glsl);
+    }
+    else
+    {
+        shaderc_compile_options_set_source_language(CompilerOptions, shaderc_source_language_hlsl);
+    }
+
     // TODO: Part 3C
     shaderc_compile_options_set_invert_y(CompilerOptions, (inConfig.CompileFlags & FShaderCompileFlags::InvertY));
 #ifdef _DEBUG

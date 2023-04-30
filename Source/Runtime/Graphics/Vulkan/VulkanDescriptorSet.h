@@ -5,18 +5,13 @@
 
 #pragma once
 #include "VulkanBuffer.h"
+#include <Runtime/Graphics/DescriptorSet.h>
 
 /**
 * Representation of a VkDescriptorSetLayout, except it can hold multiple layouts
 */
 class VRIXIC_API VulkanDescriptorSetsLayout
 {
-private:
-	friend class VulkanPipelineLayout;
-
-	VulkanDevice* Device;
-	std::vector<VkDescriptorSetLayout> DescriptorSetLayoutHandles;
-
 public:
 	VulkanDescriptorSetsLayout(VulkanDevice* inDevice)
 		: Device(inDevice) { }
@@ -109,6 +104,70 @@ public:
 	{
 		return &DescriptorSetLayoutHandles[inLayoutId];
 	}
+
+private:
+    friend class VulkanPipelineLayout;
+
+    VulkanDevice* Device;
+    std::vector<VkDescriptorSetLayout> DescriptorSetLayoutHandles;
+};
+
+/**
+* A vulkan specific descriptor set which just encapsulates a descriptor set handle 
+* 
+* Can only be created by Descriptor Pools
+*/
+class VRIXIC_API VulkanDescriptorSets final : public IDescriptorSets
+{
+    friend class VulkanDescriptorPool;
+public:
+    VulkanDescriptorSets(VulkanDevice* inDevice, uint32 inNumSets) : Device(inDevice), DescriptorSetHandles(inNumSets)
+    {
+        NumSets = inNumSets;
+    }
+
+    ~VulkanDescriptorSets() { }
+
+    /**
+    * Links the specified descriptor set to a buffer resource
+    *
+    * @param inIndex the descriptor set to update
+    * @param inDescriptorSetsLinkInfo information used to link the buffer to the descriptor set
+    */
+    virtual void LinkToBuffer(uint32 inIndex, const FDescriptorSetsLinkInfo& inDescriptorSetsLinkInfo) override;
+
+    /**
+    * Links the specified descriptor set to a texture resource
+    *
+    * @param inIndex the descriptor set to update
+    * @param inDescriptorSetsLinkInfo information used to link the texture to the descriptor set
+    */
+    virtual void LinkToTexture(uint32 inIndex, const FDescriptorSetsLinkInfo& inDescriptorSetsLinkInfo) override;
+
+public:
+    /**
+    * Gets a specific descriptor set handle by index
+    * 
+    * @param inHandleIndex the index of the descriptor set to retrieve
+    * @returns VkDescriptorSet the handle to the descriptor set 
+    */
+    VkDescriptorSet GetDescriptorSetHandle(uint32 inHandleIndex) const
+    {
+        VE_ASSERT(inHandleIndex < DescriptorSetHandles.size(), VE_TEXT("[VulkanDescriptorSets]: Invalid descriptor set handle index provided -> {0}"), inHandleIndex)
+        return DescriptorSetHandles[inHandleIndex];
+    }
+
+    /**
+    * @returns VkDescriptorSet* the pointer to the descriptor set(s) 
+    */
+    VkDescriptorSet* GetDescriptorSetHandles()
+    {
+        return DescriptorSetHandles.data();
+    }
+
+private:
+    VulkanDevice* Device;
+    std::vector<VkDescriptorSet> DescriptorSetHandles;
 };
 
 /**
@@ -118,14 +177,6 @@ public:
 */
 class VRIXIC_API VulkanDescriptorPool
 {
-private:
-	VulkanDevice* Device;
-	VkDescriptorPool DescriptorPoolHandle;
-
-	uint32 MaxDescriptorSets;
-
-	const VulkanDescriptorSetsLayout* DescriptorSetsLayout;
-
 public:
 	VulkanDescriptorPool(VulkanDevice* inDevice, const VulkanDescriptorSetsLayout& inSetsLayout, uint32 inMaxSets, std::vector<VkDescriptorPoolSize>& inPoolSizes)
 		: Device(inDevice), MaxDescriptorSets(inMaxSets),
@@ -150,7 +201,7 @@ public:
 	*
 	* @return if allocated of set(s) was successfull
 	*/
-	bool AllocateDescriptorSets(uint32 inDescriptorSetCount, VkDescriptorSet* outDescriptorSet, uint32 inLayoutId) const
+	/*bool AllocateDescriptorSets(uint32 inDescriptorSetCount, VkDescriptorSet* outDescriptorSet, uint32 inLayoutId) const
 	{
 		VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo = VulkanUtils::Initializers::DescriptorSetAllocateInfo();
 		DescriptorSetAllocateInfo.descriptorPool = DescriptorPoolHandle;
@@ -165,7 +216,50 @@ public:
 #else
 		return vkAllocateDescriptorSets(*Device->GetDeviceHandle(), &DescriptorSetAllocateInfo, outDescriptorSet) == VK_SUCCESS;
 #endif		
-	}
+	}*/
+
+    /**
+    * Uses this pool to allocate descriptor set(s)
+    *
+    * @param 1: descriptor set to be filled
+    * @param 2: the layout id used to create the decriptor set
+    *
+    * @return if allocated of set(s) was successfull
+    */
+    bool AllocateDescriptorSets(VulkanDescriptorSets* outDescriptorSets, uint32 inLayoutId) const
+    {
+        VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo = VulkanUtils::Initializers::DescriptorSetAllocateInfo();
+        DescriptorSetAllocateInfo.descriptorPool = DescriptorPoolHandle;
+        DescriptorSetAllocateInfo.descriptorSetCount = outDescriptorSets->GetNumSets();
+        DescriptorSetAllocateInfo.pSetLayouts = DescriptorSetsLayout->GetLayoutHandle(inLayoutId);
+
+        VkResult Result = vkAllocateDescriptorSets(*Device->GetDeviceHandle(), &DescriptorSetAllocateInfo, outDescriptorSets->GetDescriptorSetHandles());
+        VK_CHECK_RESULT(Result, "[VulkanDescriptorPool]: Failed to allocate a descriptor set!");
+
+        return Result == VK_SUCCESS;
+    }
+
+    /**
+    * Uses this pool to allocate a descriptor set
+    *
+    * @param 1: count of descriptor sets to create
+    * @param 2: descriptor set to be filled
+    * @param 3: the layout id used to create the decriptor set
+    *
+    * @return if allocated of set(s) was successfull
+    */
+    bool AllocateDescriptorSets(uint32 inDescriptorSetCount, VulkanDescriptorSets* outDescriptorSets, uint32 inLayoutId) const
+    {
+        VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo = VulkanUtils::Initializers::DescriptorSetAllocateInfo();
+        DescriptorSetAllocateInfo.descriptorPool = DescriptorPoolHandle;
+        DescriptorSetAllocateInfo.descriptorSetCount = inDescriptorSetCount;
+        DescriptorSetAllocateInfo.pSetLayouts = DescriptorSetsLayout->GetLayoutHandle(inLayoutId);
+
+        VkResult Result = vkAllocateDescriptorSets(*Device->GetDeviceHandle(), &DescriptorSetAllocateInfo, outDescriptorSets->GetDescriptorSetHandles());
+        VK_CHECK_RESULT(Result, "[VulkanDescriptorPool]: Failed to allocate a descriptor set!");
+
+        return Result == VK_SUCCESS;
+    }
 
 	/**
 	* Bind/Link a descriptor set to a vulkan buffer
@@ -207,6 +301,12 @@ public:
 		vkUpdateDescriptorSets(*Device->GetDeviceHandle(), 1, &WriteDescriptorSet, 0, nullptr);
 	}
 
+public:
+    inline const VkDescriptorPool* GetDescriptorPoolHandle() const
+    {
+        return &DescriptorPoolHandle;
+    }
+
 private:
 	void CreateDescriptorPool(std::vector<VkDescriptorPoolSize>& inPoolSizes)
 	{
@@ -219,9 +319,11 @@ private:
 		VK_CHECK_RESULT(vkCreateDescriptorPool(*Device->GetDeviceHandle(), &DescriptorPoolCreateInfo, nullptr, &DescriptorPoolHandle), "[VulkanDescriptorPool]: Failed to create a descriptor pool!");
 	}
 
-public:
-	inline const VkDescriptorPool* GetDescriptorPoolHandle() const
-	{
-		return &DescriptorPoolHandle;
-	}
+private:
+    VulkanDevice* Device;
+    VkDescriptorPool DescriptorPoolHandle;
+
+    uint32 MaxDescriptorSets;
+
+    const VulkanDescriptorSetsLayout* DescriptorSetsLayout;
 };

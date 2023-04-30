@@ -42,3 +42,16 @@ public:
         : Width(inWidth), Height(inHeight), Depth(inDepth) { }
 };
 
+struct VRIXIC_API FRect2D
+{
+public:
+    uint32 OffsetX;
+    uint32 OffsetY;
+    uint32 Width;
+    uint32 Height;
+
+public:
+    FRect2D()
+        : OffsetX(0), OffsetY(0), Width(0), Height(0) { }
+};
+

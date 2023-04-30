@@ -76,10 +76,10 @@ public:
     /**
     * @return Surface& the handle to the surface that is associated with the swapchain
     */
-    inline Surface& GetSurfaceHandle() const
-    {
-        return *SurfaceHandle;
-    }
+    inline Surface& GetSurfaceHandle() const { return *SurfaceHandle; }
+
+    inline uint32 GetScreenWidth() const { return ImageWidth; }
+    inline uint32 GetScreenHeight() const { return ImageHeight; }
 
 protected:
     /** The swap chain configuration */
@@ -87,4 +87,8 @@ protected:
 
     /** The surface handle that the sawp chain is associated with */
     Surface* SurfaceHandle;
+
+    /** The screen resolution of the swapchain images */
+    uint32 ImageWidth;
+    uint32 ImageHeight;
 };

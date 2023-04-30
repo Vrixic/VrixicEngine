@@ -47,6 +47,9 @@ enum class ETextureLayout
    ColorAttachment          = 2,
    DepthStencilAttachment   = 3,
    DepthStencilReadOnly     = 4,
+   ShaderReadOnlyOptimal    = 5,
+   TransferSrcOptimal       = 6,
+   TransferDstOptimal       = 7,
    PresentSrc               = 1000001002, // for swapchains 
 };
 

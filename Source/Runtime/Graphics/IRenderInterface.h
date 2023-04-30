@@ -11,6 +11,7 @@
 #include "CommandPoolGenerics.h"
 #include "CommandQueue.h"
 #include <Core/Misc/Interface.h>
+#include "DescriptorSet.h"
 #include "FrameBuffer.h"
 #include "Pipeline.h"
 #include "PipelineGenerics.h"
@@ -131,6 +132,14 @@ public:
     * @param inTextureConfig  info used to create the texture
     */
     virtual Texture* CreateTexture(const FTextureConfig& inTextureConfig) = 0;
+
+    /**
+    * Copies the data from the buffer provided and puts it into the texture
+    *
+    * @param inTexture the texture that will contain the data after copy
+    * @param inTextureWriteInfo contains information used to write to the texture
+    */
+    virtual void WriteToTexture(const Texture* inTexture, const FTextureWriteInfo& inTextureWriteInfo) = 0;
 
     /**
     * Releases/Destroys the texture passed in
@@ -282,6 +291,24 @@ public:
     virtual void Free(Sampler* inSampler) = 0;
 
     /* ------------------------------------------------------------------------------- */
+    /* -------------                 Descriptor Sets               ------------------- */
+    /* ------------------------------------------------------------------------------- */
+
+    /**
+     * Creates a new descriptor set with the specified configurations
+    *
+     * @param inDescriptorSetConfig info used to create the descriptor set 
+    */
+    virtual IDescriptorSets* CreateDescriptorSet(FDescriptorSetsConfig& inDescriptorSetConfig) = 0;
+
+    /**
+    * Releases/Destroys the descriptor set(s) passed in
+    *
+    * @param inDescriptorSets the descriptor set(s) to free
+    */
+    virtual void Free(IDescriptorSets* inDescriptorSets) = 0;
+
+    /* ------------------------------------------------------------------------------- */
     /* -------------                     ImGui                     ------------------- */
     /* ------------------------------------------------------------------------------- */
 
@@ -306,6 +333,11 @@ public:
     * Starts a new frame for imgui
     */
     virtual void EndImGuiFrame() const = 0;
+
+    /**
+    * Called when window resizes but, this function is only here temporarily as all the imgui code...
+    */
+    virtual void OnRenderViewportResized(SwapChain* inMainSwapchain, const FExtent2D& inNewRenderViewport) = 0;
 
 public:
     /**

@@ -5,6 +5,7 @@
 
 #pragma once
 #include "Buffer.h"
+#include "DescriptorSet.h"
 #include "Pipeline.h"
 #include "PipelineGenerics.h"
 #include "RenderPass.h"
@@ -108,6 +109,17 @@ public:
     * @param inPipeline the pipeline state to bind
     */
     virtual void BindPipeline(const IPipeline* inPipeline) = 0;
+
+    /* ------------------------------------------------------------------------------- */
+    /* -------------                 Descriptor Sets               ------------------- */
+    /* ------------------------------------------------------------------------------- */
+
+    /**
+    * Binds a descriptor set to the command buffer 
+    * 
+    * @param inDescriptorSetBindInfo the binding information used to bind the descriptor sets 
+    */
+    virtual void BindDescriptorSets(const FDescriptorSetsBindInfo& inDescriptorSetBindInfo) = 0;
 
     /* ------------------------------------------------------------------------------- */
     /* ---------------                Drawing Stuff                ------------------- */

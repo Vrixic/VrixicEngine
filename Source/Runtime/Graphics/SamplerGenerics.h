@@ -1,5 +1,5 @@
 /**
-* This file is part of the "Vrixic Engine" project (Copyright (c) 2022-2023 by Vrij Patel) 
+* This file is part of the "Vrixic Engine" project (Copyright (c) 2022-2023 by Vrij Patel)
 * See "LICENSE.txt" for license information.
 */
 
@@ -9,7 +9,7 @@
 #include "PipelineGenerics.h"
 
 /**
-* The address mode defines what to do for texture coordinates outside the [0, 1] range 
+* The address mode defines what to do for texture coordinates outside the [0, 1] range
 */
 enum class ESamplerAddressMode
 {
@@ -22,12 +22,12 @@ enum class ESamplerAddressMode
     // Clamps to edge
     ClampToEdge,
 
-   // Clamps to border 
+    // Clamps to border 
     ClampToBorder
 };
 
 /**
-* The sampling filter to use 
+* The sampling filter to use
 */
 enum class ESamplerFilter
 {
@@ -39,7 +39,7 @@ enum class ESamplerFilter
 };
 
 /**
-* The mip map modes 
+* The mip map modes
 */
 enum class EMipMapMode
 {
@@ -51,16 +51,16 @@ enum class EMipMapMode
 };
 
 /**
-* Enumeration specifying teh border color used for texture lookups 
+* Enumeration specifying teh border color used for texture lookups
 */
 enum class EBorderColor
 {
-   FloatTransparentBlack        = 0,
-   IntTransparentBlack          = 1,
-   FloatOpaqueBlack             = 2,
-   IntOpaqueBlack               = 3,
-   FloatOpaqueWhite             = 4,
-   IntOpaqueWhite               = 5,
+    FloatTransparentBlack = 0,
+    IntTransparentBlack = 1,
+    FloatOpaqueBlack = 2,
+    IntOpaqueBlack = 3,
+    FloatOpaqueWhite = 4,
+    IntOpaqueWhite = 5,
 };
 
 /**
@@ -89,7 +89,7 @@ public:
 
     /** the LOD bias used for mip-mapping */
     float MipMapLodBias;
-    
+
     /** specifies if the sampler should use mip-maps or not */
     bool bEnableMinMapping;
 
@@ -115,4 +115,28 @@ public:
     FSamplerConfig()
         : MagFilter(ESamplerFilter::Linear), MinFilter(ESamplerFilter::Linear), MipMapMode(EMipMapMode::Linear), AddressModeU(ESamplerAddressMode::ClampToBorder), AddressModeV(ESamplerAddressMode::ClampToBorder), AddressModeW(ESamplerAddressMode::ClampToBorder),
         MipMapLodBias(0.0f), bEnableMinMapping(false), MaxAnisotropy(0), bEnableCompare(false), CompareOp(ECompareOp::Less), MinLod(0), MaxLod(0), BorderColor(EBorderColor::FloatOpaqueWhite) { }
+
+    /**
+    * A default sampler 
+    */
+    void SetDefault()
+    {
+        AddressModeU = ESamplerAddressMode::ClampToBorder; 
+        AddressModeV = ESamplerAddressMode::ClampToBorder; 
+        AddressModeW = ESamplerAddressMode::ClampToBorder; 
+
+        MagFilter = ESamplerFilter::Linear;
+        MinFilter = ESamplerFilter::Linear;
+
+        MipMapMode = EMipMapMode::Linear;
+        MipMapLodBias = 0;
+
+        MinLod = 0;
+        MaxLod = 1;
+
+        MaxAnisotropy = 0;
+        BorderColor = EBorderColor::FloatOpaqueWhite;
+        bEnableCompare = false;
+        CompareOp = ECompareOp::Less;
+    }
 };

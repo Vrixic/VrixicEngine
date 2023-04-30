@@ -8,6 +8,9 @@
 #include "Extents.h"
 #include "Format.h"
 #include <Misc/Defines/GenericDefines.h>
+#include "RenderPassGenerics.h"
+
+class Buffer;
 
 /**
 * Texture type : in vulkan -> ImageViewType
@@ -69,6 +72,9 @@ public:
     /** Indicates the texture type, is it a 1D or 2D, etc.. texture */
     ETextureType Type;
 
+    /** Texture layout indiciates what type if texture it is and what can be done with it (read/write) */
+    ETextureLayout Layout;
+
     /** These flags specify which resource slot and attachment this texture will be bound to, ResourceBindFlags::ColorAttachment */
     uint32 BindFlags;
 
@@ -89,7 +95,7 @@ public:
 
 public:
     FTextureConfig()
-        : Type(ETextureType::Texture2D), BindFlags(0), Format(EPixelFormat::Undefined), Extent(0.0f, 0.0f, 0.0f), MipLevels(1), NumArrayLayers(1), NumSamples(1) { }
+        : Type(ETextureType::Texture2D), Layout(ETextureLayout::Undefined), BindFlags(0), Format(EPixelFormat::Undefined), Extent(0u, 0u, 0u), MipLevels(1), NumArrayLayers(1), NumSamples(1) { }
 };
 
 /**
@@ -110,5 +116,24 @@ public:
 public:
     FTextureViewConfig()
         : Type(ETextureType::Texture2D), Format(EPixelFormat::Undefined) { }
+};
+
+/**
+* Contains information for copying buffer to a texture
+*/
+struct VRIXIC_API FTextureWriteInfo
+{
+public:
+    /** The handle to the buffer to copy data from */
+    Buffer* BufferHandle;
+
+    /** The extent of the texture, for 1d and 2d the depth has to be 1*/
+    FExtent3D Extent;
+    
+    /** Specifies mipmap levels, and array layer ranges...etc...*/
+    FTextureSubresourceRange Subresource;
+
+public:
+    FTextureWriteInfo() : BufferHandle(nullptr), Extent(0u, 0u, 1u) { }
 };
 

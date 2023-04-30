@@ -440,6 +440,14 @@ public:
 		return BufferConfiguration.Size;
 	}
 
+    /**
+    * @returns uint64 the offset of the buffer from start of device memory 
+    */
+    uint64 GetBufferOffset() const
+    {
+        return Offset;
+    }
+
 	const VkBuffer* GetBufferHandle() const
 	{
 		return &BufferHandle;
@@ -574,25 +582,24 @@ public:
 
 		VulkanBuffer* Buffer = nullptr;
 
-		switch (inBufferConfig.UsageFlags)
-		{
-		case EBufferUsageFlags::Index:
-			Buffer = AllocateIndexBuffer(inBufferConfig);
-			break;
-		case EBufferUsageFlags::Vertex:
-			Buffer = AllocateVertexBuffer(inBufferConfig);
-			break;
-		case EBufferUsageFlags::Storage:
-			Buffer = AllocateStorageBuffer(inBufferConfig);
-			break;
-		//case EBufferType::Uniform:
-		//	break;
-		//case EBufferType::Staging:
-		//	Buffer = AllocateStagingBuffer(inBufferConfig);
-		//	break;
-		default:
-			break;
-		}
+        if (inBufferConfig.UsageFlags & FResourceBindFlags::IndexBuffer)
+        {
+            Buffer = AllocateIndexBuffer(inBufferConfig);
+        }
+        else if (inBufferConfig.UsageFlags & FResourceBindFlags::VertexBuffer)
+        {
+            Buffer = AllocateVertexBuffer(inBufferConfig);
+        }
+        else if ((inBufferConfig.UsageFlags & FResourceBindFlags::UniformBuffer) || (inBufferConfig.UsageFlags & FResourceBindFlags::ConstantBuffer))
+        {
+            Buffer = AllocateUniformBuffer(inBufferConfig);
+        }
+        else if (inBufferConfig.UsageFlags & FResourceBindFlags::StorageBuffer)
+        {
+            Buffer = AllocateStorageBuffer(inBufferConfig);
+        }
+
+        VE_ASSERT(Buffer != nullptr, VE_TEXT("[VulkanBuffer]: Failed to allocate buffer..."));
 
 		return Buffer;
 	}
@@ -623,9 +630,17 @@ private:
     }
 	
 	/**
-	* Allocated a storage buffer
+	* Allocated a uniform buffer
 	*/
-	VulkanBuffer* AllocateStagingBuffer(const FBufferConfig& inBufferConfig)
+	VulkanBuffer* AllocateUniformBuffer(const FBufferConfig& inBufferConfig)
+    {
+        return AllocateBufferInternal(inBufferConfig);
+    }
+
+    /**
+    * Allocated a staging buffer
+    */
+    VulkanBuffer* AllocateStagingBuffer(const FBufferConfig& inBufferConfig)
     {
         return AllocateBufferInternal(inBufferConfig);
     }
@@ -649,10 +664,25 @@ private:
 
 		VulkanBuffer* AllocBuffer = new VulkanBuffer(Device, inBufferConfig , -1, MemoryUsed);
 		AllocBuffer->AllocateBuffer(BufferCreateInfo);
+
+        // Get teh memory requirements for its alignment 
+        VkMemoryRequirements MemoryRequirements;
+        VkMemoryAllocateInfo MemoryAllocateInfo = VulkanUtils::Initializers::MemoryAllocateInfo();
+        vkGetBufferMemoryRequirements(*Device->GetDeviceHandle(), AllocBuffer->BufferHandle, &MemoryRequirements);
+
+        /* Align the memory to alignment so next buffer will be aligned correctly */
+        float AlignmentCheck = static_cast<float>(MemoryUsed) / static_cast<float>(MemoryRequirements.alignment);
+        AlignmentCheck = ceilf(AlignmentCheck);
+
+        MemoryUsed = static_cast<uint64>(AlignmentCheck * MemoryRequirements.alignment);
+
+        // Set the new buffer variables 
 		AllocBuffer->DeviceMemory = DeviceMemoryAllocater->GetDeviceMemory(MemoryID);
 		AllocBuffer->DeviceMemoryID = MemoryID;
-		AllocBuffer->Alignment = Buffer->Alignment;
+		AllocBuffer->Alignment = MemoryRequirements.alignment;
+		AllocBuffer->Offset = MemoryUsed;
 
+        // bind the new buffer 
 		AllocBuffer->Bind(0);
 
         if (inBufferConfig.InitialData != nullptr)
@@ -660,13 +690,8 @@ private:
             memcpy(AllocBuffer->GetMappedPointer(), inBufferConfig.InitialData, inBufferConfig.Size);
         }
 
-		/* Align the memory to alignment so next buffer will be aligned correctly */
-		float AlignmentCheck = static_cast<float>(inBufferConfig.Size) / static_cast<float>(Buffer->Alignment);
-		AlignmentCheck = ceilf(AlignmentCheck);
-
-		MemoryUsed += static_cast<uint64>(AlignmentCheck * Buffer->Alignment);
-
-		AllocatedBuffers.push_back(AllocBuffer);
+        MemoryUsed += inBufferConfig.Size;
+        AllocatedBuffers.push_back(AllocBuffer);
 
 		return AllocBuffer;
 	}

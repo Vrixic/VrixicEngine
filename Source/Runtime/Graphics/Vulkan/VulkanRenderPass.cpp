@@ -213,3 +213,13 @@ void VulkanRenderPass::Create(std::vector<VkSubpassDependency>& inSubpassDepende
 
 	VK_CHECK_RESULT(vkCreateRenderPass(*Device->GetDeviceHandle(), &RenderPassInfo, nullptr, &RenderPassHandle), "[VulkanRenderPass]: Failed to create a render pass!");
 }
+
+void VulkanRenderPass::UpdateRenderArea(const FRect2D& inNewRenderArea)
+{
+    VkRect2D NewRenderArea = { };
+    NewRenderArea.offset.x = inNewRenderArea.OffsetX;
+    NewRenderArea.offset.y = inNewRenderArea.OffsetY;
+    NewRenderArea.extent.width = inNewRenderArea.Width;
+    NewRenderArea.extent.height = inNewRenderArea.Height;
+    RenderLayout.SetRenderArea(NewRenderArea);
+}

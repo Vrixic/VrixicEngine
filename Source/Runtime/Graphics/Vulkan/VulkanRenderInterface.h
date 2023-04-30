@@ -135,6 +135,14 @@ public:
     virtual Texture* CreateTexture(const FTextureConfig& inTextureConfig) override;
 
     /**
+    * Copies the data from the buffer provided and puts it into the texture
+    *
+    * @param inTexture the texture that will contain the data after copy
+    * @param inTextureWriteInfo contains information used to write to the texture 
+    */
+    virtual void WriteToTexture(const Texture* inTexture, const FTextureWriteInfo& inTextureWriteInfo) override;
+
+    /**
     * Releases/Destroys the texture passed in
     *
     * @param inTexture the texture to free
@@ -290,6 +298,24 @@ public:
     virtual void Free(Sampler* inSampler) override;
 
     /* ------------------------------------------------------------------------------- */
+    /* -------------                 Descriptor Sets               ------------------- */
+    /* ------------------------------------------------------------------------------- */
+
+    /**
+     * Creates a new descriptor set with the specified configurations
+    *
+     * @param inDescriptorSetConfig info used to create the descriptor set
+    */
+    virtual IDescriptorSets* CreateDescriptorSet(FDescriptorSetsConfig& inDescriptorSetConfig) override;
+
+    /**
+    * Releases/Destroys the descriptor set(s) passed in
+    *
+    * @param inDescriptorSets the descriptor set(s) to free
+    */
+    virtual void Free(IDescriptorSets* inDescriptorSets) override;
+
+    /* ------------------------------------------------------------------------------- */
     /* -------------                     ImGui                     ------------------- */
     /* ------------------------------------------------------------------------------- */
 
@@ -319,6 +345,11 @@ public:
     * Starts a new frame for imgui
     */
     virtual void EndImGuiFrame() const override;
+
+    /**
+    * Called when window resizes but, this function is only here temporarily as all the imgui code...
+    */
+    virtual void OnRenderViewportResized(SwapChain* inMainSwapchain, const FExtent2D& inNewRenderViewport) override;
 
     /**
     * Shuts down ImGui and cleans up all its resources

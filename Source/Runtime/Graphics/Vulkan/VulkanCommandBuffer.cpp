@@ -10,6 +10,7 @@
 #include "VulkanUtils.h"
 #include "VulkanPipeline.h"
 #include "VulkanFence.h"
+#include "VulkanTypeConverter.h"
 
 /* ------------------------------------------------------------------------------- */
 /* -----------------------         Command Buffer         ------------------------ */
@@ -110,10 +111,35 @@ void VulkanCommandBuffer::EndRenderPass() const
 
 void VulkanCommandBuffer::BindPipeline(const IPipeline* inPipeline)
 {
-    ASSERT(inPipeline->GetBindPoint() != EPipelineBindPoint::Undefined, "[VulkanCommandBuffer]: Trying to bind a pipeline that is undefined, it has to be Graphics as thats whats only supported right now!")
+    VE_ASSERT(inPipeline->GetBindPoint() != EPipelineBindPoint::Undefined, VE_TEXT("[VulkanCommandBuffer]: Trying to bind a pipeline that is undefined, it has to be Graphics as thats whats only supported right now!"))
 
     VulkanPipeline* Pipeline = (VulkanPipeline*)inPipeline;
     vkCmdBindPipeline(CommandBufferHandle, (VkPipelineBindPoint)inPipeline->GetBindPoint(), *Pipeline->GetPipelineHandle());
+}
+
+void VulkanCommandBuffer::BindDescriptorSets(const FDescriptorSetsBindInfo& inDescriptorSetBindInfo)
+{
+    VE_ASSERT(inDescriptorSetBindInfo.DescriptorSets != nullptr, VE_TEXT("[VulkanCommandBuffer]: Cannot bind null descriptor sets..."));
+    VE_ASSERT(inDescriptorSetBindInfo.NumSets > 0, VE_TEXT("[VulkanCommandBuffer]: Cannot bind 0 descriptor sets... "));
+
+    VulkanPipelineLayout* PipelineLayoutPtr = (VulkanPipelineLayout*)inDescriptorSetBindInfo.PipelineLayoutPtr;
+    VulkanDescriptorSets* DescriptorSetsPtr = (VulkanDescriptorSets*)inDescriptorSetBindInfo.DescriptorSets;
+    std::vector<VkDescriptorSet> DescriptorSets(inDescriptorSetBindInfo.NumSets);
+    for (uint32 i = 0; i < inDescriptorSetBindInfo.NumSets; i++)
+    {
+        DescriptorSets[i] = DescriptorSetsPtr[i].GetDescriptorSetHandle(i);
+    }
+
+    vkCmdBindDescriptorSets(
+        CommandBufferHandle, 
+        (VkPipelineBindPoint)inDescriptorSetBindInfo.PipelineBindPoint, 
+        *PipelineLayoutPtr->GetPipelineLayoutHandle(),
+        0, 
+        inDescriptorSetBindInfo.NumSets,
+        DescriptorSets.data(),
+        0,
+        nullptr
+        );
 }
 
 void VulkanCommandBuffer::Draw(uint32 inNumVertices, uint32 inFirstVertexIndex)

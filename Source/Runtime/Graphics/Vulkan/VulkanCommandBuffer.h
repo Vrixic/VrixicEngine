@@ -125,6 +125,17 @@ public:
     virtual void BindPipeline(const IPipeline* inPipeline) override;
 
     /* ------------------------------------------------------------------------------- */
+    /* -------------                 Descriptor Sets               ------------------- */
+    /* ------------------------------------------------------------------------------- */
+
+    /**
+    * Binds a descriptor set to the command buffer
+    *
+    * @param inDescriptorSetBindInfo the binding information used to bind the descriptor sets
+    */
+    virtual void BindDescriptorSets(const FDescriptorSetsBindInfo& inDescriptorSetBindInfo) override;
+
+    /* ------------------------------------------------------------------------------- */
     /* ---------------                Drawing Stuff                ------------------- */
     /* ------------------------------------------------------------------------------- */
 

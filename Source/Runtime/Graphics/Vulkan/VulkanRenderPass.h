@@ -44,14 +44,6 @@ public:
 	void Create(std::vector<VkSubpassDependency>& inSubpassDependencies);
 
 	/**
-	* Updates the render area 
-	*/
-	void UpdateRenderArea(VkRect2D& inRenderArea)
-	{
-		RenderLayout.SetRenderArea(inRenderArea);
-	}
-
-	/**
 	* Updates the extent
 	*/
 	void UpdateExtent2D(VkExtent2D& inExtent2D)
@@ -60,6 +52,17 @@ public:
 	}
 
 public:
+    /** - IRenderpass Interface Start */
+
+    /**
+    * Updates the render area for this renderpass
+    *
+    * @param inNewRenderArea the new render area for the render pass
+    */
+    virtual void UpdateRenderArea(const FRect2D& inNewRenderArea) override;
+
+    /** - IRenderpass Interface End */
+
 	inline const VkRenderPass* GetRenderPassHandle() const
 	{
 		return &RenderPassHandle;

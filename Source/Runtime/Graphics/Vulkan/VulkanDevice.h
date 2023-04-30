@@ -26,6 +26,64 @@ class VulkanCommandPool;
 class VulkanTextureView;
 
 /**
+* Helper struct that contains information of transitioning a image layout
+*/
+struct VRIXIC_API HTransitionTextureLayoutInfo
+{
+public:
+    /** The Command buffer handle use for the transition */
+    VkCommandBuffer CommandBufferHandle;
+
+    /** The texture handle that contains the image */
+    VulkanTextureView* TextureHandle;
+
+    /** Old/current layout of the image */
+    VkImageLayout OldLayout;
+
+    /** new layout the layout the texture will transition to */
+    VkImageLayout NewLayout;
+
+    /** The Textures subresource range */
+    FTextureSubresourceRange* Subresource;
+
+public:
+    HTransitionTextureLayoutInfo() : CommandBufferHandle(VK_NULL_HANDLE), TextureHandle(nullptr), OldLayout(VK_IMAGE_LAYOUT_UNDEFINED), NewLayout(VK_IMAGE_LAYOUT_UNDEFINED), Subresource(nullptr) { }
+};
+
+/**
+* Helper struct that contains information for coping data from buffer tp texture
+*/
+struct VRIXIC_API HCopyBufferToTextureInfo
+{
+public:
+    /** The Command buffer handle */
+    VkCommandBuffer CommandBufferHandle;
+
+    /** The texture handle that contains the image */
+    VulkanTextureView* TextureHandle;
+
+    /** The buffer handle that contains the data */
+    VkBuffer BufferHandle;
+
+    /** The image offset (Zero based) into the texture data */
+    VkOffset3D Offset;
+
+    /** The extent of the sub texture region */
+    VkExtent3D Extent;
+
+    /** The Textures subresource range */
+    FTextureSubresourceRange* Subresource;
+
+public:
+    HCopyBufferToTextureInfo()
+        : CommandBufferHandle(VK_NULL_HANDLE), TextureHandle(nullptr), BufferHandle(VK_NULL_HANDLE), Subresource(nullptr)
+    {
+        Offset = { 0, 0, 0 };
+        Extent = { 0, 0, 1 };
+    }
+};
+
+/**
 * Representation of vulkan device
 */
 class VRIXIC_API VulkanDevice
@@ -57,6 +115,20 @@ public:
     * Waits until the device is idle... not executing any commands..
     */
     void WaitUntilIdle() const;
+
+    /**
+    * Transitions a image layout, used for WriteToTexture
+    *
+    * @param inTransitionImageLayoutInfo contains information needed to complete the transition
+    */
+    void TransitionTextureLayout(const HTransitionTextureLayoutInfo& inTransitionImageLayoutInfo);
+
+    /**
+    * Copies the specified buffer data to the texture specified
+    *
+    * @param inCopyBufferToTexture contains information for the data to be copied to the texture
+    */
+    void CopyBufferToTexture(const HCopyBufferToTextureInfo& inCopyBufferToTexture);
 
 public:
     /* Returns the logical device */
@@ -124,6 +196,9 @@ public:
     uint32_t GetMemoryTypeIndex(uint32_t inTypeBits, VkMemoryPropertyFlags inProperties, VkBool32* outMemTypeFound) const;
 
 private:
+    static VkImageAspectFlags GetImageAspectFlags(VkFormat inFormat);
+
+private:
     /** Representation of GPU */
     VkDevice LogicalDeviceHandle;
 
@@ -158,7 +233,7 @@ private:
 * A representation of a Vulkan Queue, derieve from command queue and has the ability to submit command buffers
 * @note A queue has a command pool which should be used to allocate all other command buffers for that respective queue
 * @example GraphicsQueue -> Command Pool ( A command buffer used for graphics will use the Graphics Queue for its creation...)
-*          ComputeQueue  -> Command Pool 
+*          ComputeQueue  -> Command Pool
 */
 class VRIXIC_API VulkanQueue : public ICommandQueue
 {
@@ -234,6 +309,22 @@ public:
     * @param inSubmitInfo - the queue submission info
     */
     void SubmitQueue(VulkanCommandBuffer* inCommandBuffer, const VkSubmitInfo& inSubmitInfo) const;
+
+    /** Used by Vulkan Render Interface for writing to textures */
+
+    /**
+    * Creates a default command buffer
+    * @param inShouldBegin true to begin the command buffer, false other wise
+    */
+    VkCommandBuffer CreateDefaultCommandBuffer(bool inShouldBegin);
+
+    /**
+    * Flushes the command buffer
+    *
+    * @param inCommandBuffer the command buffer to flush
+    * @param inShouldFree true if the command buffer should be freed, false otherwise
+    */
+    void FlushCommandBuffer(VkCommandBuffer inCommandBuffer, bool inShouldFree);
 
 public:
     inline VkQueue GetQueueHandle() const { return Queue; }
@@ -398,7 +489,7 @@ public:
     /**
     * Acquires the next swapchain image index
     *
-    * @param inWaitSemaphore the presentation complete semaphore to wait on 
+    * @param inWaitSemaphore the presentation complete semaphore to wait on
     * @param outIndex the new image index to use
     */
     virtual void AcquireNextImageIndex(ISemaphore* inWaitSemaphore, uint32* outIndex) const override;
@@ -512,9 +603,6 @@ private:
     VulkanDevice* Device;
     VulkanSurface* SurfacePtr;
     VkSwapchainKHR SwapChainHandle;
-
-    uint32 ImageWidth;
-    uint32 ImageHeight;
 
     uint32 MinImageCount;
     uint32 ImageCount;

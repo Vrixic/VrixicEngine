@@ -259,6 +259,64 @@ void VulkanDevice::WaitUntilIdle() const
     vkDeviceWaitIdle(LogicalDeviceHandle);
 }
 
+void VulkanDevice::TransitionTextureLayout(const HTransitionTextureLayoutInfo& inTransitionImageLayoutInfo)
+{
+    // Create a Image Memory Barrier 
+    VkImageMemoryBarrier ImageMemoryBarrier = VulkanUtils::Initializers::ImageMemoryBarrier();
+    ImageMemoryBarrier.oldLayout = inTransitionImageLayoutInfo.OldLayout;
+    ImageMemoryBarrier.newLayout = inTransitionImageLayoutInfo.NewLayout;
+    ImageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    ImageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    ImageMemoryBarrier.image = *inTransitionImageLayoutInfo.TextureHandle->GetImageHandle();
+    ImageMemoryBarrier.subresourceRange.aspectMask = GetImageAspectFlags(inTransitionImageLayoutInfo.TextureHandle->GetImageFormat());
+    ImageMemoryBarrier.subresourceRange.baseMipLevel = inTransitionImageLayoutInfo.Subresource->BaseMipLevel;
+    ImageMemoryBarrier.subresourceRange.levelCount = inTransitionImageLayoutInfo.Subresource->NumMipLevels;
+    ImageMemoryBarrier.subresourceRange.baseArrayLayer = inTransitionImageLayoutInfo.Subresource->BaseArrayLayer;
+    ImageMemoryBarrier.subresourceRange.layerCount = inTransitionImageLayoutInfo.Subresource->NumArrayLayers;
+
+    VkPipelineStageFlags SrcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    VkPipelineStageFlags DstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+
+    if (inTransitionImageLayoutInfo.OldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
+        inTransitionImageLayoutInfo.NewLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+    {
+        ImageMemoryBarrier.srcAccessMask = 0;
+        ImageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        SrcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        DstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    }
+    else if (inTransitionImageLayoutInfo.OldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+        && inTransitionImageLayoutInfo.NewLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    {
+        ImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        ImageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        SrcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        DstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    }
+
+    vkCmdPipelineBarrier(inTransitionImageLayoutInfo.CommandBufferHandle,
+        SrcStageMask, DstStageMask, 0, 0, nullptr, 0,
+        nullptr, 1, &ImageMemoryBarrier);
+}
+
+void VulkanDevice::CopyBufferToTexture(const HCopyBufferToTextureInfo& inCopyBufferToTexture)
+{
+    VkBufferImageCopy BufferImageCopy;
+    BufferImageCopy.bufferOffset = 0;
+    BufferImageCopy.bufferRowLength = 0;
+    BufferImageCopy.bufferImageHeight = 0;
+    BufferImageCopy.imageSubresource.aspectMask = GetImageAspectFlags(inCopyBufferToTexture.TextureHandle->GetImageFormat());
+    BufferImageCopy.imageSubresource.mipLevel = inCopyBufferToTexture.Subresource->BaseMipLevel;
+    BufferImageCopy.imageSubresource.baseArrayLayer = inCopyBufferToTexture.Subresource->BaseArrayLayer;
+    BufferImageCopy.imageSubresource.layerCount = inCopyBufferToTexture.Subresource->NumArrayLayers;
+    BufferImageCopy.imageOffset = inCopyBufferToTexture.Offset;
+    BufferImageCopy.imageExtent = inCopyBufferToTexture.Extent;
+
+    vkCmdCopyBufferToImage(inCopyBufferToTexture.CommandBufferHandle,
+        inCopyBufferToTexture.BufferHandle, *inCopyBufferToTexture.TextureHandle->GetImageHandle(),
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &BufferImageCopy);
+}
+
 uint32_t VulkanDevice::GetMemoryTypeIndex(uint32_t inTypeBits, VkMemoryPropertyFlags inProperties, VkBool32* outMemTypeFound) const
 {
     VE_PROFILE_VULKAN_FUNCTION();
@@ -288,6 +346,36 @@ uint32_t VulkanDevice::GetMemoryTypeIndex(uint32_t inTypeBits, VkMemoryPropertyF
     {
         throw std::runtime_error("Could not find a matching memory type");
     }
+}
+
+VkImageAspectFlags VulkanDevice::GetImageAspectFlags(VkFormat inFormat)
+{
+    VkImageAspectFlags ImageAspectFlags = 0;
+
+    if (inFormat & VK_IMAGE_ASPECT_COLOR_BIT)
+    {
+        ImageAspectFlags |= VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+    else if (inFormat & VK_IMAGE_ASPECT_DEPTH_BIT)
+    {
+        if (inFormat & VK_IMAGE_ASPECT_STENCIL_BIT)
+        {
+            ImageAspectFlags |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
+
+        ImageAspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT;
+    }
+    else if (inFormat & VK_IMAGE_ASPECT_STENCIL_BIT)
+    {
+        if (inFormat & VK_IMAGE_ASPECT_DEPTH_BIT)
+        {
+            ImageAspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT;
+        }
+
+        ImageAspectFlags |= VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
+
+    return ImageAspectFlags;
 }
 
 /* ------------------------------------------------------------------------------- */
@@ -382,6 +470,54 @@ void VulkanQueue::SubmitQueue(VulkanCommandBuffer* commandBuffer, const VkSubmit
 
     // Submit to the graphics queue passing a wait fence
     VK_CHECK_RESULT(vkQueueSubmit(Queue, 1, &inSubmitInfo, WaitFence->GetFenceHandle()), "[VulkanQueue]: Failed to submit a command buffer to graphics queue!");
+}
+
+VkCommandBuffer VulkanQueue::CreateDefaultCommandBuffer(bool inShouldBegin)
+{
+    VkCommandBuffer CommandBufferHandle = VK_NULL_HANDLE;
+
+    // Allocate command buffer with default configs..
+    VkCommandBufferAllocateInfo CommandBufferAllocateInfo = VulkanUtils::Initializers::CommandBufferAllocateInfo();
+    CommandBufferAllocateInfo.commandPool = CommandPool->GetCommandPoolHandle();
+    CommandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    CommandBufferAllocateInfo.commandBufferCount = 1;
+
+    VK_CHECK_RESULT(vkAllocateCommandBuffers(*Device->GetDeviceHandle(), &CommandBufferAllocateInfo, &CommandBufferHandle), VE_TEXT("[VulkanQueue]: Failed to create a default command buffer...!"));
+
+    // Only begin the newly created command buffer if user wanted to 
+    if (inShouldBegin)
+    {
+        VkCommandBufferBeginInfo CommandBufferBeginInfo = VulkanUtils::Initializers::CommandBufferBeginInfo(nullptr);
+        CommandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        VK_CHECK_RESULT(vkBeginCommandBuffer(CommandBufferHandle, &CommandBufferBeginInfo), VE_TEXT("[VulkanQueue]: Failed to begin a command buffer...!"));
+    }
+
+    return CommandBufferHandle;
+}
+
+void VulkanQueue::FlushCommandBuffer(VkCommandBuffer inCommandBuffer, bool inShouldFree)
+{
+    // Firstly end the command buffer so its not in a recording state any more 
+    VK_CHECK_RESULT(vkEndCommandBuffer(inCommandBuffer), VE_TEXT("[VulkanQueue]: Failed to end command buffer...!"));
+
+    // Ensure that all the commands are processed in the command buffer
+    VulkanFence Fence(Device);
+    Fence.Reset();
+
+    VkSubmitInfo SubmitInfo = VulkanUtils::Initializers::SubmitInfo();
+    SubmitInfo.commandBufferCount = 1;
+    SubmitInfo.pCommandBuffers = &inCommandBuffer;
+
+    vkQueueSubmit(Queue, 1, &SubmitInfo, Fence.GetFenceHandle());
+
+    // Wait for fence 
+    Fence.Wait(UINT64_MAX);
+
+    if (inShouldFree)
+    {
+        vkFreeCommandBuffers(*Device->GetDeviceHandle(), CommandPool->GetCommandPoolHandle(), 1, &inCommandBuffer);
+    }
 }
 
 /* ------------------------------------------------------------------------------- */
@@ -523,7 +659,7 @@ EPixelFormat VulkanSurface::GetColorFormat() const
 /* ------------------------------------------------------------------------------- */
 
 VulkanSwapChain::VulkanSwapChain(VulkanDevice* inDevice, VulkanSurface* inSurface, const FSwapChainConfig& inConfig)
-    : Device(inDevice), SurfacePtr(inSurface), SwapChainHandle(VK_NULL_HANDLE), ImageWidth(0), ImageHeight(0), ImageCount(0)
+    : Device(inDevice), SurfacePtr(inSurface), SwapChainHandle(VK_NULL_HANDLE), ImageCount(0)
 {
     /* Get the function pointers */
     fpCreateSwapchainKHR = reinterpret_cast<PFN_vkCreateSwapchainKHR>(vkGetDeviceProcAddr(*Device->GetDeviceHandle(), "vkCreateSwapchainKHR"));
@@ -531,6 +667,9 @@ VulkanSwapChain::VulkanSwapChain(VulkanDevice* inDevice, VulkanSurface* inSurfac
     fpGetSwapchainImagesKHR = reinterpret_cast<PFN_vkGetSwapchainImagesKHR>(vkGetDeviceProcAddr(*Device->GetDeviceHandle(), "vkGetSwapchainImagesKHR"));
     fpAcquireNextImageKHR = reinterpret_cast<PFN_vkAcquireNextImageKHR>(vkGetDeviceProcAddr(*Device->GetDeviceHandle(), "vkAcquireNextImageKHR"));
     fpQueuePresentKHR = reinterpret_cast<PFN_vkQueuePresentKHR>(vkGetDeviceProcAddr(*Device->GetDeviceHandle(), "vkQueuePresentKHR"));
+
+    ImageWidth = 0;
+    ImageHeight = 0;
 
     Create(inConfig, VK_NULL_HANDLE);
 }
@@ -721,6 +860,7 @@ void VulkanSwapChain::CreateSwapChainImageViews()
     for (uint32 i = 0; i < ImageViews.size(); ++i)
     {
         ImageViews[i]->ImageHandle = VK_NULL_HANDLE;
+        ImageViews[i]->Device = Device;
         delete ImageViews[i];
     }
 
@@ -843,7 +983,7 @@ VkPresentModeKHR VulkanSwapChain::SelectSwapChainPresentMode(bool inEnableVSync)
 void VulkanSwapChain::AcquireNextImageIndex(ISemaphore* inLastCommandBuffer, uint32* outIndex) const
 {
     // By setting timeout to UINT64_MAX we will always wait until the next image has been acquired or an actual error is thrown
-	// With that we don't have to handle VK_NOT_READY		
+    // With that we don't have to handle VK_NOT_READY		
 
     VulkanSemaphore* Semaphore = (VulkanSemaphore*)inLastCommandBuffer;
     VK_CHECK_RESULT(fpAcquireNextImageKHR(*Device->GetDeviceHandle(), SwapChainHandle, UINT64_MAX, *Semaphore->GetSemaphoresHandle(), (VkFence)nullptr, outIndex), "[VulkanSwapchain]: Failed to acquire the next swap chain image index...!");

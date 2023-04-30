@@ -89,6 +89,8 @@ void Application::OnEvent(WindowEvent& inEvent)
 		bIsRunning = false;
 	}
 
+	GameEngine->OnWindowEvent(inEvent);
+
 //#if _EDITOR
 //	GameEditor->OnEvent(inEvent);
 //#endif

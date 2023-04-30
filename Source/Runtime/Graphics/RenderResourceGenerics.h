@@ -15,8 +15,6 @@ enum class EResourceType
     Buffer,                     // a buffer resource
     Texture,                    // a texture resource
     Sampler,                    // a sampler resource 
-    CombinedTextureSampler,     // combination of a texture and a sampler
-    StorageTexture,              // 
     InputAttachment             //
 };
 
@@ -30,28 +28,42 @@ public:
 
     enum
     {
+        /** Buffer Flags */
+
         // buffer resource that is made for vertices
         VertexBuffer                = BIT(0),
 
         // buffer resource that is made for indices
         IndexBuffer                 = BIT(1),
 
-        // buffer resource for binding to set of constant 
+        // buffer resource for binding to set of constant -> read only 
         ConstantBuffer              = BIT(2),
 
-        // storage buffer resource used to bind to a buffer
+        // storage buffer resource used to bind to a buffer that holds huge amounts of data 
         StorageBuffer               = BIT(3),
 
-        TexelBuffer                 = BIT(4),
+        // buffer resource for binding to set of constant -> read only 
+        UniformBuffer               = BIT(4),
 
-        // Allows for textures to be used as a render target for color attachment 
-        ColorAttachment             = BIT(5),
-
-        // allows tectures to be used as a render target for depth-stencil attachment 
-        DepthStencilAttachment      = BIT(6),
+        TexelBuffer                 = BIT(5),
 
         // dynamics buffers 
-        Dynamic                     = BIT(7)
+        Dynamic                     = BIT(6),
+
+        /** Texture Flags */
+
+        // Allows for textures to be used as a render target for color attachment 
+        ColorAttachment             = BIT(8),
+
+        // allows tectures to be used as a render target for depth-stencil attachment 
+        DepthStencilAttachment      = BIT(9),
+
+        // The texture will get sampled 
+        Sampled                     = BIT(10),
+
+        /** ADDITIVE FLAGS */
+        SrcTransfer                 = BIT(15), 
+        DstTransfer                 = BIT(16),
     };
 };
 

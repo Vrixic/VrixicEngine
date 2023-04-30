@@ -263,24 +263,55 @@ VkCommandBufferLevel VulkanTypeConverter::ConvertCmdBuffFlagsToVk(uint32 inFlags
     return VkCommandBufferLevel();
 }
 
-VkBufferUsageFlags VulkanTypeConverter::ConvertBufferUsageFlagsToVk(EBufferUsageFlags inUsageFlag)
+VkBufferUsageFlags VulkanTypeConverter::ConvertBufferUsageFlagsToVk(uint32 inUsageFlag)
 {
-    switch (inUsageFlag)
+    VkBufferUsageFlags Flags = 0;
+
+    if (inUsageFlag & FResourceBindFlags::VertexBuffer)
     {
-    case EBufferUsageFlags::Vertex:
-        return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-        break;
-    case EBufferUsageFlags::Index:
-        return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-        break;
-    case EBufferUsageFlags::Storage:
-        return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-        break;
+        Flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
     }
 
-    ConversionFailed("EBufferUsageFlags", "VkBufferUsageFlags");
+    if (inUsageFlag & FResourceBindFlags::IndexBuffer)
+    {
+        Flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    }
 
-    return (VkBufferUsageFlags)0;
+    if (inUsageFlag & FResourceBindFlags::IndexBuffer)
+    {
+        if (inUsageFlag & FResourceBindFlags::TexelBuffer)
+        {
+            Flags |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+        }
+        else
+        {
+            Flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+        }
+    }
+
+    if (inUsageFlag & FResourceBindFlags::ConstantBuffer || inUsageFlag & FResourceBindFlags::UniformBuffer)
+    {
+        if (inUsageFlag & FResourceBindFlags::TexelBuffer)
+        {
+            Flags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+        }
+        else
+        {
+            Flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+        }
+    }
+
+    if (inUsageFlag & FResourceBindFlags::SrcTransfer)
+    {
+        Flags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    }
+
+    if (inUsageFlag & FResourceBindFlags::DstTransfer)
+    {
+        Flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    }
+
+    return Flags;
 }
 
 VkMemoryPropertyFlags VulkanTypeConverter::ConvertMemoryFlagsToVk(uint32 inMemoryFlags)
@@ -338,6 +369,9 @@ VkImageLayout VulkanTypeConverter::ConvertTextureLayoutToVk(ETextureLayout inLay
     case ETextureLayout::ColorAttachment:            return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     case ETextureLayout::DepthStencilAttachment:     return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     case ETextureLayout::DepthStencilReadOnly:       return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    case ETextureLayout::ShaderReadOnlyOptimal:      return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    case ETextureLayout::TransferSrcOptimal:         return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    case ETextureLayout::TransferDstOptimal:         return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     case ETextureLayout::PresentSrc:                 return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     default:
         break;
@@ -394,33 +428,33 @@ VkAttachmentStoreOp VulkanTypeConverter::ConvertAttachmentStoreOpToVk(const EAtt
     return (VkAttachmentStoreOp)0;
 }
 
-VkDescriptorType VulkanTypeConverter::ConvertPipelineBDToVk(const FPipelineBindingDescriptor inDesc)
+VkDescriptorType VulkanTypeConverter::ConvertBindFlagsToVkDescriptorType(EResourceType inResourceType, uint32 inBindFlags)
 {
-    switch (inDesc.ResourceType)
+    switch (inResourceType)
     {
     case EResourceType::Buffer:
-        if (inDesc.BindFlags & FResourceBindFlags::ConstantBuffer)
+        if (inBindFlags & FResourceBindFlags::ConstantBuffer)
         {
-            if (inDesc.BindFlags & FResourceBindFlags::TexelBuffer)
+            if (inBindFlags & FResourceBindFlags::TexelBuffer)
             {
                 return VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
             }
 
-            if (inDesc.BindFlags & FResourceBindFlags::Dynamic)
+            if (inBindFlags & FResourceBindFlags::Dynamic)
             {
                 return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
             }
             return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         }
 
-        if (inDesc.BindFlags & (FResourceBindFlags::StorageBuffer))
+        if (inBindFlags & (FResourceBindFlags::StorageBuffer))
         {
-            if (inDesc.BindFlags & FResourceBindFlags::TexelBuffer)
+            if (inBindFlags & FResourceBindFlags::TexelBuffer)
             {
                 return VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
             }
-            
-            if (inDesc.BindFlags & FResourceBindFlags::Dynamic)
+
+            if (inBindFlags & FResourceBindFlags::Dynamic)
             {
                 return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
             }
@@ -428,10 +462,18 @@ VkDescriptorType VulkanTypeConverter::ConvertPipelineBDToVk(const FPipelineBindi
         }
 
         break;
-    case EResourceType::Texture:                    return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    case EResourceType::Texture:                    
+        if (inBindFlags & FResourceBindFlags::Sampled)
+        {
+            return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        }
+        else if (inBindFlags & FResourceBindFlags::StorageBuffer)
+        {
+            return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        }
+
+        return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
     case EResourceType::Sampler:                    return VK_DESCRIPTOR_TYPE_SAMPLER;
-    case EResourceType::CombinedTextureSampler:     return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    case EResourceType::StorageTexture:             return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
     case EResourceType::InputAttachment:            return VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
     default:
         break;
@@ -442,16 +484,21 @@ VkDescriptorType VulkanTypeConverter::ConvertPipelineBDToVk(const FPipelineBindi
     return (VkDescriptorType)0;
 }
 
+VkDescriptorType VulkanTypeConverter::ConvertPipelineBDToVk(const FPipelineBindingDescriptor inDesc)
+{
+    return ConvertBindFlagsToVkDescriptorType(inDesc.ResourceType, inDesc.BindFlags);
+}
+
 VkShaderStageFlags VulkanTypeConverter::ConvertShaderFlagsToVk(uint32 inFlags)
 {
     VkShaderStageFlags Flags = 0;
 
-    if (inFlags & FShaderStageFlags::VertexStage)            { Flags |= VK_SHADER_STAGE_VERTEX_BIT; }
-    if (inFlags & FShaderStageFlags::TessControlStage)       { Flags |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT; }
-    if (inFlags & FShaderStageFlags::TessEvaluationStage)    { Flags |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT; }
-    if (inFlags & FShaderStageFlags::GeometryStage)          { Flags |= VK_SHADER_STAGE_GEOMETRY_BIT; }
-    if (inFlags & FShaderStageFlags::FragmentStage)          { Flags |= VK_SHADER_STAGE_FRAGMENT_BIT; }
-    if (inFlags & FShaderStageFlags::ComputeStage)           { Flags |= VK_SHADER_STAGE_COMPUTE_BIT; }
+    if (inFlags & FShaderStageFlags::VertexStage) { Flags |= VK_SHADER_STAGE_VERTEX_BIT; }
+    if (inFlags & FShaderStageFlags::TessControlStage) { Flags |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT; }
+    if (inFlags & FShaderStageFlags::TessEvaluationStage) { Flags |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT; }
+    if (inFlags & FShaderStageFlags::GeometryStage) { Flags |= VK_SHADER_STAGE_GEOMETRY_BIT; }
+    if (inFlags & FShaderStageFlags::FragmentStage) { Flags |= VK_SHADER_STAGE_FRAGMENT_BIT; }
+    if (inFlags & FShaderStageFlags::ComputeStage) { Flags |= VK_SHADER_STAGE_COMPUTE_BIT; }
 
     return Flags;
 }
@@ -743,6 +790,22 @@ VkImageUsageFlags VulkanTypeConverter::ConvertTextureUsageFlagsToVk(uint32 inFla
         Flags |= VK_IMAGE_USAGE_STORAGE_BIT;
     }
 
+    if (inFlags & FResourceBindFlags::Sampled)
+    {
+        Flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
+
+    }
+
+    if (inFlags & FResourceBindFlags::SrcTransfer)
+    {
+        Flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    }
+
+    if (inFlags & FResourceBindFlags::DstTransfer)
+    {
+        Flags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    }
+
     return Flags;
 }
 
@@ -769,7 +832,7 @@ VkImageViewType VulkanTypeConverter::ConvertTextureViewTypeToVk(ETextureType inT
 VkAccessFlags VulkanTypeConverter::ConvertSubpassAccessFlagsToVk(uint32 inFlags)
 {
     VkAccessFlags AccessFlags = 0;
-    if(inFlags & FSubpassAssessFlags::ColorAttachmentRead)
+    if (inFlags & FSubpassAssessFlags::ColorAttachmentRead)
     {
         AccessFlags |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
     }
@@ -794,4 +857,70 @@ VkSubpassDependency VulkanTypeConverter::ConvertSubpassDependencyDescToVk(const 
     SubpassDependency.dependencyFlags = 0;
 
     return SubpassDependency;
+}
+
+VkSamplerAddressMode VulkanTypeConverter::ConvertSamplerAddressModeToVk(ESamplerAddressMode inSamplerAddressMode)
+{
+    switch (inSamplerAddressMode)
+    {
+    case ESamplerAddressMode::Repeat:               return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    case ESamplerAddressMode::MirrorRepeat:         return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+    case ESamplerAddressMode::ClampToEdge:          return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    case ESamplerAddressMode::ClampToBorder:        return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    default:
+        break;
+    }
+
+    ConversionFailed("VkSamplerAddressMode", "ESamplerAddressMode");
+
+    return (VkSamplerAddressMode)0;
+}
+
+VkSamplerMipmapMode VulkanTypeConverter::ConvertMipMapModeToVk(EMipMapMode inMipMapMode)
+{
+    switch (inMipMapMode)
+    {
+    case EMipMapMode::Nearest:      return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+    case EMipMapMode::Linear:       return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    default:
+        break;
+    }
+
+    ConversionFailed("VkSamplerMipmapMode", "EMipMapMode");
+
+    return (VkSamplerMipmapMode)0;
+}
+
+VkFilter VulkanTypeConverter::ConvertSamplerFilterToVk(ESamplerFilter inSamplerFilter)
+{
+    switch (inSamplerFilter)
+    {
+    case ESamplerFilter::Nearest:   return VK_FILTER_NEAREST;
+    case ESamplerFilter::Linear:    return VK_FILTER_LINEAR;
+    default:
+        break;
+    }
+
+    ConversionFailed("VkFilter", "ESamplerFilter");
+
+    return (VkFilter)0;
+}
+
+VkBorderColor VulkanTypeConverter::ConvertBorderColorToVk(EBorderColor inSamplerFilter)
+{
+    switch (inSamplerFilter)
+    {
+    case EBorderColor::FloatTransparentBlack:   return VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+    case EBorderColor::IntTransparentBlack:     return VK_BORDER_COLOR_INT_TRANSPARENT_BLACK;
+    case EBorderColor::FloatOpaqueBlack:        return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+    case EBorderColor::IntOpaqueBlack:          return VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    case EBorderColor::FloatOpaqueWhite:        return VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+    case EBorderColor::IntOpaqueWhite:          return VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+    default:
+        break;
+    }
+
+    ConversionFailed("VkBorderColor", "EBorderColor");
+
+    return (VkBorderColor)0;
 }

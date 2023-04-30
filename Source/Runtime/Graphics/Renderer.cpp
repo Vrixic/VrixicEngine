@@ -13,6 +13,7 @@
 #include <Core/Application.h>
 #include <Core/Platform/Windows/GLFWWindowsWindow.h>
 #include <Runtime/Memory/Core/MemoryManager.h>
+#include <Runtime/Memory/ResourceManager.h>
 
 #include <External/glfw/Includes/GLFW/glfw3.h>
 
@@ -37,6 +38,12 @@ void Renderer::Shutdown()
 {
     if (RenderInterface.IsValid())
     {
+        RenderInterface.Get()->Free(TextureSet);
+        RenderInterface.Get()->Free(SamplerHandle);
+        RenderInterface.Get()->Free(CP2077TextureHandle);
+        RenderInterface.Get()->Free(VELogoTextureHandle);
+        //RenderInterface.Get()->Free(CP2077BufferHandle);
+
         // Clean up render resources
         for (uint32 i = 0; i < CommandBuffers.size(); i++)
         {
@@ -80,6 +87,10 @@ void Renderer::Render()
         // Being encoding command to this command buffer
         CurrentCommandBuffer->Begin();
 
+        // Set the main render viewport
+        CurrentCommandBuffer->SetRenderViewports(&MainRenderViewport, 1);
+        CurrentCommandBuffer->SetRenderScissors(&MainRenderScissor, 1);
+
         // Begin Render pass
         FRenderPassBeginInfo RPBeginInfo = { };
         FRenderClearValues ClearValues[2];
@@ -93,6 +104,14 @@ void Renderer::Render()
         RPBeginInfo.RenderPassPtr = RenderPass;
         RPBeginInfo.FrameBuffer = FrameBuffers[CurrentImageIndex];
 
+        // Bind the descriptor set which contains the texture with combined sampler 
+        FDescriptorSetsBindInfo BindInfo = { };
+        BindInfo.DescriptorSets = TextureSet;
+        BindInfo.NumSets = 1;
+        BindInfo.PipelineBindPoint = EPipelineBindPoint::Graphics;
+        BindInfo.PipelineLayoutPtr = GraphicsPipelineLayout;
+        CurrentCommandBuffer->BindDescriptorSets(BindInfo);
+
         CurrentCommandBuffer->BeginRenderPass(RPBeginInfo);
 
         // Bind our graphics pipeline to the current command buffer 
@@ -103,7 +122,7 @@ void Renderer::Render()
         CurrentCommandBuffer->SetIndexBuffer(*IndexBuffer);
 
         // Draw 3 verts = triangle
-        CurrentCommandBuffer->DrawIndexed(3);
+        CurrentCommandBuffer->DrawIndexed(6);
 
         // End the render pas
         CurrentCommandBuffer->EndRenderPass();
@@ -112,7 +131,8 @@ void Renderer::Render()
         static bool bShowDemoWindow = true;
         RenderInterface.Get()->BeginImGuiFrame();
 
-        ImGui::ShowDemoWindow(&bShowDemoWindow);
+        DrawEditorTools();
+        //ImGui::ShowDemoWindow(&bShowDemoWindow);
 
         RenderInterface.Get()->EndImGuiFrame();
 
@@ -123,6 +143,68 @@ void Renderer::Render()
     }
 
     Present();
+}
+
+Texture* Renderer::CreateTexture2D(const char* inTexturePath, Buffer* outTextureBuffer)
+{
+    FTextureConfig Config = { };
+    Config.BindFlags |= FResourceBindFlags::Sampled | FResourceBindFlags::DstTransfer;
+    Config.Extent.Depth = 1;
+    Config.MipLevels = 1;
+    Config.NumArrayLayers = 1;
+    Config.NumSamples = 1;
+    Config.Type = ETextureType::Texture2D;
+    Config.Layout = ETextureLayout::ShaderReadOnlyOptimal;
+
+    std::string TexturePath(inTexturePath);
+    TextureHandle& TexHandle = ResourceManager::Get().LoadTexture(TexturePath);
+
+    Config.Extent.Width = TexHandle.Width;
+    Config.Extent.Height = TexHandle.Height;
+
+    Config.Format = EPixelFormat::RGBA8UNorm;
+
+    Texture* NewTextureHandle = RenderInterface.Get()->CreateTexture(Config);
+    NewTextureHandle->SetPath(TexturePath);
+
+    // Create Buffer for Image Memory
+    FBufferConfig BufferConfig = { };
+    BufferConfig.InitialData = TexHandle.MemoryHandle.Get();
+    BufferConfig.MemoryFlags |= FMemoryFlags::HostCoherent | FMemoryFlags::HostVisible;
+    BufferConfig.Size = TexHandle.SizeInBytes;
+    BufferConfig.UsageFlags |= FResourceBindFlags::UniformBuffer | FResourceBindFlags::SrcTransfer;;
+
+    outTextureBuffer = RenderInterface.Get()->CreateBuffer(BufferConfig);
+
+    // Copy Buffer Memory Into Image 
+    FTextureWriteInfo TextureWriteInfo = { };
+    TextureWriteInfo.BufferHandle = outTextureBuffer;
+    TextureWriteInfo.Subresource.BaseArrayLayer = 0;
+    TextureWriteInfo.Subresource.NumArrayLayers = 1;
+    TextureWriteInfo.Subresource.BaseMipLevel = 0;
+    TextureWriteInfo.Subresource.NumMipLevels = 1;
+
+    TextureWriteInfo.Extent = { (uint32)TexHandle.Width, (uint32)TexHandle.Height, 1u };
+
+    RenderInterface.Get()->WriteToTexture(NewTextureHandle, TextureWriteInfo);
+
+    return NewTextureHandle;
+}
+
+bool Renderer::OnRenderViewportResized(const FExtent2D& inNewRenderViewport)
+{
+    switch (RenderInterface.Get()->GetRenderInterface())
+    {
+    case ERenderInterfaceType::Vulkan:
+        return OnRenderViewportResized_Vulkan(inNewRenderViewport);
+    case ERenderInterfaceType::Direct3D12:
+        VE_ASSERT(false, VE_TEXT("[Renderer]: Something very wrong is happening, render interface should not be D3D12.. as its not supported.... wtf..."));
+        break;
+    default:
+        break;
+    }
+
+    return false;
 }
 
 void Renderer::BeginFrame()
@@ -255,6 +337,7 @@ void Renderer::CreateVulkanRenderInterface(bool inEnableRenderDoc)
         Config.NumArrayLayers = 1;
         Config.NumSamples = 1;
         Config.BindFlags |= FResourceBindFlags::DepthStencilAttachment;
+        Config.Layout = ETextureLayout::DepthStencilAttachment;
 
         DepthStencilView = RenderInterface.Get()->CreateTexture(Config);
         VE_CORE_LOG_INFO("Successfully created depth stencil buffers...");
@@ -326,23 +409,33 @@ void Renderer::CreateVulkanRenderInterface(bool inEnableRenderDoc)
     {
         // Create a generic vertex shader as it is mandatory to have a vertex shader 
         FShaderConfig VertexSConfig = { };
-        VertexSConfig.CompileFlags |= FShaderCompileFlags::InvertY;
+        VertexSConfig.CompileFlags |= FShaderCompileFlags::InvertY | FShaderCompileFlags::GLSL;
         VertexSConfig.EntryPoint = "main";
-        VertexSConfig.SourceCode = std::string("float4 main(float3 inVertex : POSITION) : SV_POSITION { return float4(inVertex, 1.0f); }");
+        VertexSConfig.SourceCode = std::string("#version 450 \n layout(location = 0) in vec3 InVertex; layout(location = 1) in vec2 InTexCoord; layout (location = 0) out vec2 OutTexCoord; void main() { gl_Position = vec4(InVertex, 1.0f); OutTexCoord = InTexCoord; }");
+
         VertexSConfig.SourceType = EShaderSourceType::String;
         VertexSConfig.Type = EShaderType::Vertex;
 
         // Add a vertex binding
         VertexSConfig.VertexBindings.BindingNum = 0;
-        VertexSConfig.VertexBindings.Stride = sizeof(float) * 3;
+        VertexSConfig.VertexBindings.Stride = sizeof(float) * 5;
         VertexSConfig.VertexBindings.InputRate = EInputRate::Vertex;
 
         // Add a vertex attribute to the vertex binding 
         FVertexInputAttribute Attribute = { };
         Attribute.BindingNum = 0;
+
+        // Vertex Position
         Attribute.Format = EPixelFormat::RGB32Float;
         Attribute.Location = 0;
         Attribute.Offset = 0;
+
+        VertexSConfig.VertexBindings.AddVertexAttribute(Attribute);
+
+        // Texture Coord
+        Attribute.Format = EPixelFormat::RG32Float;
+        Attribute.Location = 1;
+        Attribute.Offset = sizeof(float) * 3;
 
         VertexSConfig.VertexBindings.AddVertexAttribute(Attribute);
 
@@ -350,9 +443,10 @@ void Renderer::CreateVulkanRenderInterface(bool inEnableRenderDoc)
 
         // Create a fragment shader as well
         FShaderConfig FragmentSConfig = { };
-        FragmentSConfig.CompileFlags |= FShaderCompileFlags::InvertY;
+        FragmentSConfig.CompileFlags |= FShaderCompileFlags::InvertY | FShaderCompileFlags::GLSL;
         FragmentSConfig.EntryPoint = "main";
-        FragmentSConfig.SourceCode = std::string("float4 main(float4 inPosition : SV_POSITION) : SV_TARGET { return float4(1.0f, 0.0f, 0.0f, 1.0f); }");
+        //FragmentSConfig.SourceCode = std::string("#version 450 \n layout(binding = 0) uniform sampler2D TextureSampler; layout(location = 0) in vec2 InTexCoord; layout(location = 0) out vec4 OutFragColor; void main() { OutFragColor = texture(TextureSampler, InTexCoord); } ");
+        FragmentSConfig.SourceCode = std::string("#version 450 \n layout(binding = 0) uniform sampler2D TexSampler[2]; layout(location = 0) in vec2 InTexCoord; layout(location = 0) out vec4 OutFragColor; void main() { OutFragColor = texture(TexSampler[0], InTexCoord); } ");
         FragmentSConfig.SourceType = EShaderSourceType::String;
         FragmentSConfig.Type = EShaderType::Fragment;
 
@@ -360,6 +454,19 @@ void Renderer::CreateVulkanRenderInterface(bool inEnableRenderDoc)
 
         // Empty Config, we dont not want to bind any push constants not, descriptors
         FPipelineLayoutConfig PLConfig = { };
+        FPipelineBindingDescriptor TextureBinding = { };
+
+        FPipelineBindingSlot Slot = { };
+        Slot.Index = 0;
+        Slot.SetIndex = 0;
+
+        TextureBinding.BindingSlot = Slot;
+        TextureBinding.NumResources = 2;
+        TextureBinding.ResourceType = EResourceType::Texture;
+        TextureBinding.BindFlags |= FResourceBindFlags::Sampled;
+        TextureBinding.StageFlags = FShaderStageFlags::FragmentStage;
+
+        PLConfig.Bindings.push_back(TextureBinding);
         GraphicsPipelineLayout = RenderInterface.Get()->CreatePipelineLayout(PLConfig);
 
         // Configuate the graphics pipeline 
@@ -372,25 +479,30 @@ void Renderer::CreateVulkanRenderInterface(bool inEnableRenderDoc)
         GPConfig.PrimitiveTopology = EPrimitiveTopology::TriangleList;
 
         // Viewports and scissors 
-        FRenderViewport Viewport = { };
-        Viewport.X = 0.0f;
-        Viewport.Y = 0.0f;
+        MainRenderViewport = { };
+        MainRenderViewport.X = 0.0f;
 
-        Viewport.MinDepth = 0.0f;
-        Viewport.MinDepth = 1.0f;
+        // Since we flipped the viewport height, we now have to move up to the screen or else
+        // we will be seeing a screen that is not being renderered 
+        MainRenderViewport.Y = (float)SwapChainConfiguration.ScreenResolution.Height;
 
-        Viewport.Width = (float)SwapChainConfiguration.ScreenResolution.Width;
-        Viewport.Height = (float)SwapChainConfiguration.ScreenResolution.Height;
+        MainRenderViewport.MinDepth = 0.0f;
+        MainRenderViewport.MaxDepth = 1.0f;
 
-        GPConfig.Viewports.push_back(Viewport);
+        MainRenderViewport.Width = (float)SwapChainConfiguration.ScreenResolution.Width;
+        // Since vulkan has a coordinate system where Y points down we have to flip the frame or viewports around the center
+        MainRenderViewport.Height = -(float)SwapChainConfiguration.ScreenResolution.Height;
 
-        FRenderScissor Scissor = {};
-        Scissor.OffsetX = 0;
-        Scissor.OffsetY = 0;
-        Scissor.Width = SwapChainConfiguration.ScreenResolution.Width;
-        Scissor.Height = SwapChainConfiguration.ScreenResolution.Height;
+        // Dynamic Viewports 
+        //GPConfig.Viewports.push_back(MainRenderViewport);
 
-        GPConfig.Scissors.push_back(Scissor);
+        //FRenderScissor Scissor = {};
+        MainRenderScissor.OffsetX = 0;
+        MainRenderScissor.OffsetY = 0;
+        MainRenderScissor.Width = SwapChainConfiguration.ScreenResolution.Width;
+        MainRenderScissor.Height = SwapChainConfiguration.ScreenResolution.Height;
+
+        //GPConfig.Scissors.push_back(Scissor);
 
         // Rasterization
         GPConfig.RasterizerState.bRasterizerDiscardEnabled = false;
@@ -434,36 +546,184 @@ void Renderer::CreateVulkanRenderInterface(bool inEnableRenderDoc)
     // Create Vertex Buffer
     {
         FBufferConfig Config = { };
-        Config.UsageFlags = EBufferUsageFlags::Vertex;
+        Config.UsageFlags |= FResourceBindFlags::VertexBuffer;
         Config.MemoryFlags |= FMemoryFlags::HostCached;
 
-        uint32 Indices[3] =
+        /*uint32 Indices[3] =
         {
             0, 1, 2
+        };*/
+
+        uint32 Indices[6] =
+        {
+            0, 1, 2,
+            0, 2, 3
         };
 
         struct Vertex
         {
             float Position[3];
+            float UV[2];
         };
 
-        Vertex Vertices[3]
+       /* Vertex Vertices[3]
         {
-            {0.0f, 0.75f, 0.1f}, {0.75f, -0.75f, 0.1f}, {-0.75f, -0.75f, 0.1f}
+            {   { 0.0f,   0.75f, 0.1f},       {0.5f, 0.0f}},
+            {   { 0.75f, -0.75f, 0.1f},       {1.0f, 1.0f}},
+            {   {-0.75f, -0.75f, 0.1f},       {0.0f, 1.0f}},
+        };*/
+
+        Vertex Vertices[4]
+        {
+            {{-1.f, -1.f, 0.01f}, {0.0f, 1.0f}},
+            {{-1.f,  1.f, 0.01f}, {0.0f, 0.0f}},
+            {{ 1.f,  1.f, 0.01f}, {1.0f, 0.0f}},
+            {{ 1.f, -1.f, 0.01f}, {1.0f, 1.0f}}
         };
 
         Config.InitialData = Vertices;
-        Config.Size = sizeof(Vertex) * 3;
+        Config.Size = sizeof(Vertex) * 4;
         VertexBuffer = RenderInterface.Get()->CreateBuffer(Config);
 
         Config.InitialData = Indices;
-        Config.Size = sizeof(uint32) * 3;
-        Config.UsageFlags = EBufferUsageFlags::Index;
+        Config.Size = sizeof(uint32) * 6;
+        Config.UsageFlags |= FResourceBindFlags::IndexBuffer;
         IndexBuffer = RenderInterface.Get()->CreateBuffer(Config);
+    }
+
+    // Sampler And Textures
+    {
+        FSamplerConfig SamplerConfig = { };
+        SamplerConfig.SetDefault();
+        SamplerHandle = RenderInterface.Get()->CreateSampler(SamplerConfig);
+
+        CP2077TextureHandle = CreateTexture2D("../Assets/Textures/Cybepunk2077.jpg", CP2077BufferHandle);
+        VELogoTextureHandle = CreateTexture2D("../Assets/Textures/VrixicEngineLogo.png", VELogoBufferHandle);
+    }
+
+    // Descriptor Sets
+    {
+        FDescriptorSetsConfig Config = { };
+        Config.NumSets = 1;
+        Config.PipelineLayoutPtr = GraphicsPipelineLayout;
+        TextureSet = RenderInterface.Get()->CreateDescriptorSet(Config);
+
+        // Link to textue
+        FDescriptorSetsLinkInfo LinkInfo = { };
+        LinkInfo.ArrayElementStart = 0;
+        LinkInfo.BindingStart = 0;
+        LinkInfo.DescriptorCount = 1;
+        LinkInfo.TextureSampler = SamplerHandle;
+        LinkInfo.ResourceHandle.TextureHandle = CP2077TextureHandle;
+
+        TextureSet->LinkToTexture(0, LinkInfo);
+
+        LinkInfo.ArrayElementStart = 1;
+        LinkInfo.ResourceHandle.TextureHandle = VELogoTextureHandle;
+        TextureSet->LinkToTexture(0, LinkInfo);
     }
 
     CurrentImageIndex = 0;
 
     // Init Imgui 
     RenderInterface.Get()->InitImGui(SwapChainMain, SurfacePtr);
+}
+
+bool Renderer::OnRenderViewportResized_Vulkan(const FExtent2D& inNewRenderViewport)
+{
+    // Recreate Swapchain and Framebuffers
+    bool bSuccessfullyResizedSwapchain = SwapChainMain->ResizeSwapChain(inNewRenderViewport);
+
+    // Exit early as the swap chain was recreated no need to recreate everythign else 
+    if (!bSuccessfullyResizedSwapchain)
+    {
+        return false;
+    }
+
+    // recreate the framebuffers
+    {
+        for (uint32 i = 0; i < FrameBuffers.size(); i++)
+        {
+            RenderInterface.Get()->Free(FrameBuffers[i]);
+        }
+        FrameBuffers.resize(SwapChainMain->GetImageCount());
+
+        // resetup up depth and stencil buffers
+        {
+            RenderInterface.Get()->Free(DepthStencilView);
+
+            FTextureConfig Config = { };
+            Config.Type = ETextureType::Texture2D;
+            Config.Format = EPixelFormat::D32FloatS8X24UInt;
+            Config.Extent = { SwapChainMain->GetScreenWidth(), SwapChainMain->GetScreenHeight(), 1 };
+            Config.MipLevels = 1;
+            Config.NumArrayLayers = 1;
+            Config.NumSamples = 1;
+            Config.BindFlags |= FResourceBindFlags::DepthStencilAttachment;
+            Config.Layout = ETextureLayout::DepthStencilAttachment;
+
+            DepthStencilView = RenderInterface.Get()->CreateTexture(Config);
+        }
+
+        FFrameBufferAttachment DepthStencilAttachment = { };
+        DepthStencilAttachment.Attachment = (Texture*)DepthStencilView;
+
+        FFrameBufferAttachment ColorAttachment = { };
+
+        FFrameBufferConfig Config = { };
+        Config.RenderPass = RenderPass;
+        Config.Resolution.Width = SwapChainMain->GetScreenWidth();
+        Config.Resolution.Height = SwapChainMain->GetScreenHeight();
+        Config.Attachments.resize(2);
+        Config.Attachments[1] = DepthStencilAttachment;
+
+        for (uint32 i = 0; i < SwapChainMain->GetImageCount(); i++)
+        {
+            ColorAttachment.Attachment = SwapChainMain->GetTextureAt(i);
+
+            Config.Attachments[0] = ColorAttachment;
+            FrameBuffers[i] = RenderInterface.Get()->CreateFrameBuffer(Config);
+        }
+    }
+
+    // Update render area
+    FRect2D NewRenderArea = { };
+    NewRenderArea.Width = inNewRenderViewport.Width;
+    NewRenderArea.Height = inNewRenderViewport.Height;
+    RenderPass->UpdateRenderArea(NewRenderArea);
+
+    // Since we flipped the viewport height, we now have to move up to the screen or else
+    // we will be seeing a screen that is not being renderered 
+    MainRenderViewport.Y = (float)NewRenderArea.Height;
+
+    MainRenderViewport.Width = (float)NewRenderArea.Width;
+    // Since vulkan has a coordinate system where Y points down we have to flip the frame or viewports around the center
+    MainRenderViewport.Height = -(float)NewRenderArea.Height;
+
+    MainRenderScissor.Width = NewRenderArea.Width;
+    MainRenderScissor.Height = NewRenderArea.Height;
+
+    // Command buffers need to be recreated as they may store references to the recreated frame buffer
+    {
+        for (uint32 i = 0; i < CommandBuffers.size(); i++)
+        {
+            RenderInterface.Get()->Free(CommandBuffers[i]);
+        }
+
+        FCommandBufferConfig Config = { };
+        Config.CommandQueue = RenderInterface.Get()->GetCommandQueue();
+        Config.Flags = FCommandBufferLevelFlags::Primary;
+        Config.NumBuffersToAllocate = 1;
+
+        CommandBuffers.resize(SwapChainMain->GetImageCount());
+        for (uint32 i = 0; i < SwapChainMain->GetImageCount(); i++)
+        {
+            CommandBuffers[i] = RenderInterface.Get()->CreateCommandBuffer(Config);
+        }
+    }
+
+    // Tell the render interface that window just resized 
+    RenderInterface.Get()->OnRenderViewportResized(SwapChainMain, inNewRenderViewport);
+
+    return true;
 }

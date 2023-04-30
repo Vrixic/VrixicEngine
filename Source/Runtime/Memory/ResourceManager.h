@@ -4,7 +4,28 @@
 */
 
 #pragma once
-#include "ResourceManagerImp.h"
+#include <Core/Core.h>
+#include <Misc/Defines/GenericDefines.h>
+
+#include <string>
+#include <unordered_map>
+
+struct VRIXIC_API TextureHandle
+{
+public:
+    /** The texture memory handle */
+    TPointer<uint8> MemoryHandle;
+
+    int32 Width;
+    int32 Height;
+    int32 BitsPerPixel;
+
+    /* Size of the texture in Bytes */
+    uint64 SizeInBytes;
+
+public:
+    TextureHandle() : Width(-1), Height(-1), BitsPerPixel(-1), SizeInBytes(0) { }
+};
 
 /**
 * Base Resource manager class which different types of resource manager can inherit from
@@ -12,46 +33,36 @@
 class VRIXIC_API ResourceManager
 {
 public:
-	ResourceManager(IResourceManager* inResourceManagerImp);
+    static ResourceManager& Get()
+    {
+        static ResourceManager Instance;
+        return Instance;
+    }
 
-	virtual ~ResourceManager();
+    /**
+    * Initializes the Resource Manager
+    */
+    void Init();
 
-public:
-	/**
-	* Creates a shader resource from specified path
-	* 
-	* @param inFilePath - file path to the shader location
-	* @param inShaderType - type of shader to create: vert, frag, etc...
-	* 
-	* @return uint32 - the key to where the shader handle is located
-	*/
-	uint32 CreateShaderResourceFromPath(const VString& inFilePath, uint32 inShaderType, bool inInvertY);
+    /**
+    * Shuts dows the resource manager
+    */
+    void Shutdown();
 
-	/**
-	* Creates a shader resource from specified shader code
-	*
-	* @param inShaderStr - shader code to be compiled and used
-	* @param inShaderType - type of shader to create: vert, frag, etc...
-	*
-	* @return uint32 - the key to where the shader handle is located
-	*/
-	uint32 CreateShaderResourceFromString(const VString& inShaderStr, uint32 inShaderType, bool inInvertY);
+    /**
+    * Loads a texture using the path passed in 
+    * 
+    * @param inTexturePath the path of the texture to load
+    * @returns TextureHandle the handle to the texture allocated to memory 
+    */
+    TextureHandle& LoadTexture(std::string& inTexturePath);
 
-	/**
-	* Gets the shader module
-	* 
-	* @param inShaderKey - the key to a shader handle
-	* 
-	* @return void* - the shader module
-	*/
-	const void* GetShaderModule(uint32 inShaderKey) const;
+    //void FreeTexture(TextureHandle);
 
-	/**
-	* Frees all memory used by the device 
-	*/
-	void FreeAllMemory() const;
+private:
+    /** A hash_map that contains all textures */
+    std::unordered_map<std::string, TextureHandle> TexturesMap;
 
-protected:
-    /* Implementation of the resource manager */
-    IResourceManager* ResourceManagerImp;
+    /** Memory Heap for textures */
+    TMemoryHeap<uint8>* TextureMemoryHeap;
 };

@@ -10,6 +10,8 @@
 #include <Runtime/Graphics/Vulkan/VulkanShader.h>
 #include "VulkanRenderPass.h"
 
+#include "VulkanTypeConverter.h"
+
 /* ------------------------------------------------------------------------------- */
 /**
 * @TODO: Complete vulkan pipeline creation

@@ -17,7 +17,7 @@ public:
     uint64 Size;
 
     /** this are flags that specify the usage of the buffer BufferUsageFlags::Index, etc.. */
-    EBufferUsageFlags UsageFlags;
+    uint32 UsageFlags;
 
     /** this flags are for the memory that the buffer will occupy */
     uint32 MemoryFlags;
@@ -31,7 +31,7 @@ public:
         Size = 0;
         MemoryFlags = 0;
         InitialData = nullptr;
-        UsageFlags = (EBufferUsageFlags)-1;
+        UsageFlags = 0;
     }
 };
 
@@ -44,7 +44,7 @@ public:
     /**
     * The usage flags of this buffer 
     */
-    inline EBufferUsageFlags GetUsageFlags() const
+    inline uint32 GetUsageFlags() const
     {
         return BufferConfiguration.UsageFlags;
     }

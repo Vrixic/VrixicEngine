@@ -8,6 +8,7 @@
 #include <Runtime/Core/Math/Vector4D.h>
 
 class IFrameBuffer;
+class FRect2D;
 
 /**
 * Base class for api to define a render pass object, a shell, as of now empty 
@@ -16,7 +17,13 @@ class IFrameBuffer;
 */
 class VRIXIC_API IRenderPass : public Interface
 {
-
+public:
+    /**
+    * Updates the render area for this renderpass
+    * 
+    * @param inNewRenderArea the new render area for the render pass
+    */
+    virtual void UpdateRenderArea(const FRect2D& inNewRenderArea) = 0;
 };
 
 /**

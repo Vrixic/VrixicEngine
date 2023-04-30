@@ -60,7 +60,8 @@ private:
     */
     VulkanTextureView()
         : Texture(ETextureType::Texture2D, FResourceBindFlags::ColorAttachment), Device(nullptr), 
-        ImageHandle(VK_NULL_HANDLE), ImageMemory(VK_NULL_HANDLE), ViewHandle(VK_NULL_HANDLE), ImageFormat(VK_FORMAT_UNDEFINED), NumArrayLayers(0), NumMipLevels(0) { }
+        ImageHandle(VK_NULL_HANDLE), ImageMemory(VK_NULL_HANDLE), ViewHandle(VK_NULL_HANDLE), ImageFormat(VK_FORMAT_UNDEFINED),
+        NumArrayLayers(0), NumMipLevels(0), ImageLayout(VK_IMAGE_LAYOUT_UNDEFINED){ }
 
     /**
     * Creates a VkImage from the configuration settings passed in
@@ -85,6 +86,16 @@ public:
 		return &ViewHandle;
 	}
 
+    inline VkImageLayout GetImageLayout() const
+    {
+        return ImageLayout;
+    }
+
+    inline VkFormat GetImageFormat() const
+    {
+        return ImageFormat;
+    }
+
 private:
     friend class VulkanSwapChain;
 
@@ -100,4 +111,6 @@ private:
     uint32 NumMipLevels;
 
     uint32 NumArrayLayers;
+
+    VkImageLayout ImageLayout;
 };

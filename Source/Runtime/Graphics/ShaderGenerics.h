@@ -87,7 +87,15 @@ public:
 #define BIT(x) (1 << x)
     enum
     {
-        InvertY         = BIT(0) // vulkan specific flag that just inverts vulkans NDCs y coord
+        /**
+        * vulkan specific flag that just inverts vulkans NDCs y coord (Only for HLSL shaders )
+        * for glsl shaders you have to use this viewport trick:
+        *   -> The height or the view port should be negative and the Y origin of thew viewport should be the position height
+        *   * What that does is essentially flips the viewport around the center (not really but has the same effect)
+        */
+        InvertY         = BIT(0), 
+
+        GLSL            = BIT(1), // Tells the compiler if the shader is written in glsl, if this bit is off, then its hlsl
     };
 };
 

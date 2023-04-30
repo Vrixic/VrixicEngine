@@ -35,3 +35,15 @@ void VGameEngine::Shutdown()
 {
     Renderer::Get().Shutdown();
 }
+
+void VGameEngine::OnWindowEvent(WindowEvent& inWindowEvent)
+{
+    WindowEventDispatcher EventDispatcher(inWindowEvent);
+    EventDispatcher.Dispatch<WindowResizeEvent>(VE_BIND_EVENT_FUNC(OnWindowResized));
+}
+
+bool VGameEngine::OnWindowResized(WindowResizeEvent& inWindowResizeEvent)
+{
+    FExtent2D Extent2D = { inWindowResizeEvent.GetWidth(), inWindowResizeEvent.GetHeight() };
+    return Renderer::Get().OnRenderViewportResized(Extent2D);
+}

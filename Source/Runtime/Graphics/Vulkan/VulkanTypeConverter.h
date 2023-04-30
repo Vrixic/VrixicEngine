@@ -10,6 +10,7 @@
 #include <Runtime/Graphics/Format.h>
 #include <Runtime/Graphics/PipelineLayout.h>
 #include <Runtime/Graphics/RenderPassGenerics.h>
+#include <Runtime/Graphics/SamplerGenerics.h>
 #include <Runtime/Graphics/ShaderGenerics.h>
 #include <Runtime/Graphics/TextureGenerics.h>
 
@@ -45,7 +46,7 @@ public:
     /**
     * Converts a buffer usage flag to a vulkan buffer usage flag
     */
-    static VkBufferUsageFlags ConvertBufferUsageFlagsToVk(EBufferUsageFlags inUsageFlag);
+    static VkBufferUsageFlags ConvertBufferUsageFlagsToVk(uint32 inUsageFlag);
 
     /**
     * Converts memory flags to vulkan specific memory flags 
@@ -76,6 +77,11 @@ public:
     * Converts attachment store op to vulkan specific attachment store operation
     */
     static VkAttachmentStoreOp ConvertAttachmentStoreOpToVk(const EAttachmentStoreOp inStoreOp);
+
+    /**
+    * Converts a bind flags to vulkan specific descriptor type
+    */
+    static VkDescriptorType ConvertBindFlagsToVkDescriptorType(EResourceType inResourceType, uint32 inBindFlags);
 
     /**
     * Converts a resource type to vulkan specific descriptor type
@@ -176,4 +182,24 @@ public:
     * Converts SubpassDependencyDescription to vulkan specific VkSubpassDependency
     */
     static VkSubpassDependency ConvertSubpassDependencyDescToVk(const FSubpassDependencyDescription& inDesc);
+
+    /**
+    * Converts sampler address mode to vulkan specific address mode 
+    */
+    static VkSamplerAddressMode ConvertSamplerAddressModeToVk(ESamplerAddressMode inSamplerAddressMode);
+
+    /**
+    * Converts mip map mode to vulkan specific sampler mip map mode
+    */
+    static VkSamplerMipmapMode ConvertMipMapModeToVk(EMipMapMode inMipMapMode);
+
+    /**
+    * Converts sampler filter to vulkan specific filter
+    */
+    static VkFilter ConvertSamplerFilterToVk(ESamplerFilter inSamplerFilter);
+
+    /**
+    * Converts border color to vulkan specific border color
+    */
+    static VkBorderColor ConvertBorderColorToVk(EBorderColor inSamplerFilter);
 };

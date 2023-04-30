@@ -344,7 +344,7 @@ public:
 /**
 * Defines the rasterization phase 
 */
-struct FRasterizerConfig
+struct VRIXIC_API FRasterizerConfig
 {
 public:
     /** Polygon mode */
@@ -459,7 +459,7 @@ public:
 public:
     uint32 GetNumBlendOpConfigs() const
     {
-        return BlendOpConfigs.size();
+        return static_cast<uint32>(BlendOpConfigs.size());
     }
 };
 

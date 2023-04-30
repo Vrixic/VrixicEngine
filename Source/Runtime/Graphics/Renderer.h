@@ -32,7 +32,23 @@ public:
 
     void Shutdown();
 
+public:
+
     void Render();
+
+    /**
+    * Creates a texture from the string specified 
+    * @param outTextureBuffer the buffer that was created to copy data from and upload to image on gpu
+    * @returns Texture* the texture that was created from string 
+    */
+    Texture* CreateTexture2D(const char* inTexturePath, Buffer* outTextureBuffer);
+
+    /**
+    * Should be called when the window resizes, creates new swapchain and frame buffers 
+    * 
+    * @param inNewRenderViewport the new window/viewport size 
+    */
+    bool OnRenderViewportResized(const FExtent2D& inNewRenderViewport);
 
 private:
     void BeginFrame();
@@ -41,6 +57,8 @@ private:
     void DrawEditorTools();
 
     void CreateVulkanRenderInterface(bool inEnableRenderDoc);
+
+    bool OnRenderViewportResized_Vulkan(const FExtent2D& inNewRenderViewport);
 
 private:
     /** The render interface is the object that connects us to a graphics API.. such as.. Vulkan, DirectX, etc.. */
@@ -83,4 +101,18 @@ private:
 
     Buffer* VertexBuffer;
     Buffer* IndexBuffer;
+
+    /** The main render viewport */
+    FRenderViewport MainRenderViewport;
+    FRenderScissor MainRenderScissor;
+
+    /** Rendering Others */
+    IDescriptorSets* TextureSet;
+
+    Sampler* SamplerHandle;
+    Buffer* CP2077BufferHandle;
+    Texture* CP2077TextureHandle;
+
+    Buffer* VELogoBufferHandle;
+    Texture* VELogoTextureHandle;
 };
