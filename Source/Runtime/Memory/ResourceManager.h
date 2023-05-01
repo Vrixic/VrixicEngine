@@ -5,17 +5,16 @@
 
 #pragma once
 #include <Core/Core.h>
-#include <Misc/Defines/GenericDefines.h>
+#include <Misc/Assert.h>
+#include <Misc/Defines/StringDefines.h>
 
 #include <string>
 #include <unordered_map>
 
 struct VRIXIC_API TextureHandle
 {
+    friend class ResourceManager;
 public:
-    /** The texture memory handle */
-    TPointer<uint8> MemoryHandle;
-
     int32 Width;
     int32 Height;
     int32 BitsPerPixel;
@@ -24,7 +23,17 @@ public:
     uint64 SizeInBytes;
 
 public:
-    TextureHandle() : Width(-1), Height(-1), BitsPerPixel(-1), SizeInBytes(0) { }
+    TextureHandle() : Width(-1), Height(-1), BitsPerPixel(-1), SizeInBytes(0), MemoryIndex(-1) { }
+
+    uint8* GetMemoryHandle() const
+    {
+        return MemoryViewHandle.Get() + MemoryIndex;
+    }
+
+private:
+    /** The texture memory handle */
+    TPointer<uint8> MemoryViewHandle;
+    uint64 MemoryIndex;
 };
 
 /**
@@ -63,6 +72,31 @@ private:
     /** A hash_map that contains all textures */
     std::unordered_map<std::string, TextureHandle> TexturesMap;
 
-    /** Memory Heap for textures */
-    //TMemoryHeap<uint8>* TextureMemoryHeap;
+    /**
+    * A view into aligned memory.. For specific uses..
+    */
+    template<typename T>
+    struct VRIXIC_API HMemoryView
+    {
+    public:
+        TPointer<T> MemoryHandle;
+        uint64 MemoryUsed;
+        uint64 MemorySize;
+
+    public:
+        HMemoryView() : MemoryHandle(nullptr), MemoryUsed(0), MemorySize(0) { }
+        HMemoryView(T** inMemoryHandle, uint64 inMemorySize) : MemoryHandle(inMemoryHandle), MemoryUsed(0), MemorySize(inMemorySize) { }
+
+        uint64 Malloc(uint64 inSizeInBytes)
+        {
+            // Check if we can allocate enough memory
+            VE_ASSERT((MemoryUsed + inSizeInBytes) < MemorySize, VE_TEXT("[HMemoryView]: Out of memory; Memory OverFlow!"));
+
+            uint64 MemoryIndex = MemoryUsed;
+            MemoryUsed += inSizeInBytes;
+
+            return MemoryIndex;
+        }
+    };
+    HMemoryView<uint8> TextureMemoryView;
 };

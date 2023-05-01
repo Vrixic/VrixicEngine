@@ -19,6 +19,7 @@
 
 void Renderer::Init(const FRendererConfig& inRendererConfig)
 {
+    ResourceManager::Get().Init();
     // Create the RenderInterface
     switch (inRendererConfig.RenderInterfaceType)
     {
@@ -74,6 +75,8 @@ void Renderer::Shutdown()
         MemoryManager::Get().Free((void**)RenderInterface.GetRaw());
         RenderInterface.Free();
     }
+
+    ResourceManager::Get().Shutdown();
 }
 
 void Renderer::Render()
@@ -169,7 +172,7 @@ Texture* Renderer::CreateTexture2D(const char* inTexturePath, Buffer* outTexture
 
     // Create Buffer for Image Memory
     FBufferConfig BufferConfig = { };
-    BufferConfig.InitialData = TexHandle.MemoryHandle.Get();
+    BufferConfig.InitialData = TexHandle.GetMemoryHandle();
     BufferConfig.MemoryFlags |= FMemoryFlags::HostCoherent | FMemoryFlags::HostVisible;
     BufferConfig.Size = TexHandle.SizeInBytes;
     BufferConfig.UsageFlags |= FResourceBindFlags::UniformBuffer | FResourceBindFlags::SrcTransfer;;

@@ -10,6 +10,9 @@
 
 void ResourceManager::Init()
 {
+    TextureMemoryView = { };
+    TextureMemoryView.MemorySize = MEBIBYTES_TO_BYTES(250);
+    TextureMemoryView.MemoryHandle = TPointer<uint8>(MemoryManager::Get().MallocAligned<uint8>(TextureMemoryView.MemorySize, 1));
 }
 
 void ResourceManager::Shutdown()
@@ -33,11 +36,17 @@ TextureHandle& ResourceManager::LoadTexture(std::string& inTexturePath)
     VE_ASSERT(TextureMemory != nullptr, VE_TEXT("[ResourceManager]: Failed to load texture: {0}"), inTexturePath)
 
     Handle.SizeInBytes = Handle.Width * Handle.Height * 4;
-    Handle.MemoryHandle = TPointer<uint8>(MemoryManager::Get().MallocAligned<uint8>(Handle.SizeInBytes, 4));
+
+    Handle.MemoryViewHandle = TextureMemoryView.MemoryHandle;
+    Handle.MemoryIndex = TextureMemoryView.Malloc(Handle.SizeInBytes);
+
+    VE_CORE_LOG_INFO(VE_TEXT("[TextureMemoryView]: Loaded Texture with num bytes: {0} "), Handle.SizeInBytes);
+    //Handle.MemoryHandle = TPointer<uint8>(MemoryManager::Get().MallocAligned<uint8>(Handle.SizeInBytes, 4));
 
     // Expensive but for now we will have to do it as I still need to implement my very own image decoders 
     // that will internally use the memory manager 
-    memcpy(Handle.MemoryHandle.Get(), TextureMemory, Handle.SizeInBytes);
+    memcpy(Handle.GetMemoryHandle(), TextureMemory, Handle.SizeInBytes);
+
     // free stb image memory 
     stbi_image_free(TextureMemory);
 
