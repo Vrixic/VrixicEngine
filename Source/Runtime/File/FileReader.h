@@ -39,6 +39,7 @@ class VRIXIC_API FileReader
 public:
 	FileReader(std::string inPath)
 	{
+        Handle = { };
 		Handle.open(inPath);
 	}
 
