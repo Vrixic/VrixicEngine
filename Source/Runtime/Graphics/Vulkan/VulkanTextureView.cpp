@@ -35,7 +35,8 @@ VulkanTextureView::VulkanTextureView(VulkanDevice* inDevice, const FTextureConfi
     NumMipLevels = inTextureConfig.MipLevels;
     NumArrayLayers = inTextureConfig.NumArrayLayers;
 
-    ImageLayout = VulkanTypeConverter::ConvertTextureLayoutToVk(inTextureConfig.Layout);
+    /** All Images start with layout that is undefined */
+    ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     // Create Image
     CreateImage(inTextureConfig);
