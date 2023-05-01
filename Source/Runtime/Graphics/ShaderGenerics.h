@@ -1,5 +1,5 @@
 /**
-* This file is part of the "Vrixic Engine" project (Copyright (c) 2022-2023 by Vrij Patel) 
+* This file is part of the "Vrixic Engine" project (Copyright (c) 2022-2023 by Vrij Patel)
 * See "LICENSE.txt" for license information.
 */
 
@@ -37,7 +37,7 @@ enum class EShaderType
 };
 
 /**
-* All shader stages flags 
+* All shader stages flags
 */
 struct VRIXIC_API FShaderStageFlags
 {
@@ -47,39 +47,39 @@ struct VRIXIC_API FShaderStageFlags
     enum
     {
         // vertex shader stage 
-        VertexStage                     = BIT(0),
+        VertexStage = BIT(0),
 
         // Hull Shader - tessellation-control stage
-        TessControlStage                = BIT(1),
+        TessControlStage = BIT(1),
 
         // Domain Shader - tessellation-evaluation stage
-        TessEvaluationStage             = BIT(2),
+        TessEvaluationStage = BIT(2),
 
         // geometry shader satge 
-        GeometryStage                   = BIT(3),
+        GeometryStage = BIT(3),
 
         // pixel - fragment shader stage
-        FragmentStage                   = BIT(4),
+        FragmentStage = BIT(4),
 
         // computer shader stage 
-        ComputeStage                    = BIT(5),
+        ComputeStage = BIT(5),
 
         // Defines all tessellation stages
-        TessellationStage               = (TessControlStage | TessEvaluationStage),
+        TessellationStage = (TessControlStage | TessEvaluationStage),
 
         // defines all graphics stages
-        GraphicStages                   = (VertexStage | FragmentStage | GeometryStage | TessellationStage),
+        GraphicStages = (VertexStage | FragmentStage | GeometryStage | TessellationStage),
 
         // Defins all stages
-        AllStage                        = (GraphicStages | ComputeStage),
+        AllStage = (GraphicStages | ComputeStage),
 
         // defines default shader stages which are vertex and fragment 
-        DefaultStages                   = (VertexStage | FragmentStage)
+        DefaultStages = (VertexStage | FragmentStage)
     };
 };
 
 /**
-* Flags that define how to compile a shader 
+* Flags that define how to compile a shader
 */
 struct VRIXIC_API FShaderCompileFlags
 {
@@ -93,14 +93,14 @@ public:
         *   -> The height or the view port should be negative and the Y origin of thew viewport should be the position height
         *   * What that does is essentially flips the viewport around the center (not really but has the same effect)
         */
-        InvertY         = BIT(0), 
+        InvertY = BIT(0),
 
-        GLSL            = BIT(1), // Tells the compiler if the shader is written in glsl, if this bit is off, then its hlsl
+        GLSL = BIT(1), // Tells the compiler if the shader is written in glsl, if this bit is off, then its hlsl
     };
 };
 
 /**
-* All attributes needed for a vertex shader 
+* All attributes needed for a vertex shader
 */
 struct VRIXIC_API FVertexShaderAttributes
 {
@@ -110,7 +110,7 @@ public:
 };
 
 /**
-* Used to configure settings for a shader 
+* Used to configure settings for a shader
 */
 struct VRIXIC_API FShaderConfig
 {
@@ -131,7 +131,7 @@ public:
     uint32 CompileFlags;
 
     /** All of the vertex shader bindings */
-    FVertexInputDescription VertexBindings;
+    std::vector<FVertexInputDescription> VertexBindings;
 
 public:
     FShaderConfig()
