@@ -115,4 +115,15 @@ private:
 
     Buffer* VELogoBufferHandle;
     Texture* VELogoTextureHandle;
+    
+    std::vector<Buffer*> TextureBuffers;
+    std::vector<Texture*> Textures;
+    std::vector<Sampler*> Samplers;
+    std::vector<Buffer*> Buffers;
+    std::vector<uint8*> BufferDatas;
+
+    PipelineLayout* PBRPipelineLayout;
+    IPipeline* PBRPipeline;
+    Shader* PBRVertexShader;
+    Shader* PBRFragmentShader;
 };

@@ -16,6 +16,7 @@
 #include <Runtime/Memory/ResourceManager.h>
 
 #include <External/glfw/Includes/GLFW/glfw3.h>
+#include <Runtime/File/GLTFLoader.h>
 
 void Renderer::Init(const FRendererConfig& inRendererConfig)
 {
@@ -44,6 +45,26 @@ void Renderer::Shutdown()
         RenderInterface.Get()->Free(CP2077TextureHandle);
         RenderInterface.Get()->Free(VELogoTextureHandle);
         //RenderInterface.Get()->Free(CP2077BufferHandle);
+
+        for (uint32 i = 0; i < Textures.size(); ++i)
+        {
+            RenderInterface.Get()->Free(Textures[i]);
+        }
+
+        for (uint32 i = 0; i < Samplers.size(); ++i)
+        {
+            RenderInterface.Get()->Free(Samplers[i]);
+        }
+
+        for (uint32 i = 0; i < BufferDatas.size(); ++i)
+        {
+            delete[] BufferDatas[i];
+        }
+
+        RenderInterface.Get()->Free(PBRPipelineLayout);
+        RenderInterface.Get()->Free(PBRPipeline);
+        RenderInterface.Get()->Free(PBRVertexShader);
+        RenderInterface.Get()->Free(PBRFragmentShader);
 
         // Clean up render resources
         for (uint32 i = 0; i < CommandBuffers.size(); i++)
@@ -419,10 +440,11 @@ void Renderer::CreateVulkanRenderInterface(bool inEnableRenderDoc)
         VertexSConfig.SourceType = EShaderSourceType::String;
         VertexSConfig.Type = EShaderType::Vertex;
 
-        // Add a vertex binding
-        VertexSConfig.VertexBindings.BindingNum = 0;
-        VertexSConfig.VertexBindings.Stride = sizeof(float) * 5;
-        VertexSConfig.VertexBindings.InputRate = EInputRate::Vertex;
+        // Add a vertex bindings
+        VertexSConfig.VertexBindings.resize(1);
+        VertexSConfig.VertexBindings[0].BindingNum = 0;
+        VertexSConfig.VertexBindings[0].Stride = sizeof(float) * 5;
+        VertexSConfig.VertexBindings[0].InputRate = EInputRate::Vertex;
 
         // Add a vertex attribute to the vertex binding 
         FVertexInputAttribute Attribute = { };
@@ -433,14 +455,14 @@ void Renderer::CreateVulkanRenderInterface(bool inEnableRenderDoc)
         Attribute.Location = 0;
         Attribute.Offset = 0;
 
-        VertexSConfig.VertexBindings.AddVertexAttribute(Attribute);
+        VertexSConfig.VertexBindings[0].AddVertexAttribute(Attribute);
 
         // Texture Coord
         Attribute.Format = EPixelFormat::RG32Float;
         Attribute.Location = 1;
         Attribute.Offset = sizeof(float) * 3;
 
-        VertexSConfig.VertexBindings.AddVertexAttribute(Attribute);
+        VertexSConfig.VertexBindings[0].AddVertexAttribute(Attribute);
 
         VertexShader = RenderInterface.Get()->CreateShader(VertexSConfig);
 
@@ -569,12 +591,12 @@ void Renderer::CreateVulkanRenderInterface(bool inEnableRenderDoc)
             float UV[2];
         };
 
-       /* Vertex Vertices[3]
-        {
-            {   { 0.0f,   0.75f, 0.1f},       {0.5f, 0.0f}},
-            {   { 0.75f, -0.75f, 0.1f},       {1.0f, 1.0f}},
-            {   {-0.75f, -0.75f, 0.1f},       {0.0f, 1.0f}},
-        };*/
+        /* Vertex Vertices[3]
+         {
+             {   { 0.0f,   0.75f, 0.1f},       {0.5f, 0.0f}},
+             {   { 0.75f, -0.75f, 0.1f},       {1.0f, 1.0f}},
+             {   {-0.75f, -0.75f, 0.1f},       {0.0f, 1.0f}},
+         };*/
 
         Vertex Vertices[4]
         {
@@ -624,6 +646,251 @@ void Renderer::CreateVulkanRenderInterface(bool inEnableRenderDoc)
         LinkInfo.ArrayElementStart = 1;
         LinkInfo.ResourceHandle.TextureHandle = VELogoTextureHandle;
         TextureSet->LinkToTexture(0, LinkInfo);
+    }
+
+    {
+        std::string PathToModels = "../Assets/Models/";
+        std::string PathToBusterDrone = "../Assets/Models/buster_drone/";
+        {
+            using namespace GLTF;
+
+            std::string BusterDrineModelPath = PathToModels + "buster_drone/scene.gltf";
+            FWorld World = FGLTFLoader::LoadFromFile(BusterDrineModelPath.data());
+
+            // Parsing the World Data 
+            {
+                // Load All Textures
+                Textures.resize(World.Images.size());
+                TextureBuffers.resize(World.Images.size());
+
+                for (uint32 i = 0; i < Textures.size(); ++i)
+                {
+                    FImage Image = World.Images[i];
+                    Textures[i] = CreateTexture2D((PathToBusterDrone + Image.Uri).c_str(), TextureBuffers[i]);
+                }
+            }
+
+            Samplers.resize(World.Samplers.size());
+
+            // Samplers
+            {
+                FSamplerConfig Config;
+                Config.SetDefault();
+                for (uint32 i = 0; i < Samplers.size(); ++i)
+                {
+                    Config.MagFilter = World.Samplers[i].MagFilter == GLTF::FSampler::EFilter::Linear ? ESamplerFilter::Linear : ESamplerFilter::Nearest;
+                    Config.MinFilter = World.Samplers[i].MinFilter == GLTF::FSampler::EFilter::Linear ? ESamplerFilter::Linear : ESamplerFilter::Nearest;
+
+                    Samplers[i]= RenderInterface.Get()->CreateSampler(Config);
+                }
+            }
+
+            // All buffers data vertex/index
+            BufferDatas.resize(World.Buffers.size());
+            {
+                for (uint32 i = 0; i < BufferDatas.size(); ++i)
+                {
+                    std::string PathToBuffer = PathToBusterDrone + World.Buffers[i].Uri;
+                    // Firstly Read the buffer data from binary file 
+                    std::ifstream FileHandle(PathToBuffer, std::ios_base::binary | std::ios_base::ate);
+                    if (!FileHandle.is_open())
+                    {
+                        VE_ASSERT(false, VE_TEXT("The URI for buffer index {0} which is {1} is invalid..."), i, PathToBuffer);
+                    }
+
+                    uint64 Size = FileHandle.tellg();
+                    if (Size == 0)
+                    {
+                        VE_ASSERT(false, VE_TEXT("Buffer index {0} has no data (byte length 0)..."), i);
+                    }
+
+                    FileHandle.seekg(std::ios::beg);
+
+                    BufferDatas[i] = new uint8[Size];
+                    FileHandle.read((char*)BufferDatas[i], Size);
+
+                    FileHandle.close();
+                }
+            }
+
+            // Create all the buffer resources
+            Buffers.resize(World.BufferViews.size());
+            {
+#define CHECK_MAX(x) x == UINT32_MAX ? 0u : x
+                FBufferConfig Config = { };
+                for (uint32 i = 0; i < Buffers.size(); ++i)
+                {
+                    FBufferView BufferView = World.BufferViews[i];
+                    Config.InitialData = (BufferDatas[BufferView.BufferIndex]) + (CHECK_MAX(BufferView.ByteOffset));
+                    Config.Size = CHECK_MAX(BufferView.ByteLength);
+                    Config.UsageFlags = BufferView.Target == FBufferView::ETarget::IndexData ? FResourceBindFlags::IndexBuffer : FResourceBindFlags::VertexBuffer;
+                    Config.MemoryFlags = FMemoryFlags::HostCached;
+
+                    Buffers[i] = RenderInterface.Get()->CreateBuffer(Config);
+                }
+            }
+
+            // Create PBR Pipeline Layout
+            {
+                FPipelineLayoutConfig Config = { };
+                FPipelineBindingDescriptor Desc = { };
+                FPipelineBindingSlot Slot = { };
+
+                Slot.Index = 0;
+                Slot.SetIndex = 0;
+
+                // UNIFORM Buffer for Local Constants 
+                Desc.BindingSlot = Slot;
+                Desc.ResourceType = EResourceType::Buffer;
+                Desc.BindFlags = FResourceBindFlags::UniformBuffer;
+                Desc.NumResources = 1;
+                Desc.StageFlags = FShaderStageFlags::DefaultStages;
+
+                Config.Bindings.push_back(Desc);
+
+                Slot.Index = 1;
+                Config.Bindings.push_back(Desc); // Another for MaterialConstants 
+
+                // Diffuse Texture 
+                Slot.Index = 2;
+                Desc.NumResources = 1;
+                Desc.ResourceType = EResourceType::Texture;
+                Desc.BindFlags |= FResourceBindFlags::Sampled;
+                Desc.StageFlags = FShaderStageFlags::DefaultStages;
+                Config.Bindings.push_back(Desc); 
+
+                Slot.Index = 3;
+                Config.Bindings.push_back(Desc); // Roughness Metallness Texture
+
+                Slot.Index = 4;
+                Config.Bindings.push_back(Desc); // Emissive Texture
+
+                Slot.Index = 4;
+                Config.Bindings.push_back(Desc); // Occlusion Texture
+
+                PBRPipelineLayout = RenderInterface.Get()->CreatePipelineLayout(Config);
+            }
+
+            // Create The PBR Pipeline
+            {
+                FGraphicsPipelineConfig GPConfig;
+                {
+                    // Create a generic vertex shader as it is mandatory to have a vertex shader 
+                    FShaderConfig VSConfig = { };
+                    VSConfig.CompileFlags |= FShaderCompileFlags::GLSL;
+                    VSConfig.EntryPoint = "main";
+
+                    std::string VertexShaderSource;
+                    std::string FilePathToVS("../Assets/Shaders/PBR/pbr.vert");
+                    FileHelper::LoadFileToString(VertexShaderSource, FilePathToVS);
+                    VSConfig.SourceCode = VertexShaderSource;
+
+                    VSConfig.SourceType = EShaderSourceType::String;
+                    VSConfig.Type = EShaderType::Vertex;
+
+                    // Add a vertex bindings
+                    VSConfig.VertexBindings.resize(4); 
+                    
+                    // Add a vertex attribute to the vertex binding 
+                    FVertexInputAttribute Attribute = { };
+
+                    // Position
+                    VSConfig.VertexBindings[0].BindingNum = 0;
+                    VSConfig.VertexBindings[0].Stride = 12;
+                    VSConfig.VertexBindings[0].InputRate = EInputRate::Vertex;
+                    Attribute.Location = 0;
+                    Attribute.BindingNum = 0;
+                    Attribute.Offset = 0;
+                    Attribute.Format = EPixelFormat::RGB32Float;
+                    VSConfig.VertexBindings[0].AddVertexAttribute(Attribute);
+
+                    // Tangent 
+                    VSConfig.VertexBindings[1].BindingNum = 1;
+                    VSConfig.VertexBindings[1].Stride = 16;
+                    VSConfig.VertexBindings[1].InputRate = EInputRate::Vertex;
+                    Attribute.Location = 1;
+                    Attribute.BindingNum = 1;
+                    Attribute.Format = EPixelFormat::RGBA32Float;
+                    VSConfig.VertexBindings[1].AddVertexAttribute(Attribute);
+
+                    // Normal
+                    VSConfig.VertexBindings[2].BindingNum = 2;
+                    VSConfig.VertexBindings[2].Stride = 12;
+                    VSConfig.VertexBindings[2].InputRate = EInputRate::Vertex;
+                    Attribute.Location = 2;
+                    Attribute.BindingNum = 2;
+                    Attribute.Format = EPixelFormat::RGB32Float;
+                    VSConfig.VertexBindings[2].AddVertexAttribute(Attribute);
+
+                    // Texcoord
+                    VSConfig.VertexBindings[3].BindingNum = 3;
+                    VSConfig.VertexBindings[3].Stride = 8;
+                    VSConfig.VertexBindings[3].InputRate = EInputRate::Vertex;
+                    Attribute.Location = 3;
+                    Attribute.BindingNum = 3;
+                    Attribute.Format = EPixelFormat::RG32Float;
+                    VSConfig.VertexBindings[3].AddVertexAttribute(Attribute);
+
+                    PBRVertexShader = RenderInterface.Get()->CreateShader(VSConfig);
+
+                    // Create a fragment shader as well
+                    FShaderConfig FragmentSConfig = { };
+                    FragmentSConfig.CompileFlags |= FShaderCompileFlags::GLSL;
+                    FragmentSConfig.EntryPoint = "main";
+
+                    std::string FragmentShaderSource;
+                    std::string FilePathToFS("../Assets/Shaders/PBR/pbr.frag");
+                    FileHelper::LoadFileToString(FragmentShaderSource, FilePathToFS);
+                    FragmentSConfig.SourceCode = FragmentShaderSource;
+                    FragmentSConfig.SourceType = EShaderSourceType::String;
+                    FragmentSConfig.Type = EShaderType::Fragment;
+
+                    PBRFragmentShader = RenderInterface.Get()->CreateShader(FragmentSConfig);
+                }
+
+                GPConfig.RenderPassPtr = RenderPass;
+                GPConfig.PipelineLayoutPtr = GraphicsPipelineLayout;
+                GPConfig.FragmentShader = PBRFragmentShader;
+                GPConfig.VertexShader = PBRVertexShader;
+                GPConfig.PrimitiveTopology = EPrimitiveTopology::TriangleList;
+
+                // Rasterization
+                GPConfig.RasterizerState.bRasterizerDiscardEnabled = false;
+                GPConfig.RasterizerState.PolygonMode = EPolygonMode::Fill;
+                GPConfig.RasterizerState.LineWidth = 1.0f;
+                GPConfig.RasterizerState.CullMode = ECullMode::None;
+                GPConfig.RasterizerState.FrontFace = EFrontFace::CounterClockwise;
+                GPConfig.RasterizerState.bDepthClampEnabled = false;
+                GPConfig.RasterizerState.bDepthBiasEnabled = false;
+                GPConfig.RasterizerState.DepthBias.Clamp = 0.0f;
+                GPConfig.RasterizerState.DepthBias.ConstantFactor = 0.0f;
+                GPConfig.RasterizerState.DepthBias.SlopeFactor = 0.0f;
+
+                // Depth stencil state
+                GPConfig.DepthState.bIsTestingEnabled = true;
+                GPConfig.DepthState.bIsWritingEnabled = true;
+                GPConfig.DepthState.CompareOp = ECompareOp::Less;
+
+                GPConfig.StencilState.bIsTestingEnabled = false;
+
+                // Color blend state
+                GPConfig.BlendState.LogicOp = ELogicOp::Disabled;
+
+                FBlendOpConfig BOConfig = { };
+                BOConfig.ColorWriteMask = 0xF;
+                BOConfig.bIsBlendEnabled = false;
+                BOConfig.SrcColorBlendFactor = EBlendFactor::SrcColor;
+                BOConfig.DstColorBlendFactor = EBlendFactor::DstColor;
+                BOConfig.ColorBlendOp = EBlendOp::Add;
+                BOConfig.SrcAlphaBlendFactor = EBlendFactor::SrcAlpha;
+                BOConfig.DstAlphaBlendFactor = EBlendFactor::DstAlpha;
+                BOConfig.AlphaBlendOp = EBlendOp::Add;
+
+                GPConfig.BlendState.BlendOpConfigs.push_back(BOConfig);
+
+                PBRPipeline = RenderInterface.Get()->CreatePipeline(GPConfig);
+            }
+        }
     }
 
     CurrentImageIndex = 0;
@@ -723,10 +990,10 @@ bool Renderer::OnRenderViewportResized_Vulkan(const FExtent2D& inNewRenderViewpo
         {
             CommandBuffers[i] = RenderInterface.Get()->CreateCommandBuffer(Config);
         }
+
+        // Tell the render interface that window just resized 
+        RenderInterface.Get()->OnRenderViewportResized(SwapChainMain, inNewRenderViewport);
+
+        return true;
     }
-
-    // Tell the render interface that window just resized 
-    RenderInterface.Get()->OnRenderViewportResized(SwapChainMain, inNewRenderViewport);
-
-    return true;
 }
