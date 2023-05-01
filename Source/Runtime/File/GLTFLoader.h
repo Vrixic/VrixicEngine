@@ -309,6 +309,8 @@ namespace GLTF
 
         std::vector<FBufferView> BufferViews;
 
+        std::vector<FBuffer> Buffers;
+
         std::vector<FImage> Images;
 
         std::vector<FMaterial> Materials;
@@ -845,6 +847,24 @@ namespace GLTF
             }
         }
 
+        /**
+        * Helper function which just loads all of the buffers from the parsed json data
+        */
+        static void LoadBuffers(json& inJsonData, std::vector<FBuffer>& outBuffers)
+        {
+            json Data = inJsonData["buffers"];
+
+            uint32 DataSize = Data.size();
+            outBuffers.resize(DataSize);
+            memset(outBuffers.data(), 0, sizeof(FBuffer) * DataSize);
+
+            for (uint32 i = 0; i < DataSize; i++)
+            {
+                FJsonHelpers::TryLoadString(Data[i], "uri", outBuffers[i].Uri);
+                FJsonHelpers::TryLoadUint32(Data[i], "byteLength", outBuffers[i].ByteLength);
+            }
+        }
+
         static FWorld LoadFromFile(const char* inFilePath)
         {
             FWorld World = { };
@@ -876,6 +896,10 @@ namespace GLTF
                 else if (Properties.key()._Equal("bufferViews"))
                 {
                     LoadBufferViews(ParsedGltfData, World.BufferViews);
+                }
+                else if (Properties.key()._Equal("buffers"))
+                {
+                    LoadBuffers(ParsedGltfData, World.Buffers);
                 }
                 else if (Properties.key()._Equal("images"))
                 {
