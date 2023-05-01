@@ -157,7 +157,7 @@ Texture* Renderer::CreateTexture2D(const char* inTexturePath, Buffer* outTexture
     Config.NumArrayLayers = 1;
     Config.NumSamples = 1;
     Config.Type = ETextureType::Texture2D;
-    Config.Layout = ETextureLayout::ShaderReadOnlyOptimal;
+    //Config.Layout = ETextureLayout::Undefined;
 
     std::string TexturePath(inTexturePath);
     TextureHandle& TexHandle = ResourceManager::Get().LoadTexture(TexturePath);
@@ -340,7 +340,7 @@ void Renderer::CreateVulkanRenderInterface(bool inEnableRenderDoc)
         Config.NumArrayLayers = 1;
         Config.NumSamples = 1;
         Config.BindFlags |= FResourceBindFlags::DepthStencilAttachment;
-        Config.Layout = ETextureLayout::DepthStencilAttachment;
+        //Config.Layout = ETextureLayout::DepthStencilAttachment;
 
         DepthStencilView = RenderInterface.Get()->CreateTexture(Config);
         VE_CORE_LOG_INFO("Successfully created depth stencil buffers...");
@@ -663,7 +663,7 @@ bool Renderer::OnRenderViewportResized_Vulkan(const FExtent2D& inNewRenderViewpo
             Config.NumArrayLayers = 1;
             Config.NumSamples = 1;
             Config.BindFlags |= FResourceBindFlags::DepthStencilAttachment;
-            Config.Layout = ETextureLayout::DepthStencilAttachment;
+            //Config.Layout = ETextureLayout::DepthStencilAttachment;
 
             DepthStencilView = RenderInterface.Get()->CreateTexture(Config);
         }

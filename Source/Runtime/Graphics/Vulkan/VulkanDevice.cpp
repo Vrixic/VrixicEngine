@@ -293,6 +293,13 @@ void VulkanDevice::TransitionTextureLayout(const HTransitionTextureLayoutInfo& i
         SrcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
         DstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     }
+    else
+    {
+        VE_ASSERT(false, VE_TEXT("[VulkanDevice]: Unsupported layout transition.... "));
+    }
+
+    /** Change the image layut for the texture passed in */
+    inTransitionImageLayoutInfo.TextureHandle->SetImageLayout(inTransitionImageLayoutInfo.NewLayout);
 
     vkCmdPipelineBarrier(inTransitionImageLayoutInfo.CommandBufferHandle,
         SrcStageMask, DstStageMask, 0, 0, nullptr, 0,
@@ -472,7 +479,7 @@ void VulkanQueue::SubmitQueue(VulkanCommandBuffer* commandBuffer, const VkSubmit
     VK_CHECK_RESULT(vkQueueSubmit(Queue, 1, &inSubmitInfo, WaitFence->GetFenceHandle()), "[VulkanQueue]: Failed to submit a command buffer to graphics queue!");
 }
 
-VkCommandBuffer VulkanQueue::CreateDefaultCommandBuffer(bool inShouldBegin)
+VkCommandBuffer VulkanQueue::CreateSingleTimeCommandBuffer(bool inShouldBegin)
 {
     VkCommandBuffer CommandBufferHandle = VK_NULL_HANDLE;
 
@@ -496,7 +503,7 @@ VkCommandBuffer VulkanQueue::CreateDefaultCommandBuffer(bool inShouldBegin)
     return CommandBufferHandle;
 }
 
-void VulkanQueue::FlushCommandBuffer(VkCommandBuffer inCommandBuffer, bool inShouldFree)
+void VulkanQueue::FlushSingleTimeCommandBuffer(VkCommandBuffer inCommandBuffer, bool inShouldFree)
 {
     // Firstly end the command buffer so its not in a recording state any more 
     VK_CHECK_RESULT(vkEndCommandBuffer(inCommandBuffer), VE_TEXT("[VulkanQueue]: Failed to end command buffer...!"));

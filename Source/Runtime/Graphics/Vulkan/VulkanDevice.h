@@ -316,7 +316,7 @@ public:
     * Creates a default command buffer
     * @param inShouldBegin true to begin the command buffer, false other wise
     */
-    VkCommandBuffer CreateDefaultCommandBuffer(bool inShouldBegin);
+    VkCommandBuffer CreateSingleTimeCommandBuffer(bool inShouldBegin);
 
     /**
     * Flushes the command buffer
@@ -324,7 +324,7 @@ public:
     * @param inCommandBuffer the command buffer to flush
     * @param inShouldFree true if the command buffer should be freed, false otherwise
     */
-    void FlushCommandBuffer(VkCommandBuffer inCommandBuffer, bool inShouldFree);
+    void FlushSingleTimeCommandBuffer(VkCommandBuffer inCommandBuffer, bool inShouldFree);
 
 public:
     inline VkQueue GetQueueHandle() const { return Queue; }
