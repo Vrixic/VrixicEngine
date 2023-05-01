@@ -103,7 +103,7 @@ private:
     HMemoryView<uint8> TextureMemoryView;
 
     /** Memory View for vertices (Vertex Buffer) */
-    HMemoryView<PBRVertex> VertexMemoryView;
+    HMemoryView<FPBRVertex> VertexMemoryView;
 
     /** Memory View for index data (Index Buffer) */
     HMemoryView<uint32> IndexMemoryView;

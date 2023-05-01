@@ -11,7 +11,7 @@
 /**
 * Tighly packed PBRVertex Structure 
 */
-struct VRIXIC_API PBRVertex {
+struct VRIXIC_API FPBRVertex {
 public:
     /** Position of the vertex */
     Vector3D Position;

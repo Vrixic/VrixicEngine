@@ -11,12 +11,12 @@
 void ResourceManager::Init()
 {
     TextureMemoryView = { };
-    TextureMemoryView.MemorySize = MEBIBYTES_TO_BYTES(250);
+    TextureMemoryView.MemorySize = MEBIBYTES_TO_BYTES(350);
     TextureMemoryView.MemoryHandle = TPointer<uint8>(MemoryManager::Get().MallocAligned<uint8>(TextureMemoryView.MemorySize, 1));
 
     VertexMemoryView = { };
-    VertexMemoryView.MemorySize = MEBIBYTES_TO_BYTES(250);
-    VertexMemoryView.MemoryHandle = TPointer<PBRVertex>(MemoryManager::Get().MallocAligned<PBRVertex>(VertexMemoryView.MemorySize, sizeof(PBRVertex)));
+    VertexMemoryView.MemorySize = MEBIBYTES_TO_BYTES(150);
+    VertexMemoryView.MemoryHandle = TPointer<FPBRVertex>(MemoryManager::Get().MallocAligned<FPBRVertex>(VertexMemoryView.MemorySize, sizeof(FPBRVertex)));
 
     IndexMemoryView = { };
     IndexMemoryView.MemorySize = MEBIBYTES_TO_BYTES(100);
