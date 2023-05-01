@@ -75,6 +75,8 @@ private:
     */
     VkImageAspectFlags GetAspectFlags() const;
 
+    inline void SetImageLayout(VkImageLayout inLayout) { ImageLayout = inLayout; }
+
 public:
 	inline const VkImage* GetImageHandle() const
 	{
@@ -98,6 +100,7 @@ public:
 
 private:
     friend class VulkanSwapChain;
+    friend class VulkanDevice;
 
     VulkanDevice* Device;
 

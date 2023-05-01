@@ -159,13 +159,13 @@ void VulkanRenderInterface::WriteToTexture(const Texture* inTexture, const FText
 {
     VE_ASSERT(inTexture != nullptr, VE_TEXT("{VulkanRenderInterface]: cannot write to a invalid texture...its null..."));
 
-    VkCommandBuffer CommandBufferHandle = Device->GetGraphicsQueue()->CreateDefaultCommandBuffer(true);
+    VkCommandBuffer CommandBufferHandle = Device->GetGraphicsQueue()->CreateSingleTimeCommandBuffer(true);
 
     HTransitionTextureLayoutInfo TransitionTextureLayoutInfo = { };
     TransitionTextureLayoutInfo.CommandBufferHandle = CommandBufferHandle;
-    TransitionTextureLayoutInfo.OldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    TransitionTextureLayoutInfo.NewLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     TransitionTextureLayoutInfo.TextureHandle = (VulkanTextureView*)inTexture;
+    TransitionTextureLayoutInfo.OldLayout = TransitionTextureLayoutInfo.TextureHandle->GetImageLayout();
+    TransitionTextureLayoutInfo.NewLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     TransitionTextureLayoutInfo.Subresource = (FTextureSubresourceRange*)&inTextureWriteInfo.Subresource;
 
     Device->TransitionTextureLayout(TransitionTextureLayoutInfo);
@@ -188,7 +188,7 @@ void VulkanRenderInterface::WriteToTexture(const Texture* inTexture, const FText
     TransitionTextureLayoutInfo.NewLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     Device->TransitionTextureLayout(TransitionTextureLayoutInfo);
 
-    Device->GetGraphicsQueue()->FlushCommandBuffer(CommandBufferHandle, true);
+    Device->GetGraphicsQueue()->FlushSingleTimeCommandBuffer(CommandBufferHandle, true);
 }
 
 void VulkanRenderInterface::Free(Texture* inTexture)

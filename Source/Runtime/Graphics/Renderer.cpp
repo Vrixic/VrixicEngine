@@ -157,7 +157,7 @@ Texture* Renderer::CreateTexture2D(const char* inTexturePath, Buffer* outTexture
     Config.NumArrayLayers = 1;
     Config.NumSamples = 1;
     Config.Type = ETextureType::Texture2D;
-    Config.Layout = ETextureLayout::ShaderReadOnlyOptimal;
+    Config.Layout = ETextureLayout::Undefined;
 
     std::string TexturePath(inTexturePath);
     TextureHandle& TexHandle = ResourceManager::Get().LoadTexture(TexturePath);
