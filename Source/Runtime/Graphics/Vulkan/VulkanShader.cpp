@@ -133,7 +133,7 @@ VulkanVertexShader* VulkanShaderFactory::CreateVertexShader(VulkanShaderPool* in
         inShaderPool->CreateShaderModule(CompiledSourceCode, CompiledSourceCodeSize);
 
         // Build the input layout information 
-        VertexShader->BuildInputLayout(1, &inConfig.VertexBindings);
+        VertexShader->BuildInputLayout(inConfig.VertexBindings.size(), inConfig.VertexBindings.data());
 
         // Free Resource -> 
         delete[] CompiledSourceCode;
