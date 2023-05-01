@@ -7,6 +7,7 @@
 #include <Core/Core.h>
 #include <Misc/Assert.h>
 #include <Misc/Defines/StringDefines.h>
+#include <Runtime/Graphics/Vertex.h>
 
 #include <string>
 #include <unordered_map>
@@ -98,5 +99,12 @@ private:
             return MemoryIndex;
         }
     };
+    /** Memory View for Textures */
     HMemoryView<uint8> TextureMemoryView;
+
+    /** Memory View for vertices (Vertex Buffer) */
+    HMemoryView<PBRVertex> VertexMemoryView;
+
+    /** Memory View for index data (Index Buffer) */
+    HMemoryView<uint32> IndexMemoryView;
 };
