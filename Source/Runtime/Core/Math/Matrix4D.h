@@ -12,6 +12,12 @@
 
 #include <iostream>
 
+/**
+* Row-Major Matrix4D
+* 
+* S R T (Scale * Rotation * Translation)
+*/
+
 struct VRIXIC_API Matrix4D
 {
 protected:
@@ -390,9 +396,9 @@ inline void Matrix4D::TranslateMatrix(const Vector3D& translation)
 
 inline void Matrix4D::ScaleMatrix(const Vector3D& scale)
 {
-    M[0][0] += scale.X;
-    M[1][1] += scale.Y;
-    M[2][2] += scale.Z;
+    M[0][0] *= scale.X;
+    M[1][1] *= scale.Y;
+    M[2][2] *= scale.Z;
 }
 
 inline float Matrix4D::Determinant() const
