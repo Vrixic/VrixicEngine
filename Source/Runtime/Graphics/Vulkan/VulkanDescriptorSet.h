@@ -158,6 +158,15 @@ public:
     }
 
     /**
+    * @returns void* a pointer to the descriptor set handle (native to graphics API) by the index specified
+    */
+    inline virtual void* GetRawDescriptorSetHandle(uint32 inIndex) const override final
+    {
+        VE_ASSERT(inIndex < DescriptorSetHandles.size(), VE_TEXT("[VulkanDescriptorSets]: Invalid descriptor set handle index provided -> {0}"), inIndex)
+        return DescriptorSetHandles[inIndex];
+    }
+
+    /**
     * @returns VkDescriptorSet* the pointer to the descriptor set(s) 
     */
     VkDescriptorSet* GetDescriptorSetHandles()
@@ -237,6 +246,24 @@ public:
         VK_CHECK_RESULT(Result, "[VulkanDescriptorPool]: Failed to allocate a descriptor set!");
 
         return Result == VK_SUCCESS;
+    }
+    
+    /**
+    * Uses this pool to allocate descriptor set(s)
+    *
+    * @param 1: descriptor set to be filled
+    * @param 2: the layout id used to create the decriptor set
+    *
+    * @return if allocated of set(s) was successfull
+    */
+    VkResult AllocateDescriptorSetsNoAssert(VulkanDescriptorSets* outDescriptorSets, uint32 inLayoutId) const
+    {
+        VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo = VulkanUtils::Initializers::DescriptorSetAllocateInfo();
+        DescriptorSetAllocateInfo.descriptorPool = DescriptorPoolHandle;
+        DescriptorSetAllocateInfo.descriptorSetCount = outDescriptorSets->GetNumSets();
+        DescriptorSetAllocateInfo.pSetLayouts = DescriptorSetsLayout->GetLayoutHandle(inLayoutId);
+
+        return vkAllocateDescriptorSets(*Device->GetDeviceHandle(), &DescriptorSetAllocateInfo, outDescriptorSets->GetDescriptorSetHandles());
     }
 
     /**

@@ -248,9 +248,10 @@ inline Quat Quat::MakeRotationQuat(const Vector3D& axis, float angleInDegrees)
 
 inline Quat Quat::MakeFromEuler(float inPitch, float inYaw, float inRoll)
 {
-    float PitchRads = MathUtils::DegreesToRadians(inPitch * 0.5f);
-    float YawRads = MathUtils::DegreesToRadians(inYaw * 0.5f);
-    float RollRads = MathUtils::DegreesToRadians(inRoll * 0.5f);
+    // roll (X = inPitch), pitch (Y = inYaw), yaw (Z = inRoll) 
+    float PitchRads = MathUtils::DegreesToRadians(inYaw * 0.5f);
+    float YawRads = MathUtils::DegreesToRadians(inRoll * 0.5f);
+    float RollRads = MathUtils::DegreesToRadians(inPitch * 0.5f);
 
     float SinPitch = sinf(PitchRads);
     float CosPitch = cosf(PitchRads);
@@ -443,11 +444,20 @@ inline Vector3D Quat::RotateVectorSlow(const Vector3D& v) const
 
 inline Matrix4D Quat::ToMatrix4D() const
 {
-    // Converts this quaternion to a rotation matrix.
+    // Converts this quaternion to a rotation matrix. Column Major 
     //
     // | 1 - 2(y^2 + z^2)	2(xy + zw)			2(xz - yw)			0 |
     // | 2(xy - zw)			1 - 2(x^2 + z^2)	2(yz + xw)			0 |
     // | 2(xz + yw)			2(yz - xw)			1 - 2(x^2 + y^2)	0 |
+    // | 0					0					0					1 |
+    // 
+    //
+    // Convert Column Major to Row Major by Transposing 
+    //
+    //
+    // | 1 - 2(y^2 + z^2)	2(xy - zw)			2(xz + yw)			0 |
+    // | 2(xy + zw)			1 - 2(x^2 + z^2)	2(yz - xw)			0 |
+    // | 2(xz - yw)			2(yz + xw)			1 - 2(x^2 + y^2)	0 |
     // | 0					0					0					1 |
 
     float X2 = X + X;
@@ -467,8 +477,8 @@ inline Matrix4D Quat::ToMatrix4D() const
     float WY = W * Y2;
     float WZ = W * Z2;
 
-    return Matrix4D(1 - (YY + ZZ), XY - WZ, XZ + WY, 0,
-        XY + WZ, 1 - (XX + ZZ), YZ - WX, 0,
-        XZ - WY, YZ + WX, 1 - (XX + YY), 0,
-        0, 0, 0, 1);
+    return Matrix4D(1 - (YY + ZZ), XY + WZ, XZ - WY, 0,
+                    XY - WZ, 1 - (XX + ZZ), YZ + WX, 0,
+                    XZ + WY, YZ - WX, 1 - (XX + YY), 0,
+                    0, 0, 0, 1);
 }

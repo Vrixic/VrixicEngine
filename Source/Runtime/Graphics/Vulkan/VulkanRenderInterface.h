@@ -34,7 +34,7 @@ public:
     /** --  IRenderInterface Start -- */
 
     /**
-    * Initializes the render interface 
+    * Initializes the render interface
     */
     virtual void Initialize() override;
 
@@ -83,8 +83,8 @@ public:
     /* ---------------------------------@TODO---------------------------------------- */
     /*
     * Create staging buffer for peak efficiency, as of now, all memory get mapped then never unmapped
-    * but what if we have memory that won't change during the lifetime of application, slow for no reason,
-    * 
+    * but what if we have memory that won't change during the lifetime of application, slow for no reason.
+    *
     * Affected: ReadFromBuffer, WriteToBuffer
     */
     /* ---------------------------------@TODO---------------------------------------- */
@@ -138,9 +138,18 @@ public:
     * Copies the data from the buffer provided and puts it into the texture
     *
     * @param inTexture the texture that will contain the data after copy
-    * @param inTextureWriteInfo contains information used to write to the texture 
+    * @param inTextureWriteInfo contains information used to write to the texture
     */
     virtual void WriteToTexture(const Texture* inTexture, const FTextureWriteInfo& inTextureWriteInfo) override;
+
+    /**
+    * Reads image data from the specified texture
+    *
+    * @param inTexture the texture that will contain the data after copy
+    * @param inTextureSection the section to be read from the texture
+    * @param outTextureReadInfo contains the read information from the texture
+    */
+    virtual void ReadFromTexture(const Texture* inTexture, const FTextureSection& inTextureSection, const ETextureLayout inFinalTextureLayout, FTextureReadInfo& outTextureReadInfo) override;
 
     /**
     * Releases/Destroys the texture passed in

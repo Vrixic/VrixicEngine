@@ -61,14 +61,22 @@ if (WIN32)
 		${PROJECT_EXTERNAL_DIR}/spdlog/Includes/
 		${PROJECT_EXTERNAL_DIR}/imgui/Includes/
 		${PROJECT_EXTERNAL_DIR}/glfw/Includes/
-		)
+		${PROJECT_EXTERNAL_DIR}/ktx/Includes/
+		${PROJECT_EXTERNAL_DIR}/ktx/other_include/
+		${PROJECT_EXTERNAL_DIR}/ktx/Includes/KHR/)
 
 	# set and add all libraries 
 	set (LibraryDirectories 
 		$ENV{VULKAN_SDK}/Lib/)
 
 	set (LinkLibraries
-		${PROJECT_EXTERNAL_DIR}/glfw/lib/glfw3.lib)
+		${PROJECT_EXTERNAL_DIR}/glfw/lib/glfw3.lib
+
+		${PROJECT_EXTERNAL_DIR}/ktx/lib/ktx.lib
+
+		${PROJECT_EXTERNAL_DIR}/ktx/lib/ktx_read.lib
+
+		${PROJECT_EXTERNAL_DIR}/ktx/lib/objUtil.lib)
 	
 	set(PROJECT_SOLUTION_DIR ${CMAKE_SOURCE_DIR}/../Build/VrixicEngineBuild)
 	set(RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOLUTION_DIR}/bin/$(Configuration)-$(Platform)/$(ProjectName)/)

@@ -32,12 +32,24 @@ public:
     inline uint32 GetBindFlags() const;
 
     /**
+    * @returns FExtent3D the type of texture
+    */
+    inline const FExtent3D& GetExtent() const;
+
+    /**
     * @returns const std::string& the path to the texture 
     */
     inline const std::string& GetPath() const;
 
+    /**
+    * Creates a Texture Config structure and fills it up with information from the texture
+    * 
+    * @returns FTextureConfig the config structure containing information about the texture 
+    */
+    virtual FTextureConfig GetTextureConfig() const = 0;
+
 protected:
-    Texture(const ETextureType inTextureType, uint32 inBindFlags);
+    Texture(const FTextureConfig& inTextureConfig);
 
 private:
     void SetPath(const std::string& inTexturePath);
@@ -51,4 +63,7 @@ private:
 
     /** The bind flags that were used to create this texture */
     uint32 BindFlags;
+
+    /** The extent of this texture */
+    FExtent3D Extent;
 };

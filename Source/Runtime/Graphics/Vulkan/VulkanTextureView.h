@@ -54,12 +54,19 @@ public:
     */
     void CreateDefaultImageView();
 
+    /**
+    * Creates a Texture Config structure and fills it up with information from the texture
+    *
+    * @returns FTextureConfig the config structure containing information about the texture
+    */
+    virtual FTextureConfig GetTextureConfig() const override final;
+
 private:
     /**
     * Only swapchains should use this version
     */
     VulkanTextureView()
-        : Texture(ETextureType::Texture2D, FResourceBindFlags::ColorAttachment), Device(nullptr), 
+        : Texture({}), Device(nullptr),
         ImageHandle(VK_NULL_HANDLE), ImageMemory(VK_NULL_HANDLE), ViewHandle(VK_NULL_HANDLE), ImageFormat(VK_FORMAT_UNDEFINED),
         NumArrayLayers(0), NumMipLevels(0), ImageLayout(VK_IMAGE_LAYOUT_UNDEFINED){ }
 
@@ -98,6 +105,11 @@ public:
         return ImageFormat;
     }
 
+    inline const ktxTexture* GetKtxTextureHandle() const
+    {
+        return KtxTextureHandle;
+    }
+
 private:
     friend class VulkanSwapChain;
     friend class VulkanDevice;
@@ -116,4 +128,6 @@ private:
     uint32 NumArrayLayers;
 
     VkImageLayout ImageLayout;
+
+    ktxTexture* KtxTextureHandle;
 };

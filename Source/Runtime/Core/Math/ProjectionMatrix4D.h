@@ -21,8 +21,12 @@ public:
     /* Factory function for making a right handed perspective projection matrix for DirectX */
     inline static ProjectionMatrix4D MakeProjectionDirectXRH(float aspectRatio, float verticalFOVInDegs, float nearZ, float farZ);
 
-    /* Factory function for making a left handed perspective projection matrix for Vulkan */
-    inline static ProjectionMatrix4D MakeProjectionVulkanLH(float aspectRatio, float verticalFOVInDegs, float nearZ, float farZ);
+    /**
+    * Factory function for making a left handed perspective projection matrix for Vulkan 
+    * @param inFlipY (Optional) - should flip the y clip space (default = true)
+    */
+    inline static ProjectionMatrix4D MakeProjectionVulkanLH(float aspectRatio, float verticalFOVInDegs, float nearZ, float farZ, bool inFlipY = true);
+    inline static ProjectionMatrix4D MakeProjectionVulkanLHX(float aspectRatio, float verticalFOVInDegs, float nearZ, float farZ, bool inFlipY = true);
 };
 
 inline ProjectionMatrix4D::ProjectionMatrix4D(float aspectRatio, float verticalFOVInDegs, float nearZ, float farZ)
@@ -89,7 +93,7 @@ inline ProjectionMatrix4D ProjectionMatrix4D::MakeProjectionDirectXRH(float aspe
     return Result;
 }
 
-inline ProjectionMatrix4D ProjectionMatrix4D::MakeProjectionVulkanLH(float aspectRatio, float verticalFOVInDegs, float nearZ, float farZ)
+inline ProjectionMatrix4D ProjectionMatrix4D::MakeProjectionVulkanLH(float aspectRatio, float verticalFOVInDegs, float nearZ, float farZ, bool inFlipY)
 {
     ProjectionMatrix4D Result = { };
     float Rads = MathUtils::DegreesToRadians(verticalFOVInDegs * 0.5f);
@@ -103,7 +107,38 @@ inline ProjectionMatrix4D ProjectionMatrix4D::MakeProjectionVulkanLH(float aspec
     Result.M[0][3] = 0.0f;
 
     Result.M[1][0] = 0.0f;
-    Result.M[1][1] = -Height; // Vulkan clip space for Y is [1, -1] -> its has to be flipped
+    Result.M[1][1] = Height * ((inFlipY * -2) + 1); // Vulkan clip space for Y is [1, -1] -> its has to be flipped
+    Result.M[1][2] = 0.0f;
+    Result.M[1][3] = 0.0f;
+
+    Result.M[2][0] = 0.0f;
+    Result.M[2][1] = 0.0f;
+    Result.M[2][2] = FarRange;
+    Result.M[2][3] = 1.0f;
+
+    Result.M[3][0] = 0.0f;
+    Result.M[3][1] = 0.0f;
+    Result.M[3][2] = -nearZ * FarRange;
+    Result.M[3][3] = 0.0f;
+
+    return Result;
+}
+
+inline ProjectionMatrix4D ProjectionMatrix4D::MakeProjectionVulkanLHX(float aspectRatio, float verticalFOVInDegs, float nearZ, float farZ, bool inFlipY)
+{
+    ProjectionMatrix4D Result = { };
+    float Rads = MathUtils::DegreesToRadians(verticalFOVInDegs * 0.5f);
+    float Height = 1.0f / std::tanf(Rads);
+
+    float FarRange = farZ / (farZ - nearZ);
+
+    Result.M[0][0] = Height / aspectRatio;
+    Result.M[0][1] = 0.0f;
+    Result.M[0][2] = 0.0f;
+    Result.M[0][3] = 0.0f;
+
+    Result.M[1][0] = 0.0f;
+    Result.M[1][1] = inFlipY ? -Height : Height; // Vulkan clip space for Y is [1, -1] -> its has to be flipped
     Result.M[1][2] = 0.0f;
     Result.M[1][3] = 0.0f;
 

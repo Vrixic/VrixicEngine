@@ -598,6 +598,10 @@ public:
         {
             Buffer = AllocateStorageBuffer(inBufferConfig);
         }
+        else if (inBufferConfig.UsageFlags & FResourceBindFlags::StagingBuffer)
+        {
+            Buffer = AllocateStagingBuffer(inBufferConfig);
+        }
 
         VE_ASSERT(Buffer != nullptr, VE_TEXT("[VulkanBuffer]: Failed to allocate buffer..."));
 

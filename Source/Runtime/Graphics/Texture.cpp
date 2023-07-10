@@ -5,8 +5,8 @@
 
 #include "Texture.h"
 
-Texture::Texture(const ETextureType inTextureType, uint32 inBindFlags)
-    : Type(inTextureType), BindFlags(inBindFlags) { }
+Texture::Texture(const FTextureConfig& inTextureConfig)
+    : Type(inTextureConfig.Type), BindFlags(inTextureConfig.BindFlags), Extent(inTextureConfig.Extent) { }
 
 void Texture::SetPath(const std::string& inTexturePath)
 {
@@ -26,6 +26,11 @@ inline ETextureType Texture::GetType() const
 inline uint32 Texture::GetBindFlags() const
 {
     return BindFlags;
+}
+
+inline const FExtent3D& Texture::GetExtent() const
+{
+    return Extent;
 }
 
 inline const std::string& Texture::GetPath() const

@@ -71,6 +71,26 @@ void VulkanCommandBuffer::SetVertexBuffer(Buffer& inVertexBuffer)
     vkCmdBindVertexBuffers(CommandBufferHandle, 0, 1, Buf.GetBufferHandle(), Offsets);
 }
 
+void VulkanCommandBuffer::SetVertexBuffer(Buffer& inVertexBuffer, uint32 inFirstBinding, uint32 inBindingCount)
+{
+    VE_PROFILE_VULKAN_FUNCTION();
+
+    VulkanBuffer& Buf = (VulkanBuffer&)inVertexBuffer;
+    VkDeviceSize Offsets[] = { 0 };
+
+    vkCmdBindVertexBuffers(CommandBufferHandle, inFirstBinding, inBindingCount, Buf.GetBufferHandle(), Offsets);
+}
+
+void VulkanCommandBuffer::SetVertexBuffer(Buffer& inVertexBuffer, uint32 inFirstBinding, uint32 inBindingCount, uint32 inOffset)
+{
+    VE_PROFILE_VULKAN_FUNCTION();
+
+    VulkanBuffer& Buf = (VulkanBuffer&)inVertexBuffer;
+    VkDeviceSize Offsets[] = { inOffset };
+
+    vkCmdBindVertexBuffers(CommandBufferHandle, inFirstBinding, inBindingCount, Buf.GetBufferHandle(), Offsets);
+}
+
 void VulkanCommandBuffer::SetIndexBuffer(Buffer& inIndexBuffer)
 {
     VE_PROFILE_VULKAN_FUNCTION();
@@ -78,6 +98,15 @@ void VulkanCommandBuffer::SetIndexBuffer(Buffer& inIndexBuffer)
     VulkanBuffer& Buf = (VulkanBuffer&)inIndexBuffer;
 
     vkCmdBindIndexBuffer(CommandBufferHandle, *Buf.GetBufferHandle(), 0, VK_INDEX_TYPE_UINT32);
+}
+
+void VulkanCommandBuffer::SetIndexBuffer(Buffer& inIndexBuffer, uint32 inOffset, EPixelFormat inIndexFormat)
+{
+    VE_PROFILE_VULKAN_FUNCTION();
+
+    VulkanBuffer& Buf = (VulkanBuffer&)inIndexBuffer;
+    VE_ASSERT((inIndexFormat == EPixelFormat::R32UInt || inIndexFormat == EPixelFormat::R16UInt), VE_TEXT("[VulkanCommandBuffer]: The passed in index type is not supported, only ones supported is EPixelFormat::R32Uint and EPixelFormat::R16Uint..."));
+    vkCmdBindIndexBuffer(CommandBufferHandle, *Buf.GetBufferHandle(), inOffset, inIndexFormat == EPixelFormat::R32UInt ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16);
 }
 
 void VulkanCommandBuffer::BeginRenderPass(const FRenderPassBeginInfo& inRenderPassBeginInfo) const

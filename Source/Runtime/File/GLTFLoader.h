@@ -26,6 +26,7 @@ namespace GLTF
     public:
         enum class EComponentType
         {
+            Invalid = -1,
             Byte = 5120,
             UnsignedByte = 5121,
             Short = 5122,
@@ -36,6 +37,7 @@ namespace GLTF
 
         enum class EType
         {
+            Invalid = -1,
             Scalar,
             Vec2,
             Vec3,
@@ -45,22 +47,33 @@ namespace GLTF
             Mat4,
         };
 
-        /** Index of buffer view */
-        uint32 BufferView;
+        /** Index of buffer view, default = -1 */
+        int64 BufferView;
 
-        /** Byte offset into the buffer view*/
-        uint32 ByteOffset;
+        /** Byte offset into the buffer view, default = 0 */
+        int64 ByteOffset;
 
         /** Coomponent type of this accessor */
         EComponentType ComponentType;
 
-        /** Count of data */
-        uint32 Count;
+        /** Count of data, default = 0 */
+        int64 Count;
 
-        /** MIN/MAX omitted for now */
+        /** Min/Max used for bounding boxes */
+        Vector3D Min; // default = EPSILON 
+        Vector3D Max; // default = EPSILON
 
         /** The type of the data */
         EType Type;
+
+        FAccessor()
+            : BufferView(-1),
+            ByteOffset(0),
+            ComponentType(EComponentType::Invalid),
+            Count(0),
+            Type(EType::Invalid),
+            Min(EPSILON), Max(EPSILON)
+        { }
     };
 
     struct VRIXIC_API FBufferView
@@ -68,6 +81,7 @@ namespace GLTF
     public:
         enum class ETarget
         {
+            Invalid = -1,
             VertexData = 34962, /*ArrayBuffer*/
             IndexData = 34963  /*ElementArrayBuffer*/
         };
@@ -75,70 +89,121 @@ namespace GLTF
         std::string Name;
 
         /** The index of the buffer */
-        uint32 BufferIndex;
+        int64 BufferIndex;
 
         /** The byte length of the buffer view */
-        uint32 ByteLength;
+        int64 ByteLength;
 
         /** The byte offset into the buffer data */
-        uint32 ByteOffset;
+        int64 ByteOffset;
 
-        uint32 ByteStride;
+        /** Stride of the buffer, should be tighly packed */
+        int64 ByteStride;
 
         /** Target of the buffer view */
         ETarget Target;
+
+        FBufferView()
+            : BufferIndex(-1),
+            ByteLength(0),
+            ByteOffset(0),
+            ByteStride(0),
+            Target(ETarget::Invalid)
+        {}
     };
 
     struct VRIXIC_API FBuffer
     {
     public:
         /** Byte length of the buffer */
-        uint32 ByteLength;
+        int64 ByteLength;
 
         /** The bin file for the buffer */
         std::string Uri;
+
+        /** Indicates that the URI is the buffer and not a path to the bin*/
+        bool bIsUriBuffer;
+
+        FBuffer()
+            : ByteLength(0),
+            bIsUriBuffer(false)
+        { }
     };
 
     struct VRIXIC_API FImage
     {
     public:
         /** Buffer view for the image */
-        uint32 BufferView;
+        int32 BufferView;
 
         /** The Uri for the image */
         std::string Uri;
+
+        /** Indicates that the URI is the buffer and not a path to the bin*/
+        bool bIsUriBuffer;
+
+        /** {"image/jpeg", "image/png", "image/bmp", "image/gif"} */
+        std::string MimeType;
+
+        FImage()
+            : BufferView(-1),
+            bIsUriBuffer(false)
+        { }
     };
 
     struct VRIXIC_API FTextureInfo
     {
     public:
         /** Index into the textures */
-        uint32 Index;
-        uint32 TexCoord;
+        int32 Index;
+
+        /** The set index for the textures TEXCOORD attrib/used for texture coordinate mapping */
+        int32 TexCoord;
+
+        FTextureInfo()
+            : Index(-1),
+            TexCoord(0)
+        { }
     };
 
     struct VRIXIC_API FNormalTextureInfo
     {
         /** Index into the textures */
-        uint32 Index;
-        uint32 TexCoord;
+        int32 Index;
+
+        /** The set index for the textures TEXCOORD attrib/used for texture coordinate mapping */
+        int32 TexCoord;
 
         /**
         * Linearlys scales X and Y values of the normal vector (Should normalize the vector after scaling)...
+        * EX: normalize((SurfaceNormal * 2.0 - 1.0) * vec3(NormalScale, NormalScale, 1.0))
         */
         float Scale;
+
+        FNormalTextureInfo()
+            : Index(-1),
+            TexCoord(0),
+            Scale(1.0) { }
     };
 
     struct VRIXIC_API FOcclusionTextureInfo
     {
         /** Index into the textures */
-        uint32 Index;
-        uint32 TexCoord;
+        int32 Index;
+
+        /** The set index for the textures TEXCOORD attrib/used for texture coordinate mapping */
+        int32 TexCoord;
 
         /**
         * Used to reduce the occulusion effect. Occulisions values 1.0 + Strength * (occulusionTexture - 1.0f);
+        * Ex in glsl: mix(Color, Color * SampledOcclusionTextureValue, OcclusionStrength)
         */
         float Strength;
+
+        FOcclusionTextureInfo()
+            : Index(-1),
+            TexCoord(0),
+            Strength(1.0) { }
     };
 
     struct VRIXIC_API FPBRMetallicRoughnessInfo
@@ -147,10 +212,14 @@ namespace GLTF
         Vector4D BaseColorFactor;
         FTextureInfo BaseColorTexture;
 
+        float RoughnessFactor;
         float MetallicFactor;
         FTextureInfo MetallicRoughnessTexture;
 
-        float RoughnessFactor;
+        FPBRMetallicRoughnessInfo()
+            : BaseColorFactor(1),
+            RoughnessFactor(1.0),
+            MetallicFactor(1.0) { }
     };
 
     struct VRIXIC_API FMaterial
@@ -158,7 +227,7 @@ namespace GLTF
     public:
         enum class EAlphaMode
         {
-            Invalid,
+            Invalid = -1,
             Opaque,
             Mask,
             Blend
@@ -169,6 +238,7 @@ namespace GLTF
 
         float AlphaCutoff;
         EAlphaMode AlphaMode;
+        bool bIsDoubleSided;
 
         Vector3D EmissiveFactor;
         FTextureInfo EmissiveTexture;
@@ -176,6 +246,13 @@ namespace GLTF
         FNormalTextureInfo NormalTexture;
         FOcclusionTextureInfo OcclusionTexture;
         FPBRMetallicRoughnessInfo PBRMetallicRoughnessInfo;
+
+        FMaterial()
+            : AlphaCutoff(0.5f),
+            AlphaMode(EAlphaMode::Opaque),
+            bIsDoubleSided(false),
+            EmissiveFactor(0.0f) { }
+
     };
 
     struct VRIXIC_API FMeshPrimitiveAttribute
@@ -185,7 +262,10 @@ namespace GLTF
         std::string Key;
 
         /** Index into the accessors */
-        uint32 AccessorIndex;
+        int32 AccessorIndex;
+
+        FMeshPrimitiveAttribute()
+            : AccessorIndex(-1) { }
     };
 
     struct VRIXIC_API FMeshPrimitive
@@ -193,7 +273,8 @@ namespace GLTF
     public:
         enum class EMode
         {
-            Points = 0,
+            Invalid = -1,
+            Points,
             Lines,
             LineLoop,
             LineStrip,
@@ -205,13 +286,19 @@ namespace GLTF
         /** All attributes for this mesh primitive */
         std::vector<FMeshPrimitiveAttribute> Attributes;
 
-        /** The index into the indicies */
-        uint32 IndiciesIndex;
+        /** The index into the accessors that contains the indicies */
+        int32 IndiciesIndex;
 
-        /** The index into the material data */
-        uint32 MaterialIndex;
+        /** The index into the material data | this material will be applied to this primitive */
+        int32 MaterialIndex;
 
+        /** Basically PrimitiveTopology */
         EMode Mode;
+
+        FMeshPrimitive()
+            : IndiciesIndex(-1),
+            MaterialIndex(-1),
+            Mode(EMode::Invalid) { }
     };
 
     struct VRIXIC_API FMesh
@@ -224,11 +311,47 @@ namespace GLTF
         std::vector<FMeshPrimitive> Primitives;
     };
 
+    struct VRIXIC_API FPerspectiveCamera
+    {
+    public:
+        float AspectRatio;
+        float YFov; // In Radians 
+        float ZFar; // ZFar == 0, its is a infinite projection matrix 
+        float ZNear;
+
+        FPerspectiveCamera()
+            : AspectRatio(0.0f),
+            YFov(0.0f),
+            ZFar(0.0f),
+            ZNear(0.0f) { }
+    };
+
+    struct VRIXIC_API FOrthographicCamera
+    {
+    public:
+        float XMag;
+        float YMag;
+        float ZFar;
+        float ZNear;
+
+        FOrthographicCamera()
+            : XMag(0.0f),
+            YMag(0.0f),
+            ZFar(0.0f),
+            ZNear(0.0f) { }
+    };
+
     struct VRIXIC_API FCamera
     {
     public:
         std::string Name;
-        bool bisOrthographic;
+        bool bIsOrthographic;
+
+        FPerspectiveCamera PerspectiveCamera;
+        FOrthographicCamera OrthographicCamera;
+
+        FCamera()
+            : bIsOrthographic(false) { }
     };
 
     struct VRIXIC_API FNode
@@ -237,7 +360,7 @@ namespace GLTF
         std::string Name;
 
         /** Index to the camera object referenced by this node */
-        uint32 CameraIndex;
+        int32 CameraIndex;
 
         /** All of the nodes children, their indicies*/
         std::vector<uint32> Children;
@@ -248,7 +371,17 @@ namespace GLTF
         Matrix4D Matrix;
 
         /** Index into the meshes data */
-        uint32 MeshIndex;
+        int32 MeshIndex;
+
+        FNode()
+            : CameraIndex(-1),
+            Rotation(0.0f),
+            Scale(1.0f),
+            Translation(0.0f),
+            MeshIndex(-1)
+        {
+            Matrix.SetIdentity();
+        }
     };
 
     struct VRIXIC_API FSampler
@@ -256,6 +389,8 @@ namespace GLTF
     public:
         enum class EFilter
         {
+            Invalid = -1,
+
             Nearest = 9728,
 
             Linear = 9729,
@@ -271,6 +406,8 @@ namespace GLTF
 
         enum class EWrap
         {
+            Invalid = -1,
+
             ClampToEdge = 33071,
 
             MirroredRepeat = 33648,
@@ -282,6 +419,12 @@ namespace GLTF
         EFilter MinFilter;
         EWrap WrapS;
         EWrap WrapT;
+
+        FSampler()
+            : MagFilter(EFilter::Invalid),
+            MinFilter(EFilter::Invalid),
+            WrapS(EWrap::Invalid),
+            WrapT(EWrap::Invalid) { }
     };
 
     struct VRIXIC_API FScene
@@ -297,10 +440,14 @@ namespace GLTF
         std::string Name;
 
         /** Index into the samplers */
-        uint32 SamplerIndex;
+        int32 SamplerIndex;
 
-        /** Aka. Source, index of the image this texture refers to */
-        uint32 ImageIndex;
+        /** Aka. Source - index of the image this texture refers to */
+        int32 ImageIndex;
+
+        FTexture()
+            : SamplerIndex(-1),
+            ImageIndex(-1) { }
     };
 
     struct VRIXIC_API FWorld
@@ -333,13 +480,39 @@ namespace GLTF
         /**
         * Trys to load a uint32 from json data, loads it if it exists, otherwise will not load
         */
-        static void TryLoadUint32(json& inJsonData, const char* inDataKey, uint32& outValue)
+        static void TryLoadUint32(json& inJsonData, const char* inDataKey, uint32 inFailValue, uint32& outValue)
         {
             // Check if it exists, if not exit 
             auto It = inJsonData.find(inDataKey);
             if (It == inJsonData.end())
             {
-                outValue = UINT32_MAX;
+                outValue = inFailValue;
+                return;
+            }
+
+            outValue = inJsonData.value(inDataKey, 0);
+        }
+
+        static void TryLoadInt32(json& inJsonData, const char* inDataKey, int32 inFailValue, int32& outValue)
+        {
+            // Check if it exists, if not exit 
+            auto It = inJsonData.find(inDataKey);
+            if (It == inJsonData.end())
+            {
+                outValue = inFailValue;
+                return;
+            }
+
+            outValue = inJsonData.value(inDataKey, 0);
+        }
+
+        static void TryLoadInt64(json& inJsonData, const char* inDataKey, int64 inFailValue, int64& outValue)
+        {
+            // Check if it exists, if not exit 
+            auto It = inJsonData.find(inDataKey);
+            if (It == inJsonData.end())
+            {
+                outValue = inFailValue;
                 return;
             }
 
@@ -349,16 +522,30 @@ namespace GLTF
         /**
         * Trys to load a float from json data, loads it if it exists, otherwise will not load
         */
-        static void TryLoadFloat(json& inJsonData, const char* inDataKey, float& outValue)
+        static void TryLoadFloat(json& inJsonData, const char* inDataKey, float inFailValue, float& outValue)
         {
             // Check if it exists, if not exit 
             auto It = inJsonData.find(inDataKey);
             if (It == inJsonData.end())
             {
+                outValue = inFailValue;
                 return;
             }
 
             outValue = inJsonData.value(inDataKey, 0.0f);
+        }
+
+        static void TryLoadBoolean(json& inJsonData, const char* inDataKey, bool inFailValue, bool& outValue)
+        {
+            // Check if it exists, if not exit 
+            auto It = inJsonData.find(inDataKey);
+            if (It == inJsonData.end())
+            {
+                outValue = inFailValue;
+                return;
+            }
+
+            outValue = inJsonData.value(inDataKey, false);
         }
 
         /**
@@ -379,7 +566,7 @@ namespace GLTF
         /**
         * Trys to load int vector from json data, loads it if it exists, otherwise will not load
         */
-        static void TryLoadIntVector(json& inJsonData, const char* inDataKey, std::vector<uint32>& outVector)
+        static void TryLoadUint32Vector(json& inJsonData, const char* inDataKey, std::vector<uint32>& outVector)
         {
             // Check if it exists, if not exit 
             auto It = inJsonData.find(inDataKey);
@@ -406,12 +593,11 @@ namespace GLTF
             auto It = inJsonData.find(inDataKey);
             if (It == inJsonData.end())
             {
-                outTextureInfo.Index = UINT32_MAX;
                 return;
             }
 
-            TryLoadUint32(inJsonData, "index", outTextureInfo.Index);
-            TryLoadUint32(inJsonData, "texCoord", outTextureInfo.TexCoord);
+            TryLoadInt32(*It, "index", -1, outTextureInfo.Index);
+            TryLoadInt32(*It, "texCoord", 0, outTextureInfo.TexCoord);
         }
 
         /**
@@ -423,13 +609,12 @@ namespace GLTF
             auto It = inJsonData.find(inDataKey);
             if (It == inJsonData.end())
             {
-                outTextureInfo.Index = UINT32_MAX;
                 return;
             }
 
-            TryLoadUint32(inJsonData, "index", outTextureInfo.Index);
-            TryLoadUint32(inJsonData, "texCoord", outTextureInfo.TexCoord);
-            TryLoadFloat(inJsonData, "scale", outTextureInfo.Scale);
+            TryLoadInt32(*It, "index", -1, outTextureInfo.Index);
+            TryLoadInt32(*It, "texCoord", 0, outTextureInfo.TexCoord);
+            TryLoadFloat(*It, "scale", 1.0f, outTextureInfo.Scale);
         }
 
         /**
@@ -441,13 +626,12 @@ namespace GLTF
             auto It = inJsonData.find(inDataKey);
             if (It == inJsonData.end())
             {
-                outTextureInfo.Index = UINT32_MAX;
                 return;
             }
 
-            TryLoadUint32(inJsonData, "index", outTextureInfo.Index);
-            TryLoadUint32(inJsonData, "texCoord", outTextureInfo.TexCoord);
-            TryLoadFloat(inJsonData, "strength", outTextureInfo.Strength);
+            TryLoadInt32(*It, "index", -1, outTextureInfo.Index);
+            TryLoadInt32(*It, "texCoord", 0, outTextureInfo.TexCoord);
+            TryLoadFloat(*It, "strength", 1.0f, outTextureInfo.Strength);
         }
 
         /**
@@ -462,27 +646,27 @@ namespace GLTF
                 return;
             }
 
-            TryLoadVector4D(inJsonData, "index", outInfo.BaseColorFactor);
-            TryLoadTextureInfo(inJsonData, "baseColorTexture", outInfo.BaseColorTexture);
+            TryLoadVector4D(*It, "baseColorFactor", 1.0f, outInfo.BaseColorFactor);
+            TryLoadTextureInfo(*It, "baseColorTexture", outInfo.BaseColorTexture);
 
-            TryLoadFloat(inJsonData, "metallicFactor", outInfo.MetallicFactor);
-            TryLoadTextureInfo(inJsonData, "metallicRoughnessTexture", outInfo.MetallicRoughnessTexture);
+            TryLoadFloat(*It, "metallicFactor", 1.0f, outInfo.MetallicFactor);
+            TryLoadTextureInfo(*It, "metallicRoughnessTexture", outInfo.MetallicRoughnessTexture);
 
-            TryLoadFloat(inJsonData, "roughnessFactor", outInfo.RoughnessFactor);
+            TryLoadFloat(*It, "roughnessFactor", 1.0f, outInfo.RoughnessFactor);
         }
 
         /**
         * Trys to load a vector3d from json data, loads it if it exists, otherwise will not load
         */
-        static void TryLoadVector3D(json& inJsonData, const char* inDataKey, Vector3D& outVector)
+        static void TryLoadVector3D(json& inJsonData, const char* inDataKey, float inFailValue, Vector3D& outVector)
         {
             // Check if it exists, if not exit 
             auto It = inJsonData.find(inDataKey);
             if (It == inJsonData.end())
             {
-                outVector.X = 0.0f;
-                outVector.Y = 0.0f;
-                outVector.Z = 0.0f;
+                outVector.X = inFailValue;
+                outVector.Y = inFailValue;
+                outVector.Z = inFailValue;
                 return;
             }
 
@@ -501,16 +685,16 @@ namespace GLTF
         /**
         * Trys to load a vector4d from json data, loads it if it exists, otherwise will not load
         */
-        static void TryLoadVector4D(json& inJsonData, const char* inDataKey, Vector4D& outVector)
+        static void TryLoadVector4D(json& inJsonData, const char* inDataKey, float inFailValue, Vector4D& outVector)
         {
             // Check if it exists, if not exit 
             auto It = inJsonData.find(inDataKey);
             if (It == inJsonData.end())
             {
-                outVector.X = 0.0f;
-                outVector.Y = 0.0f;
-                outVector.Z = 0.0f;
-                outVector.W = 0.0f;
+                outVector.X = inFailValue;
+                outVector.Y = inFailValue;
+                outVector.Z = inFailValue;
+                outVector.W = inFailValue;
                 return;
             }
 
@@ -536,6 +720,7 @@ namespace GLTF
             auto It = inJsonData.find(inDataKey);
             if (It == inJsonData.end())
             {
+                outMatrix(0, 0) = EPSILON;
                 return;
             }
 
@@ -616,12 +801,69 @@ namespace GLTF
             {
                 outAlphaMode = FMaterial::EAlphaMode::Blend;
             }
-            //else
-            //{
-            //    // If it makes it this far then an error has occured as it has to be one of those options
-            //    VE_ASSERT(false, VE_TEXT("[FJsonHelpers]: Cannot load alpha mode as its invalid...."));
-            //}
+            else
+            {
+                // If it makes it this far then an error has occured as it has to be one of those options
+                VE_CORE_LOG_ERROR(VE_TEXT("[FJsonHelpers]: Cannot load alpha mode as its invalid...."));
+            }
         }
+
+        static inline bool IsUCharBase64(unsigned char c) {
+            return (isalnum(c) || (c == '+') || (c == '/'));
+        }
+
+        static std::string DecodeBase64(std::string const& inEncodedString)
+        {
+            int in_len = static_cast<int>(inEncodedString.size());
+            int i = 0;
+            int j = 0;
+            int in_ = 0;
+            unsigned char char_array_4[4], char_array_3[3];
+            std::string ret;
+
+            const std::string base64_chars =
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                "abcdefghijklmnopqrstuvwxyz"
+                "0123456789+/";
+
+            while (in_len-- && (inEncodedString[in_] != '=') &&
+                IsUCharBase64(inEncodedString[in_])) {
+                char_array_4[i++] = inEncodedString[in_];
+                in_++;
+                if (i == 4) {
+                    for (i = 0; i < 4; i++)
+                        char_array_4[i] =
+                        static_cast<unsigned char>(base64_chars.find(char_array_4[i]));
+
+                    char_array_3[0] =
+                        (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+                    char_array_3[1] =
+                        ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+                    char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+                    for (i = 0; (i < 3); i++) ret += char_array_3[i];
+                    i = 0;
+                }
+            }
+
+            if (i) {
+                for (j = i; j < 4; j++) char_array_4[j] = 0;
+
+                for (j = 0; j < 4; j++)
+                    char_array_4[j] =
+                    static_cast<unsigned char>(base64_chars.find(char_array_4[j]));
+
+                char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+                char_array_3[1] =
+                    ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+                char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+                for (j = 0; (j < i - 1); j++) ret += char_array_3[j];
+            }
+
+            return ret;
+        }
+
     };
 
     struct VRIXIC_API FGLTFLoader
@@ -640,11 +882,17 @@ namespace GLTF
 
             for (uint32 i = 0; i < DataSize; i++)
             {
-                FJsonHelpers::TryLoadUint32(Data[i], "bufferView", outAccessors[i].BufferView);
-                FJsonHelpers::TryLoadUint32(Data[i], "byteOffset", outAccessors[i].ByteOffset);
-                FJsonHelpers::TryLoadUint32(Data[i], "componentType", (uint32&)outAccessors[i].ComponentType);
-                FJsonHelpers::TryLoadUint32(Data[i], "count", outAccessors[i].Count);
+                FJsonHelpers::TryLoadInt64(Data[i], "bufferView", -1, outAccessors[i].BufferView);
+                FJsonHelpers::TryLoadInt64(Data[i], "byteOffset", 0, outAccessors[i].ByteOffset);
+                FJsonHelpers::TryLoadInt32(Data[i], "componentType", -1, (int32&)outAccessors[i].ComponentType);
+                FJsonHelpers::TryLoadInt64(Data[i], "count", 0, outAccessors[i].Count);
                 FJsonHelpers::TryLoadType(Data[i], "type", outAccessors[i].Type);
+
+                if (outAccessors[i].Type == FAccessor::EType::Vec3)
+                {
+                    FJsonHelpers::TryLoadVector3D(Data[i], "min", EPSILON, outAccessors[i].Min);
+                    FJsonHelpers::TryLoadVector3D(Data[i], "max", EPSILON, outAccessors[i].Max);
+                }
             }
         }
 
@@ -661,11 +909,11 @@ namespace GLTF
 
             for (uint32 i = 0; i < DataSize; i++)
             {
-                FJsonHelpers::TryLoadUint32(Data[i], "buffer", outBufferView[i].BufferIndex);
-                FJsonHelpers::TryLoadUint32(Data[i], "byteLength", outBufferView[i].ByteLength);
-                FJsonHelpers::TryLoadUint32(Data[i], "byteOffset", outBufferView[i].ByteOffset);
-                FJsonHelpers::TryLoadUint32(Data[i], "byteStride", outBufferView[i].ByteStride);
-                FJsonHelpers::TryLoadUint32(Data[i], "target", (uint32&)outBufferView[i].Target);
+                FJsonHelpers::TryLoadInt64(Data[i], "buffer", -1, outBufferView[i].BufferIndex);
+                FJsonHelpers::TryLoadInt64(Data[i], "byteLength", 0, outBufferView[i].ByteLength);
+                FJsonHelpers::TryLoadInt64(Data[i], "byteOffset", 0, outBufferView[i].ByteOffset);
+                FJsonHelpers::TryLoadInt64(Data[i], "byteStride", 0, outBufferView[i].ByteStride);
+                FJsonHelpers::TryLoadInt32(Data[i], "target", -1, (int32&)outBufferView[i].Target);
                 FJsonHelpers::TryLoadString(Data[i], "name", outBufferView[i].Name);
             }
         }
@@ -683,8 +931,22 @@ namespace GLTF
 
             for (uint32 i = 0; i < DataSize; i++)
             {
-                FJsonHelpers::TryLoadUint32(Data[i], "bufferView", outImages[i].BufferView);
+                FJsonHelpers::TryLoadInt32(Data[i], "bufferView", -1, outImages[i].BufferView);
                 FJsonHelpers::TryLoadString(Data[i], "uri", outImages[i].Uri);
+
+                int32 HeaderLength = -1;
+                int32 HeaderIndex = CheckURI(outImages[i].Uri, HeaderLength);
+
+                outImages[i].bIsUriBuffer = false;
+                if (HeaderIndex != -1)
+                {
+                    outImages[i].bIsUriBuffer = true;
+
+                    outImages[i].MimeType = outImages[i].Uri.substr(5, outImages[i].Uri.find(';'));
+
+                    std::string DecodedString = FJsonHelpers::DecodeBase64(outImages[i].Uri.substr(HeaderLength));
+                    outImages[i].Uri = DecodedString;
+                }
             }
         }
 
@@ -703,10 +965,11 @@ namespace GLTF
             {
                 FJsonHelpers::TryLoadString(Data[i], "name", outMaterials[i].Name);
 
-                FJsonHelpers::TryLoadFloat(Data[i], "alphaCutoff", outMaterials[i].AlphaCutoff);
+                FJsonHelpers::TryLoadFloat(Data[i], "alphaCutoff", 0.5f, outMaterials[i].AlphaCutoff);
                 FJsonHelpers::TryLoadAlphaMode(Data[i], "alphaMode", outMaterials[i].AlphaMode);
+                FJsonHelpers::TryLoadBoolean(Data[i], "doubleSided", false, outMaterials[i].bIsDoubleSided);
 
-                FJsonHelpers::TryLoadVector3D(Data[i], "emissiveFactor", outMaterials[i].EmissiveFactor);
+                FJsonHelpers::TryLoadVector3D(Data[i], "emissiveFactor", 0.0f, outMaterials[i].EmissiveFactor);
                 FJsonHelpers::TryLoadTextureInfo(Data[i], "emissiveTexture", outMaterials[i].EmissiveTexture);
 
                 FJsonHelpers::TryLoadNormalTextureInfo(Data[i], "normalTexture", outMaterials[i].NormalTexture);
@@ -718,7 +981,7 @@ namespace GLTF
         /**
         * Helper function which just loads all of the mesh primitives from the parsed json data
         */
-        static void LoadMeshPrimitives(json& inJsonData, std::vector<FMeshPrimitive> outMeshPrimitives)
+        static void LoadMeshPrimitives(json& inJsonData, std::vector<FMeshPrimitive>& outMeshPrimitives)
         {
             json Data = inJsonData["primitives"];
 
@@ -728,19 +991,19 @@ namespace GLTF
 
             for (uint32 i = 0; i < DataSize; i++)
             {
-                FJsonHelpers::TryLoadUint32(Data[i], "indices", outMeshPrimitives[i].IndiciesIndex);
-                FJsonHelpers::TryLoadUint32(Data[i], "material", outMeshPrimitives[i].MaterialIndex);
-                FJsonHelpers::TryLoadUint32(Data[i], "mode", (uint32&)outMeshPrimitives[i].Mode);
+                FJsonHelpers::TryLoadInt32(Data[i], "indices", -1, outMeshPrimitives[i].IndiciesIndex);
+                FJsonHelpers::TryLoadInt32(Data[i], "material", -1, outMeshPrimitives[i].MaterialIndex);
+                FJsonHelpers::TryLoadInt32(Data[i], "mode", -1, (int32&)outMeshPrimitives[i].Mode);
 
-                json Attributes = inJsonData["attributes"];
+                json Attributes = Data[i]["attributes"];
                 outMeshPrimitives[i].Attributes.resize(Attributes.size());
                 memset(outMeshPrimitives[i].Attributes.data(), 0, sizeof(FMeshPrimitiveAttribute) * Attributes.size());
 
                 uint32 Index = 0;
                 for (auto JsonAttribute : Attributes.items())
                 {
-                    std::string Key = JsonAttribute.key();
-                    outMeshPrimitives[i].Attributes[Index].Key = Key;
+                    outMeshPrimitives[i].Attributes[Index].Key.resize(JsonAttribute.key().size());
+                    outMeshPrimitives[i].Attributes[Index].Key = JsonAttribute.key();
                     outMeshPrimitives[i].Attributes[Index++].AccessorIndex = JsonAttribute.value();
                 }
             }
@@ -779,14 +1042,14 @@ namespace GLTF
             {
                 FJsonHelpers::TryLoadString(Data[i], "name", outNodes[i].Name);
 
-                FJsonHelpers::TryLoadUint32(Data[i], "camera", outNodes[i].CameraIndex);
-                FJsonHelpers::TryLoadUint32(Data[i], "mesh", outNodes[i].MeshIndex);
+                FJsonHelpers::TryLoadInt32(Data[i], "camera", -1, outNodes[i].CameraIndex);
+                FJsonHelpers::TryLoadInt32(Data[i], "mesh", -1, outNodes[i].MeshIndex);
 
-                FJsonHelpers::TryLoadIntVector(Data[i], "children", outNodes[i].Children);
+                FJsonHelpers::TryLoadUint32Vector(Data[i], "children", outNodes[i].Children);
 
-                FJsonHelpers::TryLoadVector3D(Data[i], "scale", outNodes[i].Scale);
-                FJsonHelpers::TryLoadVector3D(Data[i], "translation", outNodes[i].Translation);
-                FJsonHelpers::TryLoadVector4D(Data[i], "rotation", outNodes[i].Rotation);
+                FJsonHelpers::TryLoadVector3D(Data[i], "scale", 1.0f, outNodes[i].Scale);
+                FJsonHelpers::TryLoadVector3D(Data[i], "translation", 0.0f, outNodes[i].Translation);
+                FJsonHelpers::TryLoadVector4D(Data[i], "rotation", 0.0f, outNodes[i].Rotation);
                 FJsonHelpers::TryLoadMatrix4D(Data[i], "matrix", outNodes[i].Matrix);
             }
         }
@@ -804,10 +1067,10 @@ namespace GLTF
 
             for (uint32 i = 0; i < DataSize; i++)
             {
-                FJsonHelpers::TryLoadUint32(Data[i], "magFilter", (uint32&)outSamplers[i].MagFilter);
-                FJsonHelpers::TryLoadUint32(Data[i], "minFilter", (uint32&)outSamplers[i].MinFilter);
-                FJsonHelpers::TryLoadUint32(Data[i], "wrapS", (uint32&)outSamplers[i].WrapS);
-                FJsonHelpers::TryLoadUint32(Data[i], "wrapT", (uint32&)outSamplers[i].WrapT);
+                FJsonHelpers::TryLoadInt32(Data[i], "magFilter", -1, (int32&)outSamplers[i].MagFilter);
+                FJsonHelpers::TryLoadInt32(Data[i], "minFilter", -1, (int32&)outSamplers[i].MinFilter);
+                FJsonHelpers::TryLoadInt32(Data[i], "wrapS", -1, (int32&)outSamplers[i].WrapS);
+                FJsonHelpers::TryLoadInt32(Data[i], "wrapT", -1, (int32&)outSamplers[i].WrapT);
             }
         }
 
@@ -824,7 +1087,7 @@ namespace GLTF
 
             for (uint32 i = 0; i < DataSize; i++)
             {
-                FJsonHelpers::TryLoadIntVector(Data[i], "nodes", outScenes[i].Nodes);
+                FJsonHelpers::TryLoadUint32Vector(Data[i], "nodes", outScenes[i].Nodes);
             }
         }
 
@@ -842,8 +1105,8 @@ namespace GLTF
             for (uint32 i = 0; i < DataSize; i++)
             {
                 FJsonHelpers::TryLoadString(Data[i], "name", outTextures[i].Name);
-                FJsonHelpers::TryLoadUint32(Data[i], "sampler", outTextures[i].SamplerIndex);
-                FJsonHelpers::TryLoadUint32(Data[i], "source", outTextures[i].ImageIndex);
+                FJsonHelpers::TryLoadInt32(Data[i], "sampler", -1, outTextures[i].SamplerIndex);
+                FJsonHelpers::TryLoadInt32(Data[i], "source", -1, outTextures[i].ImageIndex);
             }
         }
 
@@ -861,7 +1124,19 @@ namespace GLTF
             for (uint32 i = 0; i < DataSize; i++)
             {
                 FJsonHelpers::TryLoadString(Data[i], "uri", outBuffers[i].Uri);
-                FJsonHelpers::TryLoadUint32(Data[i], "byteLength", outBuffers[i].ByteLength);
+                FJsonHelpers::TryLoadInt64(Data[i], "byteLength", 0, outBuffers[i].ByteLength);
+
+                int32 HeaderLength = -1;
+                int32 HeaderIndex = CheckURI(outBuffers[i].Uri, HeaderLength);
+
+                outBuffers[i].bIsUriBuffer = false;
+                if (HeaderIndex != -1)
+                {
+                    outBuffers[i].bIsUriBuffer = true;
+
+                    std::string DecodedString = FJsonHelpers::DecodeBase64(outBuffers[i].Uri.substr(HeaderLength));
+                    outBuffers[i].Uri = DecodedString;
+                }
             }
         }
 
@@ -932,6 +1207,36 @@ namespace GLTF
             }
 
             return World;
+        }
+
+    private:
+
+        static int CheckURI(const std::string& inURI, int32& outUriLength)
+        {
+            // Firstly we want to check for encodings 
+            static std::string Headers[7] = {
+                "data:application/octet-stream;base64,",
+                "data:image/jpeg;base64,",
+                "data:image/png;base64,",
+                "data:image/bmp;base64,",
+                "data:image/gif;base64,",
+                "data:text/plain;base64,",
+                "data:application/gltf-buffer;base64,"
+            };
+
+            // if data is the uri then we will know
+            for (uint32 j = 0; j < 7; ++j)
+            {
+                if (inURI.find(Headers[j]) == 0)
+                {
+                    outUriLength = Headers[j].length();
+                    return j;
+                    break;
+                }
+            }
+
+            outUriLength = -1;
+            return -1;
         }
     };
 

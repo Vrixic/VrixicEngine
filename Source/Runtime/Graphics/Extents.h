@@ -42,6 +42,24 @@ public:
         : Width(inWidth), Height(inHeight), Depth(inDepth) { }
 };
 
+/**
+* Defines a 3D offset 
+*/
+struct VRIXIC_API FOffset3D
+{
+public:
+    int32 X;
+    int32 Y;
+    int32 Z;
+
+public:
+    FOffset3D()
+        : X(0), Y(0), Z(0) { }
+
+    FOffset3D(int32 inX, int32 inY, int32 inZ)
+        : X(inX), Y(inY), Z(inZ) { }
+};
+
 struct VRIXIC_API FRect2D
 {
 public:
