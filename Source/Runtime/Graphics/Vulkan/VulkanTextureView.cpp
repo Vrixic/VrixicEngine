@@ -28,17 +28,34 @@
 //}
 
 VulkanTextureView::VulkanTextureView(VulkanDevice* inDevice, const FTextureConfig& inTextureConfig)
-    : Texture(inTextureConfig.Type, inTextureConfig.BindFlags), Device(inDevice), ImageHandle(VK_NULL_HANDLE),
-    ImageMemory(VK_NULL_HANDLE), ViewHandle(VK_NULL_HANDLE)
+    : Texture(inTextureConfig), Device(inDevice), ImageHandle(VK_NULL_HANDLE),
+    ImageMemory(VK_NULL_HANDLE), ViewHandle(VK_NULL_HANDLE), KtxTextureHandle(nullptr)
 {
-    ImageFormat = VulkanTypeConverter::Convert(inTextureConfig.Format);
     NumMipLevels = inTextureConfig.MipLevels;
     NumArrayLayers = inTextureConfig.NumArrayLayers;
+
+    if (inTextureConfig.CreationFlags & FResourceCreationFlags::KTX)
+    {
+        ImageFormat = (VkFormat)((int32)inTextureConfig.Format);
+        KtxTextureHandle = ((const FVulkanTextureConfig&)inTextureConfig).KtxTextureHandle;
+        VE_ASSERT(KtxTextureHandle != nullptr, VE_TEXT("[VulkanTextureView]: Cannot create a texture with Creation Flag: KTX, if KtxTextureHandle is a nullptr..."));
+    }
+    else
+    {
+        ImageFormat = VulkanTypeConverter::Convert(inTextureConfig.Format);
+    }
 
     /** All Images start with layout that is undefined */
     ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     // Create Image
+    if (inTextureConfig.TextureHandle != nullptr)
+    {
+        VulkanTextureView* VulkanTexture = (VulkanTextureView*)inTextureConfig.TextureHandle;
+        ImageHandle = *VulkanTexture->GetImageHandle();
+        KtxTextureHandle = (ktxTexture*)VulkanTexture->GetKtxTextureHandle();
+        return;
+    }
     CreateImage(inTextureConfig);
 }
 
@@ -49,16 +66,19 @@ VulkanTextureView::~VulkanTextureView()
     if (ImageHandle != VK_NULL_HANDLE)
     {
         vkDestroyImage(*Device->GetDeviceHandle(), ImageHandle, nullptr);
+        ImageHandle = VK_NULL_HANDLE;
     }
 
     if (ViewHandle != VK_NULL_HANDLE)
     {
         vkDestroyImageView(*Device->GetDeviceHandle(), ViewHandle, nullptr);
+        ViewHandle = VK_NULL_HANDLE;
     }
 
     if (ImageMemory != VK_NULL_HANDLE)
     {
         vkFreeMemory(*Device->GetDeviceHandle(), ImageMemory, nullptr);
+        ImageMemory = VK_NULL_HANDLE;
     }
 }
 
@@ -105,17 +125,33 @@ void VulkanTextureView::CreateDefaultImageView()
     );
 }
 
+FTextureConfig VulkanTextureView::GetTextureConfig() const
+{
+    FTextureConfig TextureConfig = { };
+    TextureConfig.BindFlags = GetBindFlags();
+    TextureConfig.Type = GetType();
+    TextureConfig.TextureHandle = (Texture*)this;
+    TextureConfig.Extent = GetExtent();
+    TextureConfig.MipLevels = NumMipLevels;
+    TextureConfig.NumArrayLayers = NumArrayLayers;
+    TextureConfig.NumSamples = 0;
+    TextureConfig.Format = VulkanTypeConverter::Convert(GetImageFormat());
+
+    return TextureConfig;
+}
+
 void VulkanTextureView::CreateImage(const FTextureConfig& inTextureConfig)
 {
     VkImageCreateInfo ImageCreateInfo = VulkanUtils::Initializers::ImageCreateInfo();
     ImageCreateInfo.imageType = VulkanTypeConverter::ConvertTextureTypeToVk(inTextureConfig.Type);
-    ImageCreateInfo.format = VulkanTypeConverter::Convert(inTextureConfig.Format);
+    ImageCreateInfo.format = ImageFormat; //VulkanTypeConverter::Convert(inTextureConfig.Format);
     ImageCreateInfo.extent = { inTextureConfig.Extent.Width, inTextureConfig.Extent.Height, inTextureConfig.Extent.Depth };
     ImageCreateInfo.mipLevels = NumMipLevels;
     ImageCreateInfo.arrayLayers = NumArrayLayers;
     ImageCreateInfo.samples = VulkanTypeConverter::ConvertSampleCountToVk(inTextureConfig.NumSamples);
     ImageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     ImageCreateInfo.usage = VulkanTypeConverter::ConvertTextureUsageFlagsToVk(inTextureConfig.BindFlags);
+    ImageCreateInfo.flags = VulkanTypeConverter::ConvertTextureCreationFlagsToVk(inTextureConfig.CreationFlags);
 
     VK_CHECK_RESULT(vkCreateImage(*Device->GetDeviceHandle(), &ImageCreateInfo, nullptr, &ImageHandle), "[VulkanTextureView]: Failed to create an image!");
 

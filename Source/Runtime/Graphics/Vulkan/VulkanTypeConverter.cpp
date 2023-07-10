@@ -433,7 +433,7 @@ VkDescriptorType VulkanTypeConverter::ConvertBindFlagsToVkDescriptorType(EResour
     switch (inResourceType)
     {
     case EResourceType::Buffer:
-        if (inBindFlags & FResourceBindFlags::ConstantBuffer)
+        if ((inBindFlags & FResourceBindFlags::ConstantBuffer) || (inBindFlags & FResourceBindFlags::UniformBuffer))
         {
             if (inBindFlags & FResourceBindFlags::TexelBuffer)
             {
@@ -462,7 +462,7 @@ VkDescriptorType VulkanTypeConverter::ConvertBindFlagsToVkDescriptorType(EResour
         }
 
         break;
-    case EResourceType::Texture:                    
+    case EResourceType::Texture:
         if (inBindFlags & FResourceBindFlags::Sampled)
         {
             return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -760,6 +760,7 @@ VkImageType VulkanTypeConverter::ConvertTextureTypeToVk(ETextureType inType)
     switch (inType)
     {
     case ETextureType::Texture1D: return VK_IMAGE_TYPE_1D;
+    case ETextureType::TextureCube:
     case ETextureType::Texture2D: return VK_IMAGE_TYPE_2D;
     case ETextureType::Texture3D: return VK_IMAGE_TYPE_3D;
     default:
@@ -793,7 +794,6 @@ VkImageUsageFlags VulkanTypeConverter::ConvertTextureUsageFlagsToVk(uint32 inFla
     if (inFlags & FResourceBindFlags::Sampled)
     {
         Flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
-
     }
 
     if (inFlags & FResourceBindFlags::SrcTransfer)
@@ -804,6 +804,23 @@ VkImageUsageFlags VulkanTypeConverter::ConvertTextureUsageFlagsToVk(uint32 inFla
     if (inFlags & FResourceBindFlags::DstTransfer)
     {
         Flags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    }
+
+    return Flags;
+}
+
+VkImageUsageFlags VulkanTypeConverter::ConvertTextureCreationFlagsToVk(uint32 inFlags)
+{
+    VkImageCreateFlags Flags = 0;
+
+    if (inFlags & FResourceCreationFlags::Cube)
+    {
+        Flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    }
+
+    if (inFlags & FResourceCreationFlags::Mutable)
+    {
+        Flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
     }
 
     return Flags;

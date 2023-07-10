@@ -4,6 +4,7 @@
 */
 
 #include "VulkanCommandBuffer.h"
+#include "VulkanBuffer.h"
 #include <Misc/Defines/VulkanProfilerDefines.h>
 #include <Misc/Defines/StringDefines.h>
 
@@ -268,7 +269,7 @@ void VulkanDevice::TransitionTextureLayout(const HTransitionTextureLayoutInfo& i
     ImageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     ImageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     ImageMemoryBarrier.image = *inTransitionImageLayoutInfo.TextureHandle->GetImageHandle();
-    ImageMemoryBarrier.subresourceRange.aspectMask = GetImageAspectFlags(inTransitionImageLayoutInfo.TextureHandle->GetImageFormat());
+    ImageMemoryBarrier.subresourceRange.aspectMask = inTransitionImageLayoutInfo.TextureHandle->GetAspectFlags();
     ImageMemoryBarrier.subresourceRange.baseMipLevel = inTransitionImageLayoutInfo.Subresource->BaseMipLevel;
     ImageMemoryBarrier.subresourceRange.levelCount = inTransitionImageLayoutInfo.Subresource->NumMipLevels;
     ImageMemoryBarrier.subresourceRange.baseArrayLayer = inTransitionImageLayoutInfo.Subresource->BaseArrayLayer;
@@ -293,12 +294,12 @@ void VulkanDevice::TransitionTextureLayout(const HTransitionTextureLayoutInfo& i
         SrcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
         DstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     }
-    else
-    {
-        VE_ASSERT(false, VE_TEXT("[VulkanDevice]: Unsupported layout transition.... "));
-    }
+    //else
+    //{
+    //    VE_ASSERT(false, VE_TEXT("[VulkanDevice]: Unsupported layout transition.... "));
+    //}
 
-    /** Change the image layut for the texture passed in */
+    /** Change the image layout for the texture passed in */
     inTransitionImageLayoutInfo.TextureHandle->SetImageLayout(inTransitionImageLayoutInfo.NewLayout);
 
     vkCmdPipelineBarrier(inTransitionImageLayoutInfo.CommandBufferHandle,
@@ -306,22 +307,121 @@ void VulkanDevice::TransitionTextureLayout(const HTransitionTextureLayoutInfo& i
         nullptr, 1, &ImageMemoryBarrier);
 }
 
-void VulkanDevice::CopyBufferToTexture(const HCopyBufferToTextureInfo& inCopyBufferToTexture)
+void VulkanDevice::CopyBufferToTexture(const HCopyBufferTextureInfo& inCopyBufferToTexture)
 {
-    VkBufferImageCopy BufferImageCopy;
-    BufferImageCopy.bufferOffset = 0;
-    BufferImageCopy.bufferRowLength = 0;
-    BufferImageCopy.bufferImageHeight = 0;
-    BufferImageCopy.imageSubresource.aspectMask = GetImageAspectFlags(inCopyBufferToTexture.TextureHandle->GetImageFormat());
-    BufferImageCopy.imageSubresource.mipLevel = inCopyBufferToTexture.Subresource->BaseMipLevel;
-    BufferImageCopy.imageSubresource.baseArrayLayer = inCopyBufferToTexture.Subresource->BaseArrayLayer;
-    BufferImageCopy.imageSubresource.layerCount = inCopyBufferToTexture.Subresource->NumArrayLayers;
-    BufferImageCopy.imageOffset = inCopyBufferToTexture.Offset;
-    BufferImageCopy.imageExtent = inCopyBufferToTexture.Extent;
+    /**
+    * Expects a texture array to be in the buffer if it has more than one array layers
+    * Texture array has to be horizontal
+    */
+    std::vector<VkBufferImageCopy> BufferImageCopies;
+    BufferImageCopies.resize(inCopyBufferToTexture.Subresource->NumArrayLayers * inCopyBufferToTexture.Subresource->NumMipLevels);
+
+    VkImageAspectFlags ImageAspectFlags = inCopyBufferToTexture.TextureHandle->GetAspectFlags();
+    uint64 OffsetImage = 0;
+    uint64 TotalFaceSize = 0;
+
+    for (uint32 i = 0; i < inCopyBufferToTexture.Subresource->NumMipLevels; ++i)
+    {
+        TotalFaceSize += ((inCopyBufferToTexture.Extent.width >> i) * (inCopyBufferToTexture.Extent.height >> i));
+    }
+    TotalFaceSize *= 4;
+
+    for (uint32 faceIndex = 0; faceIndex < inCopyBufferToTexture.Subresource->NumArrayLayers; ++faceIndex)
+    {
+        OffsetImage = faceIndex * TotalFaceSize;
+        uint64 BufferOffset = 0;
+        uint32 BufferImageCopyBaseIndex = faceIndex * inCopyBufferToTexture.Subresource->NumMipLevels;
+        for (uint32 mipLevel = 0; mipLevel < inCopyBufferToTexture.Subresource->NumMipLevels; ++mipLevel)
+        {
+            uint32 CurrentBufferCopyIndex = BufferImageCopyBaseIndex + mipLevel;
+            BufferImageCopies[CurrentBufferCopyIndex].imageExtent.width = inCopyBufferToTexture.Extent.width >> mipLevel;
+            BufferImageCopies[CurrentBufferCopyIndex].imageExtent.height = inCopyBufferToTexture.Extent.height >> mipLevel;
+            BufferImageCopies[CurrentBufferCopyIndex].imageExtent.depth = inCopyBufferToTexture.Extent.depth;
+                              
+            BufferImageCopies[CurrentBufferCopyIndex].bufferOffset = OffsetImage + BufferOffset; // (mipLevel * BufferImageCopies[i].imageExtent.width)
+            BufferImageCopies[CurrentBufferCopyIndex].bufferRowLength = 0;
+            BufferImageCopies[CurrentBufferCopyIndex].bufferImageHeight = 0;
+                              
+            BufferImageCopies[CurrentBufferCopyIndex].imageSubresource.aspectMask = ImageAspectFlags;
+                              
+            BufferImageCopies[CurrentBufferCopyIndex].imageSubresource.mipLevel = mipLevel;
+            BufferImageCopies[CurrentBufferCopyIndex].imageSubresource.baseArrayLayer = faceIndex;
+            BufferImageCopies[CurrentBufferCopyIndex].imageSubresource.layerCount = 1;
+
+            BufferOffset += (BufferImageCopies[faceIndex].imageExtent.width * BufferImageCopies[faceIndex].imageExtent.height * 4);
+        }
+    }
 
     vkCmdCopyBufferToImage(inCopyBufferToTexture.CommandBufferHandle,
-        inCopyBufferToTexture.BufferHandle, *inCopyBufferToTexture.TextureHandle->GetImageHandle(),
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &BufferImageCopy);
+        *inCopyBufferToTexture.BufferHandle->GetBufferHandle(), *inCopyBufferToTexture.TextureHandle->GetImageHandle(),
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, BufferImageCopies.size(), BufferImageCopies.data());
+}
+
+void VulkanDevice::CopyBufferToTextureKtx(const HCopyBufferTextureInfo& inCopyBufferToTexture)
+{
+    /**
+    * Expects a texture array to be in the buffer if it has more than one array layers
+    * Texture array has to be horizontal
+    */
+    std::vector<VkBufferImageCopy> BufferImageCopies;
+    BufferImageCopies.resize(inCopyBufferToTexture.Subresource->NumArrayLayers * inCopyBufferToTexture.Subresource->NumMipLevels);
+
+    VkImageAspectFlags ImageAspectFlags = inCopyBufferToTexture.TextureHandle->GetAspectFlags();
+    ktxTexture* KtxTextureHandle = (ktxTexture*)inCopyBufferToTexture.TextureHandle->GetKtxTextureHandle();
+
+    for (uint32 faceIndex = 0; faceIndex < inCopyBufferToTexture.Subresource->NumArrayLayers; ++faceIndex)
+    {
+        uint32 BufferImageCopyBaseIndex = faceIndex * inCopyBufferToTexture.Subresource->NumMipLevels;
+        for (uint32 mipLevel = 0; mipLevel < inCopyBufferToTexture.Subresource->NumMipLevels; ++mipLevel)
+        {
+            uint32 CurrentBufferCopyIndex = BufferImageCopyBaseIndex + mipLevel;
+            BufferImageCopies[CurrentBufferCopyIndex].imageExtent.width = inCopyBufferToTexture.Extent.width >> mipLevel;
+            BufferImageCopies[CurrentBufferCopyIndex].imageExtent.height = inCopyBufferToTexture.Extent.height >> mipLevel;
+            BufferImageCopies[CurrentBufferCopyIndex].imageExtent.depth = inCopyBufferToTexture.Extent.depth;
+
+            uint64 BufferOffset = 0;
+            VE_ASSERT(ktxTexture_GetImageOffset(KtxTextureHandle, mipLevel, 0, faceIndex, &BufferOffset) == KTX_SUCCESS, VE_TEXT("KTX Texture: Failed to retreive image offset.."));
+
+            BufferImageCopies[CurrentBufferCopyIndex].bufferOffset =BufferOffset;
+            BufferImageCopies[CurrentBufferCopyIndex].bufferRowLength = 0;
+            BufferImageCopies[CurrentBufferCopyIndex].bufferImageHeight = 0;
+
+            BufferImageCopies[CurrentBufferCopyIndex].imageSubresource.aspectMask = ImageAspectFlags;
+
+            BufferImageCopies[CurrentBufferCopyIndex].imageSubresource.mipLevel = mipLevel;
+            BufferImageCopies[CurrentBufferCopyIndex].imageSubresource.baseArrayLayer = faceIndex;
+            BufferImageCopies[CurrentBufferCopyIndex].imageSubresource.layerCount = 1;
+        }
+    }
+
+    vkCmdCopyBufferToImage(inCopyBufferToTexture.CommandBufferHandle,
+        *inCopyBufferToTexture.BufferHandle->GetBufferHandle(), *inCopyBufferToTexture.TextureHandle->GetImageHandle(),
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, BufferImageCopies.size(), BufferImageCopies.data());
+}
+
+void VulkanDevice::CopyTextureToBuffer(const HCopyBufferTextureInfo& inCopyTextureToBuffer)
+{
+    VkBufferImageCopy BufferImageCopy;
+    {
+        BufferImageCopy.bufferOffset = 0;
+        BufferImageCopy.bufferRowLength = 0;
+        BufferImageCopy.bufferImageHeight = 0;
+        BufferImageCopy.imageSubresource.aspectMask = inCopyTextureToBuffer.TextureHandle->GetAspectFlags();
+        BufferImageCopy.imageSubresource.mipLevel = inCopyTextureToBuffer.Subresource->BaseMipLevel;
+        BufferImageCopy.imageSubresource.baseArrayLayer = inCopyTextureToBuffer.Subresource->BaseArrayLayer;
+        BufferImageCopy.imageSubresource.layerCount = inCopyTextureToBuffer.Subresource->NumArrayLayers;
+        BufferImageCopy.imageOffset = inCopyTextureToBuffer.Offset;
+        BufferImageCopy.imageExtent = inCopyTextureToBuffer.Extent;
+    }
+
+    vkCmdCopyImageToBuffer
+    (
+        inCopyTextureToBuffer.CommandBufferHandle,
+        *inCopyTextureToBuffer.TextureHandle->GetImageHandle(),
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        *inCopyTextureToBuffer.BufferHandle->GetBufferHandle(), 1,
+        &BufferImageCopy
+    );
 }
 
 uint32_t VulkanDevice::GetMemoryTypeIndex(uint32_t inTypeBits, VkMemoryPropertyFlags inProperties, VkBool32* outMemTypeFound) const
@@ -355,36 +455,6 @@ uint32_t VulkanDevice::GetMemoryTypeIndex(uint32_t inTypeBits, VkMemoryPropertyF
     }
 }
 
-VkImageAspectFlags VulkanDevice::GetImageAspectFlags(VkFormat inFormat)
-{
-    VkImageAspectFlags ImageAspectFlags = 0;
-
-    if (inFormat & VK_IMAGE_ASPECT_COLOR_BIT)
-    {
-        ImageAspectFlags |= VK_IMAGE_ASPECT_COLOR_BIT;
-    }
-    else if (inFormat & VK_IMAGE_ASPECT_DEPTH_BIT)
-    {
-        if (inFormat & VK_IMAGE_ASPECT_STENCIL_BIT)
-        {
-            ImageAspectFlags |= VK_IMAGE_ASPECT_STENCIL_BIT;
-        }
-
-        ImageAspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT;
-    }
-    else if (inFormat & VK_IMAGE_ASPECT_STENCIL_BIT)
-    {
-        if (inFormat & VK_IMAGE_ASPECT_DEPTH_BIT)
-        {
-            ImageAspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT;
-        }
-
-        ImageAspectFlags |= VK_IMAGE_ASPECT_STENCIL_BIT;
-    }
-
-    return ImageAspectFlags;
-}
-
 /* ------------------------------------------------------------------------------- */
 /* -----------------------             Queue             ------------------------- */
 /* ------------------------------------------------------------------------------- */
@@ -414,9 +484,14 @@ VulkanQueue::~VulkanQueue()
 void VulkanQueue::Submit(ICommandBuffer* inCommandBuffer, uint32 inNumSignalSemaphores, ISemaphore* inSignalSemaphores)
 {
     VulkanCommandBuffer* CommandBuff = (VulkanCommandBuffer*)inCommandBuffer;
-    VulkanSemaphore* Semaphores = (VulkanSemaphore*)inSignalSemaphores;
+    if (inNumSignalSemaphores > 0)
+    {
+        VulkanSemaphore* Semaphores = (VulkanSemaphore*)inSignalSemaphores;
+        SubmitQueue(CommandBuff, inNumSignalSemaphores, Semaphores->GetSemaphoresHandle());
+        return;
+    }
 
-    SubmitQueue(CommandBuff, inNumSignalSemaphores, Semaphores->GetSemaphoresHandle());
+    SubmitQueue(CommandBuff, 0, VK_NULL_HANDLE);
 }
 
 void VulkanQueue::SetWaitFence(IFence* inWaitFence, uint64 inTimeout) const

@@ -126,6 +126,7 @@ void VulkanRenderInterface::WriteToBuffer(Buffer* inBuffer, uint64 inOffset, con
     MappedPointer += inOffset;
 
     memcpy(MappedPointer, inData, inDataSize);
+    memcpy(MappedPointer, inData, inDataSize);
 }
 
 void VulkanRenderInterface::ReadFromBuffer(Buffer* inBuffer, uint64 inOffset, void* outData, uint64 inDataSize)
@@ -170,25 +171,96 @@ void VulkanRenderInterface::WriteToTexture(const Texture* inTexture, const FText
 
     Device->TransitionTextureLayout(TransitionTextureLayoutInfo);
 
-    HCopyBufferToTextureInfo CopyBufferToTextureInfo = { };
+    HCopyBufferTextureInfo CopyBufferToTextureInfo = { };
     CopyBufferToTextureInfo.CommandBufferHandle = CommandBufferHandle;
     CopyBufferToTextureInfo.TextureHandle = TransitionTextureLayoutInfo.TextureHandle;
     CopyBufferToTextureInfo.Subresource = TransitionTextureLayoutInfo.Subresource;
+    CopyBufferToTextureInfo.Offset.x = inTextureWriteInfo.Offset.Width;
+    CopyBufferToTextureInfo.Offset.y = inTextureWriteInfo.Offset.Height;
+    CopyBufferToTextureInfo.Offset.z = inTextureWriteInfo.Offset.Depth;
 
     VulkanBuffer* BufferHandle = (VulkanBuffer*)inTextureWriteInfo.BufferHandle;
-    CopyBufferToTextureInfo.BufferHandle = *BufferHandle->GetBufferHandle();
+    CopyBufferToTextureInfo.BufferHandle = BufferHandle;
 
     CopyBufferToTextureInfo.Extent.width = inTextureWriteInfo.Extent.Width;
     CopyBufferToTextureInfo.Extent.height = inTextureWriteInfo.Extent.Height;
     CopyBufferToTextureInfo.Extent.depth = inTextureWriteInfo.Extent.Depth;
 
-    Device->CopyBufferToTexture(CopyBufferToTextureInfo);
+    if (TransitionTextureLayoutInfo.TextureHandle->GetKtxTextureHandle() != nullptr)
+    {
+        Device->CopyBufferToTextureKtx(CopyBufferToTextureInfo);
+    }
+    else
+    {
+        Device->CopyBufferToTexture(CopyBufferToTextureInfo);
+    }
 
     TransitionTextureLayoutInfo.OldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     TransitionTextureLayoutInfo.NewLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     Device->TransitionTextureLayout(TransitionTextureLayoutInfo);
 
     Device->GetGraphicsQueue()->FlushSingleTimeCommandBuffer(CommandBufferHandle, true);
+}
+
+void VulkanRenderInterface::ReadFromTexture(const Texture* inTexture, const FTextureSection& inTextureSection, const ETextureLayout inFinalTextureLayout, FTextureReadInfo& outTextureReadInfo)
+{
+    VulkanTextureView* VulkanTexture = (VulkanTextureView*)inTexture;
+
+    const FOffset3D Offset = CalculateTextureOffsetByType(VulkanTexture->GetType(), inTextureSection.Offset, 0);
+    const FExtent3D Extent = CalculateTextureExtentByType(VulkanTexture->GetType(), inTextureSection.Extent, 0);
+    const EPixelFormat Format = VulkanTypeConverter::Convert(VulkanTexture->GetImageFormat());
+
+    uint32 ImageSize = Extent.Width * Extent.Height * Extent.Depth * inTextureSection.Subresource.NumArrayLayers;
+    // Assume they are BGRA8 or RG16
+    uint32 ImageDataSize = ImageSize * 4;
+
+    FBufferConfig BufferConfig = { };
+    BufferConfig.InitialData = nullptr;
+    BufferConfig.Size = ImageDataSize;
+    BufferConfig.UsageFlags = FResourceBindFlags::DstTransfer | FResourceBindFlags::StagingBuffer;
+    BufferConfig.MemoryFlags = FMemoryFlags::HostVisible | FMemoryFlags::HostCoherent;
+
+    VulkanBuffer* StagingBuffer = VulkanMemoryHeapMain->AllocateBuffer(BufferConfig);
+
+    // Copy the newly created staging buffer into hardware texture and then transfer image
+    // into a state where we can sample from
+    VkCommandBuffer CommandBufferHandle = Device->GetGraphicsQueue()->CreateSingleTimeCommandBuffer(true);
+
+    HTransitionTextureLayoutInfo LayoutInfo = { };
+    LayoutInfo.CommandBufferHandle = CommandBufferHandle;
+    LayoutInfo.TextureHandle = VulkanTexture;
+    LayoutInfo.OldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    LayoutInfo.NewLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    LayoutInfo.Subresource = &inTextureSection.Subresource;
+
+    Device->TransitionTextureLayout(LayoutInfo);
+
+    HCopyBufferTextureInfo CopyInfo = { };
+    CopyInfo.CommandBufferHandle = CommandBufferHandle;
+    CopyInfo.BufferHandle = StagingBuffer;
+    CopyInfo.Subresource = &inTextureSection.Subresource;
+    CopyInfo.Extent = { Extent.Width, Extent.Height, Extent.Depth };
+    CopyInfo.Offset = { Offset.X, Offset.Y, Offset.Z };
+    CopyInfo.TextureHandle = VulkanTexture;
+
+    Device->CopyTextureToBuffer(CopyInfo);
+
+    LayoutInfo.OldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    LayoutInfo.NewLayout = VulkanTypeConverter::ConvertTextureLayoutToVk(inFinalTextureLayout);// VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    Device->TransitionTextureLayout(LayoutInfo);
+
+    Device->GetGraphicsQueue()->FlushSingleTimeCommandBuffer(CommandBufferHandle, true);
+
+    // Map the staging buffer to a CPU memory space
+    //StagingBuffer->Map(VK_WHOLE_SIZE, 0);
+    TPointer<uint8> MemoryPtr = MemoryManager::Get().MallocAligned<uint8>(ImageDataSize);
+    memcpy(MemoryPtr.Get(), StagingBuffer->GetMappedPointer(), ImageDataSize);
+    //StagingBuffer->Unmap();
+
+    outTextureReadInfo.Data = MemoryPtr.Get();
+    outTextureReadInfo.SizeInByte = ImageDataSize;
+    outTextureReadInfo.Format = Format;
 }
 
 void VulkanRenderInterface::Free(Texture* inTexture)
@@ -315,7 +387,16 @@ IDescriptorSets* VulkanRenderInterface::CreateDescriptorSet(FDescriptorSetsConfi
     VulkanPipelineLayout* PipelineLayoutVk = (VulkanPipelineLayout*)inDescriptorSetConfig.PipelineLayoutPtr;
 
     // Hard code the layout id to be 0
-    PipelineLayoutVk->GetDescriptorPool()->AllocateDescriptorSets(DescriptorSet, 0);
+    VkResult Result = PipelineLayoutVk->GetDescriptorPool()->AllocateDescriptorSetsNoAssert(DescriptorSet, 0);
+    if (Result == VK_ERROR_OUT_OF_POOL_MEMORY)
+    {
+        PipelineLayoutVk->CreateNewDescriptorPool();
+        PipelineLayoutVk->GetDescriptorPool()->AllocateDescriptorSets(DescriptorSet, 0);
+    }
+    else
+    {
+        VK_CHECK_RESULT(Result, VE_TEXT("[VulkanRenderInterface]: failed to allocate a descriptor set..."));
+    }
 
     return DescriptorSet;
 }
