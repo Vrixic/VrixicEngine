@@ -1,6 +1,14 @@
+/**
+* This file is part of the "Vrixic Engine" project (Copyright (c) 2022-2023 by Vrij Patel) 
+* See "LICENSE.txt" for license information.
+*/
+
 #pragma once
 #include "VulkanDevice.h"
+#include <Misc/Defines/VulkanProfilerDefines.h>
+#include <Runtime/Graphics/Buffer.h>
 #include <Runtime/Memory/Core/MemoryManager.h>
+#include "VulkanTypeConverter.h"
 
 /**
 * Buffer allocation diagram
@@ -17,20 +25,8 @@
 * Representation of a vulkan device memory
 * Allocates device memory for use, DO NOT CREATE THIS OBJECT YOURSELF
 */
-class VulkanDeviceMemory
+class VRIXIC_API VulkanDeviceMemory
 {
-private:
-	friend class VulkanDeviceMemoryAllocater;
-
-	const VulkanDevice* Device;
-	VkDeviceMemory MemoryHandle;
-	VkDeviceSize Size;
-
-	/* Used to check what memory type this device memory was made from */
-	uint32 MemoryTypeIndex;
-
-	void* MappedDataPtr;
-
 public:
 	VulkanDeviceMemory(const VulkanDevice* inDevice)
 		: Device(inDevice), MemoryHandle(VK_NULL_HANDLE), Size(0), MappedDataPtr(nullptr), MemoryTypeIndex(0) { }
@@ -40,6 +36,8 @@ public:
 	*/
 	~VulkanDeviceMemory()
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		if (MappedDataPtr != nullptr)
 		{
 			Unmap();
@@ -66,6 +64,8 @@ public:
 	*/
 	void* Map(VkDeviceSize inSize, VkDeviceSize inOffset)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 #if _DEBUG | _DEBUG_EDITOR
 		VK_CHECK_RESULT(vkMapMemory(*Device->GetDeviceHandle(), MemoryHandle, inOffset, inSize, 0, &MappedDataPtr), "[VulkanBuffer]: Failed trying to map buffer memory");
 #else
@@ -81,6 +81,8 @@ public:
 	*/
 	void Unmap()
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		if (MappedDataPtr)
 		{
 			vkUnmapMemory(*Device->GetDeviceHandle(), MemoryHandle);
@@ -100,6 +102,8 @@ public:
 	*/
 	bool FlushMappedMemory(VkDeviceSize inSize, VkDeviceSize inOffset)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		VkMappedMemoryRange MappedMemoryRange = { };
 		MappedMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		MappedMemoryRange.memory = MemoryHandle;
@@ -121,6 +125,8 @@ public:
 	*/
 	bool Invalidate(VkDeviceSize inSize, VkDeviceSize inOffset)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		VkMappedMemoryRange MappedMemoryRange = { };
 		MappedMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		MappedMemoryRange.memory = MemoryHandle;
@@ -145,6 +151,18 @@ public:
 	{
 		return Size;
 	}
+
+private:
+    friend class VulkanDeviceMemoryAllocater;
+
+    const VulkanDevice* Device;
+    VkDeviceMemory MemoryHandle;
+    VkDeviceSize Size;
+
+    /** Used to check what memory type this device memory was made from */
+    uint32 MemoryTypeIndex;
+
+    void* MappedDataPtr;
 };
 
 /**
@@ -152,15 +170,8 @@ public:
 *	Keeps device memory leaks from happening, will be used by VulkanMemoryHeap ONLY, DO NOT CREATE
 *	THIS OBJECT YOURSELF
 */
-class VulkanDeviceMemoryAllocater
+class VRIXIC_API VulkanDeviceMemoryAllocater
 {
-private:
-	friend class VulkanMemoryHeap;
-
-	VulkanDevice* Device;
-
-	std::vector<VulkanDeviceMemory*> MemoryAllocations;
-
 public:
 	VulkanDeviceMemoryAllocater(VulkanDevice* inDevice)
 		: Device(inDevice) { }
@@ -170,6 +181,8 @@ public:
 	*/
 	~VulkanDeviceMemoryAllocater()
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		Device->WaitUntilIdle();
 		for (uint32 i = 0; i < MemoryAllocations.size(); ++i)
 		{
@@ -194,6 +207,8 @@ public:
 	*/
 	uint32 AllocateMemory(VkDeviceSize inAllocationSize, uint32 inMemoryTypeIndex)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		VkMemoryAllocateInfo MemoryAllocateInfo = VulkanUtils::Initializers::MemoryAllocateInfo();
 		MemoryAllocateInfo.allocationSize = inAllocationSize;
 		MemoryAllocateInfo.memoryTypeIndex = inMemoryTypeIndex;
@@ -212,6 +227,8 @@ public:
 	*/
 	uint32 AllocateMemory(const VkMemoryAllocateInfo& inMemoryAllocateInfo)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		VkDeviceMemory MemoryHandle = VK_NULL_HANDLE;
 #if _DEBUG | _DEBUG_EDITOR
 		VK_CHECK_RESULT(vkAllocateMemory(*Device->GetDeviceHandle(), &inMemoryAllocateInfo, nullptr, &MemoryHandle), "[VulkanBuffer]: Failed trying to allocate buffer memory");
@@ -236,6 +253,8 @@ public:
 	*/
 	void FreeMemory(uint32 inId)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		delete MemoryAllocations[inId];
 		MemoryAllocations[inId] = nullptr;
 	}
@@ -250,35 +269,30 @@ private:
 	{
 		return MemoryAllocations[inId];
 	}
+
+private:
+    friend class VulkanMemoryHeap;
+
+    VulkanDevice* Device;
+
+    std::vector<VulkanDeviceMemory*> MemoryAllocations;
 };
 
 /**
 * Representation of a vulkan buffer (VkBuffer)
 * Memory visible to GPU, A view into the memory
+* 
+* -- Memory is already mapped to meaning Pointer to Memory in CPU side already exits, make sure to 64 byte align memory ranges when flushing 
 */
-class VulkanBuffer
+class VRIXIC_API VulkanBuffer : public Buffer
 {
-private:
-	friend class VulkanMemoryHeap;
-
-	const VulkanDevice* Device;
-	VkBuffer BufferHandle;
-
-	// A ID for the device memory
-	int32 DeviceMemoryID;
-
-	// The device memory that the ID refers to if valid
-	VulkanDeviceMemory* DeviceMemory;
-
-	uint64 Offset;
-
-	VkDeviceSize Size;
-	VkDeviceSize Alignment;
-
 public:
-	VulkanBuffer(const VulkanDevice* inDevice, int32 inDeviceMemoryID, uint64 inOffset)
+	VulkanBuffer(const VulkanDevice* inDevice, const FBufferConfig& inBufferConfiguration, int32 inDeviceMemoryID, uint64 inOffset)
 		: Device(inDevice), BufferHandle(VK_NULL_HANDLE), DeviceMemoryID(inDeviceMemoryID),
-		Size(0), Alignment(0), Offset(inOffset), DeviceMemory(nullptr) { }
+		Alignment(0), Offset(inOffset), DeviceMemory(nullptr) 
+    { 
+        BufferConfiguration = inBufferConfiguration;
+    }
 
 	/**
 	* Destroy vulkan buffer upon destruction
@@ -289,6 +303,7 @@ public:
 		{
 			Device->WaitUntilIdle();
 			vkDestroyBuffer(*Device->GetDeviceHandle(), BufferHandle, nullptr);
+            BufferHandle = VK_NULL_HANDLE;
 		}
 	}
 
@@ -297,38 +312,41 @@ public:
 
 public:
 	/**
-	* Create Buffer handle using the create info (does extra things if BufferUsageFlags requires it), also creates
-	*
-	* @param inAllocater The allocater to use to allocate the device memory
-	* @param inBufferCreateInfo Buffer Handle creation info
-	*
-	* @return bool Buffer handle creation is successful
+	* Invalidate a memory range to make it visible to the host CPU
+	* refer to VulkanDeviceMemory::Invalidate() for in depth overview
 	*/
-	bool AllocateBuffer(VulkanDeviceMemoryAllocater* const inAllocater, VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
+	bool Invalidate(VkDeviceSize inSize, VkDeviceSize inOffset)
 	{
-		// Create the Buffer Handle 
-		AllocateBuffer(inBufferCreateInfo);
+		return DeviceMemory->Invalidate(inSize, Offset + inOffset);
+	}
 
-		// Create the memory backing up the buffer handle
-		VkMemoryRequirements MemoryRequirements;
-		VkMemoryAllocateInfo MemoryAllocateInfo = VulkanUtils::Initializers::MemoryAllocateInfo();
-		vkGetBufferMemoryRequirements(*Device->GetDeviceHandle(), BufferHandle, &MemoryRequirements);
-
-		MemoryAllocateInfo.allocationSize = MemoryRequirements.size;
-		MemoryAllocateInfo.memoryTypeIndex = Device->GetMemoryTypeIndex(MemoryRequirements.memoryTypeBits, inBufferCreateInfo.MemoryPropertyFlags, nullptr);
-
-		// If the buffer has VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT set we also need to enable the appropriate flag during allocation
-		VkMemoryAllocateFlagsInfoKHR MemoryAllocateFlagsInfoKHR = { };
-		if (inBufferCreateInfo.BufferUsageFlags & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
-			MemoryAllocateFlagsInfoKHR.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
-			MemoryAllocateFlagsInfoKHR.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
-			MemoryAllocateInfo.pNext = &MemoryAllocateFlagsInfoKHR;
+	/**
+	* Map a memory range of this buffer. If successful, mapped points to the specified buffer range.
+	*
+	* @param inSize - The size of the memory range to map.Pass VK_WHOLE_SIZE to complete buffer range.
+	* @param inOffset - Byte offset from beginning
+	*
+	* @return void* returns the pointer to the mapped memory location
+	*/
+	void* Map(VkDeviceSize inSize, VkDeviceSize inOffset)
+	{
+		inOffset += Offset;
+		if (inSize == VK_WHOLE_SIZE)
+		{
+			inSize = BufferConfiguration.Size;
 		}
 
-		Alignment = MemoryRequirements.alignment;
-		DeviceMemoryID = inAllocater->AllocateMemory(MemoryAllocateInfo);
+		return DeviceMemory->Map(inSize, inOffset);
+	}
 
-		return true;
+	/**
+	* Unmap a mapped memory range
+	*
+	* @remarks Does not return a result as vkUnmapMemory can't fail
+	*/
+	void Unmap()
+	{
+		DeviceMemory->Unmap();
 	}
 
 	/**
@@ -337,36 +355,64 @@ public:
 	*/
 	bool FlushMappedMemory(VkDeviceSize inSize, VkDeviceSize inOffset)
 	{
-		return DeviceMemory->FlushMappedMemory(inSize, Offset + inOffset);
+		inOffset += Offset;
+		if (inSize == VK_WHOLE_SIZE)
+		{
+			inSize = BufferConfiguration.Size;
+		}
+
+		return DeviceMemory->FlushMappedMemory(inSize, inOffset);
 	}
 
-	/*
-	* Invalidate a memory range to make it visible to the host CPU
-	* refer to VulkanDeviceMemory::Invalidate() for in depth overview
-	*/
-	bool Invalidate(VkDeviceSize inSize, VkDeviceSize inOffset)
-	{
-		return DeviceMemory->Invalidate(inSize, Offset + inOffset);
-	}
 private:
+    /**
+    * Create Buffer handle using the create info (does extra things if BufferUsageFlags requires it), also creates
+    *
+    * @param inAllocater The allocater to use to allocate the device memory
+    * @param inBufferCreateInfo Buffer Handle creation info
+    *
+    * @return bool Buffer handle creation is successful
+    */
+    bool AllocateBuffer(VulkanDeviceMemoryAllocater* const inAllocater, VulkanUtils::Descriptions::FVulkanBufferCreateInfo& inBufferCreateInfo)
+    {
+        // Create the Buffer Handle 
+        AllocateBuffer(inBufferCreateInfo);
+
+        // Create the memory backing up the buffer handle
+        VkMemoryRequirements MemoryRequirements;
+        VkMemoryAllocateInfo MemoryAllocateInfo = VulkanUtils::Initializers::MemoryAllocateInfo();
+        vkGetBufferMemoryRequirements(*Device->GetDeviceHandle(), BufferHandle, &MemoryRequirements);
+
+        MemoryAllocateInfo.allocationSize = MemoryRequirements.size;
+        MemoryAllocateInfo.memoryTypeIndex = Device->GetMemoryTypeIndex(MemoryRequirements.memoryTypeBits, inBufferCreateInfo.MemoryPropertyFlags, nullptr);
+
+        // If the buffer has VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT set we also need to enable the appropriate flag during allocation
+        VkMemoryAllocateFlagsInfoKHR MemoryAllocateFlagsInfoKHR = { };
+        if (inBufferCreateInfo.BufferUsageFlags & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
+            MemoryAllocateFlagsInfoKHR.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
+            MemoryAllocateFlagsInfoKHR.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+            MemoryAllocateInfo.pNext = &MemoryAllocateFlagsInfoKHR;
+        }
+
+        Alignment = MemoryRequirements.alignment;
+        DeviceMemoryID = inAllocater->AllocateMemory(MemoryAllocateInfo);
+
+        return true;
+    }
+
 	/**
 	* Creates a buffer handle using the create info
 	*
 	* @param inBufferCreateInfo Buffer handle creation info
 	*/
-	void AllocateBuffer(VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
+	void AllocateBuffer(VulkanUtils::Descriptions::FVulkanBufferCreateInfo& inBufferCreateInfo)
 	{
 		// Create the buffer handle
 		VkBufferCreateInfo BufferCreateInfo = VulkanUtils::Initializers::BufferCreateInfo();
 		BufferCreateInfo.usage = inBufferCreateInfo.BufferUsageFlags;
 		BufferCreateInfo.size = inBufferCreateInfo.DeviceSize;
 
-		Size = inBufferCreateInfo.DeviceSize;
-#if _DEBUG
 		VK_CHECK_RESULT(vkCreateBuffer(*Device->GetDeviceHandle(), &BufferCreateInfo, nullptr, &BufferHandle), "[VulkanBuffer]: Failed trying to create buffer");
-#else
-		vkCreateBuffer(*Device->GetDeviceHandle(), &BufferCreateInfo, nullptr, &BufferHandle);
-#endif
 	}
 
 	/**
@@ -391,8 +437,16 @@ private:
 public:
 	uint64 GetBufferSize() const
 	{
-		return Size;
+		return BufferConfiguration.Size;
 	}
+
+    /**
+    * @returns uint64 the offset of the buffer from start of device memory 
+    */
+    uint64 GetBufferOffset() const
+    {
+        return Offset;
+    }
 
 	const VkBuffer* GetBufferHandle() const
 	{
@@ -405,24 +459,48 @@ public:
 	*/
 	void* GetMappedPointer() const
 	{
-		char* PointerOffseter = (char*)DeviceMemory->GetMappedPointer();
-		PointerOffseter += Offset;
+		uint8* PointerOffseted = static_cast<uint8*>(DeviceMemory->GetMappedPointer());
+		PointerOffseted += Offset;
 
-		return PointerOffseter;
+		return PointerOffseted;
 	}
+
+	///*
+	//* @return VulkanDeviceMemory* the handle to the device memory occupied by the buffer 
+	//*/
+	//VulkanDeviceMemory* GetDeviceMemoryHandle() const
+	//{
+	//	return DeviceMemory;
+	//}
 
 private:
 	uint32 GetDeviceMemoryID() const
 	{
 		return DeviceMemoryID;
 	}
+
+private:
+    friend class VulkanMemoryHeap;
+
+    const VulkanDevice* Device;
+    VkBuffer BufferHandle;
+
+    /** A ID for the device memory */
+    int32 DeviceMemoryID;
+
+    /** The device memory that the ID refers to if valid */
+    VulkanDeviceMemory* DeviceMemory;
+
+    uint64 Offset;
+
+    VkDeviceSize Alignment;
 };
 
 /**
 * The type of buffer, used for creating/allocating memory of use for a certain type of buffer,
 * each type of buffer will have it own offset into the memory heap
 */
-enum class EBufferType
+enum class EBufferType : uint32
 {
 	Index = 0,
 	Vertex,
@@ -435,28 +513,8 @@ enum class EBufferType
 * Allocates a bunch of memory up front, Memory is split into buffer -> types: Index, Vertex, Storage
 * For any kind of buffer creation, clients have to use the heap interface
 */
-class VulkanMemoryHeap
+class VRIXIC_API VulkanMemoryHeap
 {
-private:
-	friend class VulkanBuffer;
-
-	const VulkanDevice* Device;
-
-	// Size of the heap in mebibytes
-	uint32 HeapSizeInMebibytes;
-
-	// where the memory is stored in VulkanDeviceMemoryAllocater 
-	uint32 MemoryID;
-
-	// Heap buffer -> the view of the heap memory
-	VulkanBuffer* Buffer;
-	VulkanDeviceMemoryAllocater* DeviceMemoryAllocater;
-
-	// Avoid memory leaking from buffers 
-	std::vector<VulkanBuffer*> AllocatedBuffers;
-
-	uint64 MemoryUsed;
-
 public:
 	/**
 	* Creates the buffer/heap
@@ -467,16 +525,21 @@ public:
 	VulkanMemoryHeap(VulkanDevice* inDevice, uint32 inHeapSizeInMebibytes)
 		: Device(inDevice), HeapSizeInMebibytes(inHeapSizeInMebibytes)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		DeviceMemoryAllocater = new VulkanDeviceMemoryAllocater(inDevice);
 		
 		uint64 HeapSize = MEBIBYTES_TO_BYTES(inHeapSizeInMebibytes);
 
-		VulkanUtils::Descriptions::VulkanBufferCreateInfo BufferCreateInfo = { };
+		VulkanUtils::Descriptions::FVulkanBufferCreateInfo BufferCreateInfo = { };
 		BufferCreateInfo.DeviceSize = (VkDeviceSize)HeapSize;
 		BufferCreateInfo.BufferUsageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 		BufferCreateInfo.MemoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 
-		Buffer = new VulkanBuffer(Device, -1, 0);
+        FBufferConfig BufferConfg;
+        BufferConfg.Size = HeapSize;
+
+		Buffer = new VulkanBuffer(Device, BufferConfg, -1, 0);
 		Buffer->AllocateBuffer(DeviceMemoryAllocater, BufferCreateInfo);
 		MemoryID = Buffer->GetDeviceMemoryID();
 
@@ -487,6 +550,8 @@ public:
 
 	~VulkanMemoryHeap()
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		delete Buffer;
 		delete DeviceMemoryAllocater;
 
@@ -507,32 +572,38 @@ public:
 	* Allocates a buffer to be used by clients
 	*
 	* @param inBufferType The type of buffer to be created, refer to EBufferType...
-	* @param inBufferCreateInfo Information of how the buffer should be created
+	* @param inBufferConfig Information of how the buffer should be created
 	*
 	* @return VulkanBuffer* A pointer to the buffer that was created
 	*/
-	VulkanBuffer* AllocateBuffer(EBufferType inBufferType, VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
+	VulkanBuffer* AllocateBuffer(/*EBufferType inBufferType,*/ const FBufferConfig& inBufferConfig)
 	{
+		VE_PROFILE_VULKAN_FUNCTION();
+
 		VulkanBuffer* Buffer = nullptr;
 
-		switch (inBufferType)
-		{
-		case EBufferType::Index:
-			Buffer = AllocateIndexBuffer(inBufferCreateInfo);
-			break;
-		case EBufferType::Vertex:
-			Buffer = AllocateVertexBuffer(inBufferCreateInfo);
-			break;
-		case EBufferType::Storage:
-			Buffer = AllocateStorageBuffer(inBufferCreateInfo);
-			break;
-		case EBufferType::Uniform:
-			break;
-		case EBufferType::Staging:
-			break;
-		default:
-			break;
-		}
+        if (inBufferConfig.UsageFlags & FResourceBindFlags::IndexBuffer)
+        {
+            Buffer = AllocateIndexBuffer(inBufferConfig);
+        }
+        else if (inBufferConfig.UsageFlags & FResourceBindFlags::VertexBuffer)
+        {
+            Buffer = AllocateVertexBuffer(inBufferConfig);
+        }
+        else if ((inBufferConfig.UsageFlags & FResourceBindFlags::UniformBuffer) || (inBufferConfig.UsageFlags & FResourceBindFlags::ConstantBuffer))
+        {
+            Buffer = AllocateUniformBuffer(inBufferConfig);
+        }
+        else if (inBufferConfig.UsageFlags & FResourceBindFlags::StorageBuffer)
+        {
+            Buffer = AllocateStorageBuffer(inBufferConfig);
+        }
+        else if (inBufferConfig.UsageFlags & FResourceBindFlags::StagingBuffer)
+        {
+            Buffer = AllocateStagingBuffer(inBufferConfig);
+        }
+
+        VE_ASSERT(Buffer != nullptr, VE_TEXT("[VulkanBuffer]: Failed to allocate buffer..."));
 
 		return Buffer;
 	}
@@ -541,26 +612,42 @@ private:
 	/**
 	* Allocated a index buffer
 	*/
-	VulkanBuffer* AllocateIndexBuffer(VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
+	VulkanBuffer* AllocateIndexBuffer(const FBufferConfig& inBufferConfig)
 	{
-		return AllocateBuffer(inBufferCreateInfo);
+		return AllocateBufferInternal(inBufferConfig);
 	}
 
 	/**
 	* Allocated a vertex buffer
 	*/
-	VulkanBuffer* AllocateVertexBuffer(VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
-	{
-		return AllocateBuffer(inBufferCreateInfo);
-	}
+	VulkanBuffer* AllocateVertexBuffer(const FBufferConfig& inBufferConfig)
+    {
+        return AllocateBufferInternal(inBufferConfig);
+    }
 
 	/**
 	* Allocated a storage buffer
 	*/
-	VulkanBuffer* AllocateStorageBuffer(VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
-	{
-		return AllocateBuffer(inBufferCreateInfo);
-	}
+	VulkanBuffer* AllocateStorageBuffer(const FBufferConfig& inBufferConfig)
+    {
+        return AllocateBufferInternal(inBufferConfig);
+    }
+	
+	/**
+	* Allocated a uniform buffer
+	*/
+	VulkanBuffer* AllocateUniformBuffer(const FBufferConfig& inBufferConfig)
+    {
+        return AllocateBufferInternal(inBufferConfig);
+    }
+
+    /**
+    * Allocated a staging buffer
+    */
+    VulkanBuffer* AllocateStagingBuffer(const FBufferConfig& inBufferConfig)
+    {
+        return AllocateBufferInternal(inBufferConfig);
+    }
 
 	/**
 	* Allocates a buffer, Alignment of memory offset is done for you
@@ -569,24 +656,67 @@ private:
 	*
 	* @return VulkanBuffer* The buffer that was created
 	*/
-	VulkanBuffer* AllocateBuffer(VulkanUtils::Descriptions::VulkanBufferCreateInfo& inBufferCreateInfo)
+	VulkanBuffer* AllocateBufferInternal(const FBufferConfig& inBufferConfig)
 	{
-		VulkanBuffer* AllocBuffer = new VulkanBuffer(Device, -1, MemoryUsed);
-		AllocBuffer->AllocateBuffer(inBufferCreateInfo);
+		VE_PROFILE_VULKAN_FUNCTION();
+
+        VulkanUtils::Descriptions::FVulkanBufferCreateInfo BufferCreateInfo = { 0 };
+
+        BufferCreateInfo.BufferUsageFlags = VulkanTypeConverter::ConvertBufferUsageFlagsToVk(inBufferConfig.UsageFlags);
+        BufferCreateInfo.DeviceSize = inBufferConfig.Size;
+        BufferCreateInfo.MemoryPropertyFlags = VulkanTypeConverter::ConvertMemoryFlagsToVk(inBufferConfig.MemoryFlags);
+
+		VulkanBuffer* AllocBuffer = new VulkanBuffer(Device, inBufferConfig , -1, MemoryUsed);
+		AllocBuffer->AllocateBuffer(BufferCreateInfo);
+
+        // Get teh memory requirements for its alignment 
+        VkMemoryRequirements MemoryRequirements;
+        VkMemoryAllocateInfo MemoryAllocateInfo = VulkanUtils::Initializers::MemoryAllocateInfo();
+        vkGetBufferMemoryRequirements(*Device->GetDeviceHandle(), AllocBuffer->BufferHandle, &MemoryRequirements);
+
+        /* Align the memory to alignment so next buffer will be aligned correctly */
+        float AlignmentCheck = static_cast<float>(MemoryUsed) / static_cast<float>(MemoryRequirements.alignment);
+        AlignmentCheck = ceilf(AlignmentCheck);
+
+        MemoryUsed = static_cast<uint64>(AlignmentCheck * MemoryRequirements.alignment);
+
+        // Set the new buffer variables 
 		AllocBuffer->DeviceMemory = DeviceMemoryAllocater->GetDeviceMemory(MemoryID);
 		AllocBuffer->DeviceMemoryID = MemoryID;
-		AllocBuffer->Alignment = Buffer->Alignment;
+		AllocBuffer->Alignment = MemoryRequirements.alignment;
+		AllocBuffer->Offset = MemoryUsed;
 
+        // bind the new buffer 
 		AllocBuffer->Bind(0);
 
-		/* Align the memory to alignment so next buffer will be aligned correctly */
-		float AlignmentCheck = static_cast<float>(AllocBuffer->Size) / static_cast<float>(Buffer->Alignment);
-		AlignmentCheck = ceilf(AlignmentCheck);
+        if (inBufferConfig.InitialData != nullptr)
+        {
+            memcpy(AllocBuffer->GetMappedPointer(), inBufferConfig.InitialData, inBufferConfig.Size);
+        }
 
-		MemoryUsed += static_cast<uint64>(AlignmentCheck * Buffer->Alignment);
-
-		AllocatedBuffers.push_back(AllocBuffer);
+        MemoryUsed += inBufferConfig.Size;
+        AllocatedBuffers.push_back(AllocBuffer);
 
 		return AllocBuffer;
 	}
+
+private:
+    friend class VulkanBuffer;
+
+    const VulkanDevice* Device;
+
+    /** Size of the heap in mebibytes */
+    uint32 HeapSizeInMebibytes;
+
+    /** where the memory is stored in VulkanDeviceMemoryAllocater */
+    uint32 MemoryID;
+
+    /** Heap buffer -> the view of the heap memory */
+    VulkanBuffer* Buffer;
+    VulkanDeviceMemoryAllocater* DeviceMemoryAllocater;
+
+    /** Avoid memory leaking from buffers */ 
+    std::vector<VulkanBuffer*> AllocatedBuffers;
+
+    uint64 MemoryUsed;
 };
