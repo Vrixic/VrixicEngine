@@ -11,7 +11,7 @@
 void ResourceManager::Init()
 {
     TextureMemoryView = { };
-    TextureMemoryView.MemorySize = MEBIBYTES_TO_BYTES(350);
+    TextureMemoryView.MemorySize = MEBIBYTES_TO_BYTES(450);
     TextureMemoryView.MemoryHandle = TPointer<uint8>(MemoryManager::Get().MallocAligned<uint8>(TextureMemoryView.MemorySize, 1));
 
     VertexMemoryView = { };
@@ -27,7 +27,7 @@ void ResourceManager::Shutdown()
 {
 }
 
-TextureHandle& ResourceManager::LoadTexture(std::string& inTexturePath)
+TextureHandle& ResourceManager::LoadTexture(const std::string& inTexturePath)
 {
     if (TexturesMap.find(inTexturePath) != TexturesMap.end())
     {
