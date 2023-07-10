@@ -144,6 +144,11 @@ public:
         return NumSets;
     }
 
+    /**
+    * @returns void* a pointer to the descriptor set handle (native to graphics API) by the index specified 
+    */
+    inline virtual void* GetRawDescriptorSetHandle(uint32 inIndex) const = 0;
+
 protected:
     /** Number of descriptor sets contained in this object */
     uint32 NumSets;
