@@ -69,6 +69,9 @@ public:
 struct VRIXIC_API FTextureConfig
 {
 public:
+    /** Uses this texture to allocate a new texture view from it, if it is nullptr, then it will create a new Image (Ex.. VKImage), otherwise use existing image and just create a new ImageView */
+    class Texture* TextureHandle;
+
     /** Indicates the texture type, is it a 1D or 2D, etc.. texture */
     ETextureType Type;
 
@@ -77,6 +80,9 @@ public:
 
     /** These flags specify which resource slot and attachment this texture will be bound to, ResourceBindFlags::ColorAttachment */
     uint32 BindFlags;
+
+    /** These flags specify how the texture should be created for ImageView usage -> FResourceCreationFlags*/
+    uint32 CreationFlags;
 
     /** The format of the texture  */
     EPixelFormat Format;
@@ -95,7 +101,17 @@ public:
 
 public:
     FTextureConfig()
-        : Type(ETextureType::Texture2D), /*Layout(ETextureLayout::Undefined),*/ BindFlags(0), Format(EPixelFormat::Undefined), Extent(0u, 0u, 0u), MipLevels(1), NumArrayLayers(1), NumSamples(1) { }
+        : TextureHandle(nullptr), Type(ETextureType::Texture2D), /*Layout(ETextureLayout::Undefined),*/ BindFlags(0), CreationFlags(0), Format(EPixelFormat::Undefined), Extent(0u, 0u, 0u), MipLevels(1), NumArrayLayers(1), NumSamples(1) { }
+};
+
+struct VRIXIC_API FVulkanTextureConfig : public FTextureConfig
+{
+public:
+    class ktxTexture* KtxTextureHandle;
+
+public:
+    FVulkanTextureConfig()
+        : FTextureConfig(), KtxTextureHandle(nullptr) { }
 };
 
 /**
@@ -129,6 +145,9 @@ public:
 
     /** The extent of the texture, for 1d and 2d the depth has to be 1*/
     FExtent3D Extent;
+
+    /** Image Offset */
+    FExtent3D Offset;
     
     /** Specifies mipmap levels, and array layer ranges...etc...*/
     FTextureSubresourceRange Subresource;
@@ -137,3 +156,112 @@ public:
     FTextureWriteInfo() : BufferHandle(nullptr), Extent(0u, 0u, 1u) { }
 };
 
+/**
+* Contains information from copying texture data  
+*/
+struct VRIXIC_API FTextureReadInfo
+{
+public:
+    /**
+    * Format of the data 
+    */
+    EPixelFormat Format;
+
+    /**
+    * Pointer to the data 
+    */
+    void* Data;
+
+    /**
+    * Size in bytes of Data 
+    */
+    uint32 SizeInByte;
+
+public:
+    FTextureReadInfo() : Format(EPixelFormat::RGBA8UInt), Data(nullptr), SizeInByte(0)
+    {
+
+    }
+};
+
+/**
+* Specifies a section inside of a texture 
+*/
+struct VRIXIC_API FTextureSection
+{
+public:
+    /**
+    * Specifies the array layer and the mipmap level of the texture 
+    */
+    FTextureSubresourceRange Subresource;
+
+    /**
+    * The extent of the section 
+    */
+    FExtent3D Extent;
+
+    /**
+    * The offset starting fom 0 to the starting of texture data 
+    */
+    FOffset3D Offset;
+
+public: 
+    FTextureSection() : Subresource({}), Extent(0,0,0), Offset(0,0,0)
+    {
+
+    }
+};
+
+static FOffset3D CalculateTextureOffsetByType(const ETextureType inType, const FOffset3D& inOffset, uint32 inBaseArrayLayer = 0)
+{
+    /**
+    * Extracts unnecessary information out of the offset passed in 
+    */
+    switch (inType)
+    {
+    case ETextureType::Texture1D:
+        return FOffset3D{ inOffset.X, 0, 0 };
+
+    case ETextureType::Texture1DArray:
+        return FOffset3D{ inOffset.X, static_cast<int32>(inBaseArrayLayer), 0 };
+
+    case ETextureType::Texture2D:
+        return FOffset3D{ inOffset.X, inOffset.Y, 0 };
+
+    case ETextureType::Texture2DArray:
+    case ETextureType::TextureCube:
+    case ETextureType::TextureCubeArray:
+        return FOffset3D{ inOffset.X, inOffset.Y, static_cast<int32>(inBaseArrayLayer) };
+
+    case ETextureType::Texture3D:
+        return inOffset;
+    }
+    return FOffset3D(0,0,0);
+}
+ 
+static FExtent3D CalculateTextureExtentByType(const ETextureType inType, const FExtent3D& inOffset, uint32 inBaseArrayLayer = 1)
+{
+    /**
+    * Extracts unnecessary information out of the offset passed in
+    */
+    switch (inType)
+    {
+    case ETextureType::Texture1D:
+        return FExtent3D{ inOffset.Width, 1u, 1u };
+
+    case ETextureType::Texture1DArray:
+        return FExtent3D{ inOffset.Width, inBaseArrayLayer, 1u };
+
+    case ETextureType::Texture2D:
+        return FExtent3D{ inOffset.Width, inOffset.Height, 1u };
+
+    case ETextureType::Texture2DArray:
+    case ETextureType::TextureCube:
+    case ETextureType::TextureCubeArray:
+        return FExtent3D{ inOffset.Width, inOffset.Height, inBaseArrayLayer };
+
+    case ETextureType::Texture3D:
+        return inOffset;
+    }
+    return FExtent3D(0, 0, 0);
+}

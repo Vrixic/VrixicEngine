@@ -142,6 +142,15 @@ public:
     virtual void WriteToTexture(const Texture* inTexture, const FTextureWriteInfo& inTextureWriteInfo) = 0;
 
     /**
+    * Reads image data from the specified texture
+    *
+    * @param inTexture the texture that will contain the data after copy
+    * @param inTextureSection the section to be read from the texture 
+    * @param outTextureReadInfo contains the read information from the texture 
+    */
+    virtual void ReadFromTexture(const Texture* inTexture, const FTextureSection& inTextureSection, const ETextureLayout inFinalTextureLayout, FTextureReadInfo& outTextureReadInfo) = 0;
+
+    /**
     * Releases/Destroys the texture passed in
     *
     * @param inTexture the texture to free

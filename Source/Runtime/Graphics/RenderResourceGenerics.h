@@ -50,6 +50,8 @@ public:
         // dynamics buffers 
         Dynamic                     = BIT(6),
 
+        StagingBuffer               = BIT(7),
+
         /** Texture Flags */
 
         // Allows for textures to be used as a render target for color attachment 
@@ -64,6 +66,28 @@ public:
         /** ADDITIVE FLAGS */
         SrcTransfer                 = BIT(15), 
         DstTransfer                 = BIT(16),
+    };
+};
+
+/**
+* Creation flags for resources 
+*/
+struct VRIXIC_API FResourceCreationFlags
+{
+public:
+#define BIT(x) (1 << x)
+    enum {
+
+        /** Texture */
+
+        // The texture allows for imageview to have a different format 
+        Mutable = BIT(8),
+
+        /** Allows for cube arrays or cube to be created fro imageview */
+        Cube = BIT(9),
+
+        /** States that the resource was created using KTX software */
+        KTX = BIT(10),
     };
 };
 
