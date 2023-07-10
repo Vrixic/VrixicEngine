@@ -11,14 +11,18 @@
 /**
 * Tighly packed PBRVertex Structure 
 */
-struct VRIXIC_API PBRVertex {
+struct VRIXIC_API FPBRVertex {
 public:
-    /** Position of the vertex: Tighly Packed With UVs, meaning The XYZ components is the positions, while W is the first UV */
-    Vector4D Position;
+    /** Position of the vertex */
+    Vector3D Position;
 
     /** Tangent vector */
     Vector4D Tangent;
 
-    /** Normal vector: Tighlty packed with UVs, meaning the XYZ components is the normal vector while W is the second UV*/
-    Vector4D Normal;
+    /** Normal vector */
+    Vector3D Normal;
+
+    float TexCoord[2];
+
+    float Padding[4];
 };

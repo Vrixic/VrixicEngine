@@ -65,7 +65,7 @@ public:
     * @param inTexturePath the path of the texture to load
     * @returns TextureHandle the handle to the texture allocated to memory 
     */
-    TextureHandle& LoadTexture(std::string& inTexturePath);
+    TextureHandle& LoadTexture(const std::string& inTexturePath);
 
     //void FreeTexture(TextureHandle);
 
@@ -103,7 +103,7 @@ private:
     HMemoryView<uint8> TextureMemoryView;
 
     /** Memory View for vertices (Vertex Buffer) */
-    HMemoryView<PBRVertex> VertexMemoryView;
+    HMemoryView<FPBRVertex> VertexMemoryView;
 
     /** Memory View for index data (Index Buffer) */
     HMemoryView<uint32> IndexMemoryView;

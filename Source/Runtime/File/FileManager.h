@@ -31,11 +31,11 @@ public:
 		inProjectPath = ProjectPath;
 	}
 
-	FileReader CreateFileReader(std::string inFilePath)
+	/*FileReader CreateFileReader(std::string inFilePath)
 	{
 		FileReader Reader(inFilePath);
 		return Reader;
-	}
+	}*/
 
 public:
 	static const std::string* GetProjectPath() 

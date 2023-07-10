@@ -4,7 +4,7 @@
 */
 
 #pragma once
-#include "FileManager.h"
+#include "FileReader.h"
 
 #include <string>
 
@@ -13,11 +13,17 @@
 */
 class VRIXIC_API FileHelper
 {
+public:
 	// Loads a text file into a string 
 	static bool LoadFileToString(std::string& outResult, std::string& inFilePath)
 	{
-		FileReader Reader = FileManager::GetInstance().CreateFileReader(inFilePath);
-		Reader.Seek(0, EFileSeek::End);
+        FileReader Reader(inFilePath); //= FileManager::GetInstance().CreateFileReader(inFilePath);
+        if (!Reader.IsOpen())
+        {
+            return false;
+        }
+        
+        Reader.Seek(0, EFileSeek::End);
 
 		uint64 Size = Reader.Tell();
 		if (Size == 0)
@@ -27,6 +33,7 @@ class VRIXIC_API FileHelper
 
 		Reader.Seek(0, EFileSeek::Begin);
 
+        outResult.resize(Size + 1);
 		Reader.Read(&outResult[0], Size);
 
 		Reader.Close();
