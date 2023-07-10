@@ -14,6 +14,8 @@
 #include <Runtime/Graphics/Surface.h>
 #include <Runtime/Graphics/SwapChain.h>
 
+#include <External/ktx/Includes/ktx.h>
+
 #include <vector>
 #include <string>
 
@@ -44,16 +46,16 @@ public:
     VkImageLayout NewLayout;
 
     /** The Textures subresource range */
-    FTextureSubresourceRange* Subresource;
+    const FTextureSubresourceRange* Subresource;
 
 public:
     HTransitionTextureLayoutInfo() : CommandBufferHandle(VK_NULL_HANDLE), TextureHandle(nullptr), OldLayout(VK_IMAGE_LAYOUT_UNDEFINED), NewLayout(VK_IMAGE_LAYOUT_UNDEFINED), Subresource(nullptr) { }
 };
 
 /**
-* Helper struct that contains information for coping data from buffer tp texture
+* Helper struct that contains information for coping data from buffer to texture or vice versa..
 */
-struct VRIXIC_API HCopyBufferToTextureInfo
+struct VRIXIC_API HCopyBufferTextureInfo
 {
 public:
     /** The Command buffer handle */
@@ -63,7 +65,7 @@ public:
     VulkanTextureView* TextureHandle;
 
     /** The buffer handle that contains the data */
-    VkBuffer BufferHandle;
+    class VulkanBuffer* BufferHandle;
 
     /** The image offset (Zero based) into the texture data */
     VkOffset3D Offset;
@@ -72,10 +74,10 @@ public:
     VkExtent3D Extent;
 
     /** The Textures subresource range */
-    FTextureSubresourceRange* Subresource;
+    const FTextureSubresourceRange* Subresource;
 
 public:
-    HCopyBufferToTextureInfo()
+    HCopyBufferTextureInfo()
         : CommandBufferHandle(VK_NULL_HANDLE), TextureHandle(nullptr), BufferHandle(VK_NULL_HANDLE), Subresource(nullptr)
     {
         Offset = { 0, 0, 0 };
@@ -128,7 +130,21 @@ public:
     *
     * @param inCopyBufferToTexture contains information for the data to be copied to the texture
     */
-    void CopyBufferToTexture(const HCopyBufferToTextureInfo& inCopyBufferToTexture);
+    void CopyBufferToTexture(const HCopyBufferTextureInfo& inCopyBufferToTexture);
+
+    /**
+    * Copies the specified buffer data to the texture specified (KTX textures are handled differently than others)
+    *
+    * @param inCopyBufferToTexture contains information for the data to be copied to the texture
+    */
+    void CopyBufferToTextureKtx(const HCopyBufferTextureInfo& inCopyBufferToTexture);
+
+    /**
+    * Copies the specified texture to the buffer specified
+    *
+    * @param inCopyTextureToBuffer contains information for the data to be copied to the buffer
+    */
+    void CopyTextureToBuffer(const HCopyBufferTextureInfo& inCopyTextureToBuffer);
 
 public:
     /* Returns the logical device */
@@ -194,9 +210,6 @@ public:
     * @throw Throws an exception if memTypeFound is null and no memory type could be found that supports the requested properties
     */
     uint32_t GetMemoryTypeIndex(uint32_t inTypeBits, VkMemoryPropertyFlags inProperties, VkBool32* outMemTypeFound) const;
-
-private:
-    static VkImageAspectFlags GetImageAspectFlags(VkFormat inFormat);
 
 private:
     /** Representation of GPU */

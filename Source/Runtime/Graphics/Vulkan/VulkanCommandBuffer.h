@@ -89,12 +89,40 @@ public:
     virtual void SetVertexBuffer(Buffer& inVertexBuffer) override;
 
     /**
+    * Sets the specified vertex buffer passed in to be used for drawing
+    *
+    * @param inVertexBuffer the vertex buffer to set
+    * @param inFirstBinding the first binding of the buffer
+    * @param inBindingCount the count of bindings (default = 1)
+    */
+    virtual void SetVertexBuffer(Buffer& inVertexBuffer, uint32 inFirstBinding, uint32 inBindingCount = 1) override;
+
+    /**
+    * Sets the specified vertex buffer passed in to be used for drawing
+    *
+    * @param inVertexBuffer the vertex buffer to set
+    * @param inFirstBinding the first binding of the buffer
+    * @param inBindingCount the count of bindings
+    * @param inOffset the offset of the buffer
+    */
+    virtual void SetVertexBuffer(Buffer& inVertexBuffer, uint32 inFirstBinding, uint32 inBindingCount, uint32 inOffset = 0) override;
+
+    /**
     * Sets the specified index buffer passed in to be used for drawing
     *
     * @param inIndexBuffer the index buffer to set
     * @remarks - fixed index buffer type hard set to VK_INDEX_TYPE_UINT32, need to abstract that to to configs 
     */
     virtual void SetIndexBuffer(Buffer& inIndexBuffer) override;
+
+    /**
+    * Sets the specified index buffer passed in to be used for drawing
+    *
+    * @param inIndexBuffer the index buffer to set
+    * @param inOffset the offset into the index buffer
+    * @param inIndexFormat the index format (Uint32 and Uint16 are only supports (EPixelFormat::R32Uint / EPixelFormat::R16Uint))
+    */
+    virtual void SetIndexBuffer(Buffer& inIndexBuffer, uint32 inOffset, EPixelFormat inIndexFormat) override;
 
     /* ------------------------------------------------------------------------------- */
     /* ---------------                 RenderPass                  ------------------- */

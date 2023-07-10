@@ -168,6 +168,7 @@ public:
     */
     static VkImageUsageFlags ConvertTextureUsageFlagsToVk(uint32 inFlags);
 
+    static VkImageCreateFlags ConvertTextureCreationFlagsToVk(uint32 inFlags);
     /**
     * Converts texture type to vulkan specific texture view type (image type)
     */

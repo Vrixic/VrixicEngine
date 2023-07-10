@@ -25,7 +25,7 @@ class VRIXIC_API VulkanPipelineLayout : public PipelineLayout
 {
 public:
     VulkanPipelineLayout(VulkanDevice* inDevice, const FPipelineLayoutConfig& inPipelineLayoutConfig)
-        : PipelineLayout(inPipelineLayoutConfig), Device(inDevice), PipelineLayoutHandle(VK_NULL_HANDLE)
+        : PipelineLayout(inPipelineLayoutConfig), Device(inDevice), PipelineLayoutHandle(VK_NULL_HANDLE), MaxSets(0)
     {
         DescriptorSetsLayout = new VulkanDescriptorSetsLayout(Device);
 
@@ -49,9 +49,6 @@ public:
         }
 
         // DescriptorPool
-        std::vector<VkDescriptorPoolSize> PoolSizes;
-        uint32 MaxSets = 0;
-
         uint32 CountPerType[11] = { 0,0,0,0,0,0,0,0,0,0,0 };
         for (uint32 i = 0; i < inPipelineLayoutConfig.Bindings.size(); i++)
         {
@@ -73,7 +70,10 @@ public:
 
         delete[] LayoutBinding;
         //delete[] CountPerType;
-        DescriptorPool = new VulkanDescriptorPool(Device, *DescriptorSetsLayout, MaxSets > 0 ? MaxSets : 2, PoolSizes);
+
+        DescriptorPools.resize(1);
+        DescriptorPools[0] = new VulkanDescriptorPool(Device, *DescriptorSetsLayout, MaxSets > 0 ? MaxSets : 2, PoolSizes);
+        FreePoolIndex = 0;
     }
 
     ~VulkanPipelineLayout()
@@ -81,7 +81,11 @@ public:
         Device->WaitUntilIdle();
 
         delete DescriptorSetsLayout;
-        delete DescriptorPool;
+
+        for (uint32 i = 0; i < DescriptorPools.size(); ++i)
+        {
+            delete DescriptorPools[i];
+        }
         vkDestroyPipelineLayout(*Device->GetDeviceHandle(), PipelineLayoutHandle, nullptr);
     }
 
@@ -141,6 +145,17 @@ public:
             &PipelineLayoutHandle), "[VulkanPipelineLayout]: Failed to create a empty pipeline layout!");
     }
 
+    /**
+    * Creates another decriptor pool
+    */
+    void CreateNewDescriptorPool()
+    {
+        VulkanDescriptorPool* DescriptorPool = new VulkanDescriptorPool(Device, *DescriptorSetsLayout, MaxSets > 0 ? MaxSets : 2, PoolSizes);
+        DescriptorPools.push_back(DescriptorPool);
+
+        FreePoolIndex = DescriptorPools.size() - 1;
+    }
+
     // helpers
     static void Convert(VulkanUtils::Descriptions::FDescriptorSetLayoutBinding& outDst, const FPipelineBindingDescriptor& inSrc)
     {
@@ -158,7 +173,7 @@ public:
 
     inline const VulkanDescriptorPool* GetDescriptorPool() const
     {
-        return DescriptorPool;
+        return DescriptorPools[FreePoolIndex];
     }
 
 private:
@@ -166,7 +181,10 @@ private:
     VkPipelineLayout PipelineLayoutHandle;
 
     /** Vulkan Descriptor pool - main pool used for all descriptor set creations */
-    VulkanDescriptorPool* DescriptorPool;
+    std::vector<VulkanDescriptorPool*> DescriptorPools;
+    std::vector<VkDescriptorPoolSize> PoolSizes;
+    uint32 MaxSets;
+    uint32 FreePoolIndex;
 
     /** Layout of descriptor sets */
     VulkanDescriptorSetsLayout* DescriptorSetsLayout;
@@ -178,7 +196,7 @@ private:
         uint32 StageFlags;
         VkDescriptorType DescriptorType;
     };
-    /** all of the pipeline layout bindings */ 
+    /** all of the pipeline layout bindings */
     std::vector<VulkanLayoutBinding> LayoutBindings;
 };
 
