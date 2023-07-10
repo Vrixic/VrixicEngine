@@ -5,6 +5,7 @@
 
 #pragma once
 #include "WindowEvent.h"
+//#include <Misc/Logging/Log.h>
 
 #include <sstream>
 
@@ -44,7 +45,7 @@ public:
 	MouseScrolledEvent(float inOffsetX, float inOffsetY)
 		: OffsetX(inOffsetX), OffsetY(inOffsetY) { }
 
-	inline float GetOffsetX() const { VE_CORE_LOG_WARN("No support for horizontal mouse scroll yet... GetOffsetX() will always return 0!"); return OffsetX; };
+	inline float GetOffsetX() const { /*VE_CORE_LOG_WARN("No support for horizontal mouse scroll yet... GetOffsetX() will always return 0!");*/ return OffsetX; };
 	inline float GetOffsetY() const { return OffsetY; };
 
 	std::string ToString() const override
