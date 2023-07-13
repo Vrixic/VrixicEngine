@@ -46,7 +46,7 @@ VulkanTextureView::VulkanTextureView(VulkanDevice* inDevice, const FTextureConfi
     }
 
     /** All Images start with layout that is undefined */
-    ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    ImageLayout = VulkanTypeConverter::ConvertTextureLayoutToVk(inTextureConfig.InitialLayout);
 
     // Create Image
     if (inTextureConfig.TextureHandle != nullptr)
