@@ -118,7 +118,7 @@ public:
     /** Defines the type of shader it is */
     EShaderType Type;
 
-    /** The souce code of the shader as a string */
+    /** The souce code of the shader as a string | Could also be a file path */
     std::string SourceCode;
 
     /** defines the type of source it is, is it a string, filename, or a full file path */

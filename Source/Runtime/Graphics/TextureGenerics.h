@@ -76,7 +76,7 @@ public:
     ETextureType Type;
 
     /** Texture layout indiciates what type if texture it is and what can be done with it (read/write) */
-    //ETextureLayout Layout;
+    ETextureLayout InitialLayout;
 
     /** These flags specify which resource slot and attachment this texture will be bound to, ResourceBindFlags::ColorAttachment */
     uint32 BindFlags;
@@ -101,7 +101,7 @@ public:
 
 public:
     FTextureConfig()
-        : TextureHandle(nullptr), Type(ETextureType::Texture2D), /*Layout(ETextureLayout::Undefined),*/ BindFlags(0), CreationFlags(0), Format(EPixelFormat::Undefined), Extent(0u, 0u, 0u), MipLevels(1), NumArrayLayers(1), NumSamples(1) { }
+        : TextureHandle(nullptr), Type(ETextureType::Texture2D), InitialLayout(ETextureLayout::Undefined), BindFlags(0), CreationFlags(0), Format(EPixelFormat::Undefined), Extent(0u, 0u, 0u), MipLevels(1), NumArrayLayers(1), NumSamples(1) { }
 };
 
 struct VRIXIC_API FVulkanTextureConfig : public FTextureConfig

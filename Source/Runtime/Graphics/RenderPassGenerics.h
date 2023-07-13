@@ -83,6 +83,12 @@ public:
     /** The store operation of the ouput for the attachment */
     EAttachmentStoreOp StoreOp;
 
+    /** The load operation of the pervious stencil attachment */
+    EAttachmentLoadOp StencilLoadOp;
+
+    /** The store operation of the ouput for the stencil attachment */
+    EAttachmentStoreOp StencilStoreOp;
+
     /** layout the attachment image subresource will be (For when the render pass begins) */
     ETextureLayout InitialLayout;
 
@@ -91,7 +97,9 @@ public:
 
 public:
     FAttachmentDescription()
-        : Format(EPixelFormat::Undefined), LoadOp(EAttachmentLoadOp::Undefined), StoreOp(EAttachmentStoreOp::Undefined), InitialLayout(ETextureLayout::Undefined), FinalLayout(ETextureLayout::Undefined) { }
+        : Format(EPixelFormat::Undefined), LoadOp(EAttachmentLoadOp::Undefined), StoreOp(EAttachmentStoreOp::Undefined), 
+        InitialLayout(ETextureLayout::Undefined), FinalLayout(ETextureLayout::Undefined),
+        StencilLoadOp(EAttachmentLoadOp::Undefined), StencilStoreOp(EAttachmentStoreOp::Undefined) { }
 };
 
 /**
