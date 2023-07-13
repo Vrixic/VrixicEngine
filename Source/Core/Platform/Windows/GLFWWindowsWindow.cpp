@@ -74,6 +74,26 @@ void GLFWWindowsWindow::Init(const FWindowConfig& inWindowConfig)
 	glfwSetWindowSizeCallback(WindowPtr, [](GLFWwindow* window, int width, int height)
 		{
 			HWindowData& data = *(HWindowData*)glfwGetWindowUserPointer(window);
+
+			bool bIsBadSize = false;
+			if (width == 0)
+			{
+				width = 1;
+				bIsBadSize = true;
+			}
+
+			if (height == 0)
+			{
+				height = 1;
+				bIsBadSize = true;
+			}
+
+			if (bIsBadSize)
+			{
+				glfwSetWindowSize(window, width, height);
+				return;
+			}
+
 			data.Width = width;
 			data.Height = height;
 

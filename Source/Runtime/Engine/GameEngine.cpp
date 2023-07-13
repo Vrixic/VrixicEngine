@@ -6,9 +6,16 @@
 #include "GameEngine.h"
 #include <Runtime/Graphics/Renderer.h>
 
+#include <Core/Application.h>
+#include <Misc/Assert.h>
+
+VGameEngine* VGameEngine::GameEnginePtr = nullptr;
+
 VGameEngine::VGameEngine()
-    : World(nullptr)
+    : World(nullptr), RenderTime(0), FrameRate(0), TickTime(0)
 {
+    VE_ASSERT(GameEnginePtr == nullptr, "Game Engine should not be created twice! Game Engine already exists!");
+    GameEnginePtr = this;
 }
 
 VGameEngine::~VGameEngine()
@@ -28,7 +35,32 @@ void VGameEngine::Init()
 
 void VGameEngine::Tick()
 {
+    typedef std::chrono::high_resolution_clock Clock;
+    auto Start = Clock::now();
+
+    FrameCounter++;
+
+    Application::Get()->GetWindow().OnUpdate();
+
+    TickTime = std::chrono::duration<float, std::milli>(Clock::now() - Start).count();
+    TickTime /= 1000.0f;
+
+    auto RenderStart = Clock::now();
+
     Renderer::Get().Render();
+
+    auto End = Clock::now();
+
+    RenderTime = std::chrono::duration<float, std::milli>(End - RenderStart).count();
+    RenderTime /= 1000.0f;
+
+    float FpsTimer = (std::chrono::duration<float, std::milli>(End - LastTimestamp).count());
+    if (FpsTimer > 1000.0f)
+    {
+        FrameRate = static_cast<uint64>((float)FrameCounter * (1000.0f / FpsTimer));
+        FrameCounter = 0;
+        LastTimestamp = End;
+    }
 }
 
 void VGameEngine::Shutdown()

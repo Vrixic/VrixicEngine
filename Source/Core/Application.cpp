@@ -79,7 +79,7 @@ void Application::OnEvent(WindowEvent& inEvent)
 {
 	VE_PROFILE_FUNCTION();
 
-	VE_CORE_LOG_DISPLAY(VE_TEXT("App::OnEvent: {0}"), inEvent.ToString());
+	//VE_CORE_LOG_DISPLAY(VE_TEXT("App::OnEvent: {0}"), inEvent.ToString());
 
 	WindowEventDispatcher EventDispatcher(inEvent);
  	EventDispatcher.Dispatch<KeyPressedEvent>(VE_BIND_EVENT_FUNC(OnKeyDownEvent));
@@ -115,7 +115,7 @@ void Application::Run()
 	{
 		VE_PROFILE_BEGIN_SESSION("Main Loop");
 
-		WindowPtr->OnUpdate();
+		//WindowPtr->OnUpdate();
 
 //#if _EDITOR
 //		GameEditor->Tick();
@@ -124,7 +124,6 @@ void Application::Run()
 //#endif // _EDITOR
 
 		GameEngine->Tick();
-
 	}
 
 	VE_PROFILE_END_SESSION();

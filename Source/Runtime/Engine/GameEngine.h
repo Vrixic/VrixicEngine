@@ -10,6 +10,8 @@
 #include <Core/Events/KeyEvent.h>
 #include <Core/Events/MouseEvents.h>
 
+#include<chrono>
+
 /**
 * The game engine, consists of all the modules and objects needed to run a game
 */
@@ -19,6 +21,11 @@ public:
     VGameEngine();
 
     ~VGameEngine();
+
+    static VGameEngine* Get()
+    {
+        return GameEnginePtr;
+    }
 
     /**
     * Initializes the game engine
@@ -57,7 +64,38 @@ public:
     bool OnKeyPressed(KeyPressedEvent& inKeyPressedEvent);
     bool OnKeyReleased(KeyReleasedEvent& inKeyReleasedEvent);
 
+    uint64 GetFrameRate() const
+    {
+        return FrameRate;
+    }
+
+    float GetTickTime() const
+    {
+        return TickTime;
+    }
+
+    float GetRenderTime() const
+    {
+        return RenderTime;
+    }
+
 private:
+    /** The application pointer */
+    static VGameEngine* GameEnginePtr;
+
     /** The Current world the engine is updating and rendering  */
     GameWorld* World;
+
+    std::chrono::time_point<std::chrono::high_resolution_clock> LastTimestamp;
+
+    uint64 FrameCounter;
+
+    // Frame Rate in Millisecond 
+    uint64 FrameRate;
+
+    // Update Time
+    float TickTime;
+
+    // Render Time 
+    float RenderTime;
 };

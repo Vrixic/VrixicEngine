@@ -7,6 +7,8 @@
 
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <stdarg.h>
+//#include <iostream>
+//#include <fstream>
 
 std::shared_ptr<spdlog::logger> Log::CoreLogger;
 std::shared_ptr<spdlog::logger> Log::ClientLogger;
@@ -30,6 +32,11 @@ void Log::LogCoreMsg(ELogSeverity inSeverity...)
 	va_list Args;
 	va_start(Args, inSeverity);
 	const char* Message = va_arg(Args, const char*);
+
+	//std::ofstream FileHandle;
+	//FileHandle.open("Log.txt", std::ios::app);
+	//FileHandle << Message << "\n";
+	//FileHandle.close();
 
 	switch (inSeverity)
 	{
