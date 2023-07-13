@@ -635,7 +635,7 @@ Texture* Renderer::CreateTextureCubemapKtx(const std::string& inTexturePath, Buf
     ktxTexture* KtxTextureHandle;
 
     Result = ktxTexture_CreateFromNamedFile(inTexturePath.c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &KtxTextureHandle);
-    VE_ASSERT(Result == KTX_SUCCESS, VE_TEXT("Could not create a texture from the KTX file passed in: %s"), inTexturePath);
+    VE_ASSERT(Result == KTX_SUCCESS, VE_TEXT("Could not create a texture from the KTX file passed in: ${0}"), inTexturePath);
 
     uint32 CubemapWidth, CubemapHeight, CubemapMipLevels;
 
@@ -1117,8 +1117,25 @@ void Renderer::CreatePBRPipeline()
 
 void Renderer::CreateSkyboxPipeline()
 {
-    CreateHighDynamicImagePipeline(MakePathToResource("Skybox4.hdr", 't').c_str());
-    //CreateCubemapFromHighDynamicImage("Skybox4", 512);
+    std::string HDRPath = MakePathToResource("NewportLoft.hdr", 't');
+    std::wstring WHDRPath(HDRPath.begin(), HDRPath.end());
+
+    GetFileAttributes(WHDRPath.c_str()); // from winbase.h
+    if (INVALID_FILE_ATTRIBUTES == GetFileAttributes(WHDRPath.c_str()) && GetLastError() == ERROR_FILE_NOT_FOUND)
+    {
+        VE_ASSERT(false, VE_TEXT("Could not find NewportLoftCubemap.hdr"));
+    }
+
+    CreateHighDynamicImagePipeline(MakePathToResource("NewportLoft.hdr", 't').c_str());
+
+    std::string CubemapPath = MakePathToResource("NewportLoftCubemap.ktx", 't');
+    std::wstring WCubemapPath(CubemapPath.begin(), CubemapPath.end());
+
+    GetFileAttributes(WCubemapPath.c_str()); // from winbase.h
+    if (INVALID_FILE_ATTRIBUTES == GetFileAttributes(WCubemapPath.c_str()) && GetLastError() == ERROR_FILE_NOT_FOUND)
+    {
+        CreateCubemapFromHighDynamicImage("NewportLoftCubemap", 512);
+    }
 
     SkyboxAsset = new CSkybox(RenderPass, CubeVertexBuffer, LocalConstantsBuffer, MakePathToResource("NewportLoftCubemap.ktx", 't'));
 
@@ -1543,9 +1560,32 @@ void Renderer::CreateSkyboxPipeline()
 
     //CreateSpecularIBL("Skybox1", 128);
 
-    CreateBrdfIntegration("NewportLoft", 512); // Create BRDF Lut
-    CreatePrefilterEnvMap("NewportLoft", 512); // Create Prefiltered env map
-    CreateIrradianceMap("NewportLoft_IrradianceMap", 32); // Create Irradiance Map 
+    std::string Path = MakePathToResource("NewportLoft_BRDFIntegration.ktx", 't');
+    std::wstring WPath(Path.begin(), Path.end());
+
+    GetFileAttributes(WPath.c_str()); // from winbase.h
+    if (INVALID_FILE_ATTRIBUTES == GetFileAttributes(WPath.c_str()) && GetLastError() == ERROR_FILE_NOT_FOUND)
+    {
+        CreateBrdfIntegration("NewportLoft", 512); // Create BRDF Lut
+    }
+
+    Path = MakePathToResource("NewportLoftPrefilteredEnvMap.ktx", 't');
+    WPath = std::wstring(Path.begin(), Path.end());
+
+    GetFileAttributes(WPath.c_str()); // from winbase.h
+    if (INVALID_FILE_ATTRIBUTES == GetFileAttributes(WPath.c_str()) && GetLastError() == ERROR_FILE_NOT_FOUND)
+    {
+        CreatePrefilterEnvMap("NewportLoft", 512); // Create Prefiltered env map
+    }
+
+    Path = MakePathToResource("NewportLoftIrradianceMap.ktx", 't');
+    WPath = std::wstring(Path.begin(), Path.end());
+
+    GetFileAttributes(WPath.c_str()); // from winbase.h
+    if (INVALID_FILE_ATTRIBUTES == GetFileAttributes(WPath.c_str()) && GetLastError() == ERROR_FILE_NOT_FOUND)
+    {
+        CreateIrradianceMap("NewportLoft", 32); // Create Irradiance Map 
+    }
 
     {
         //FPipelineLayoutConfig Config = { };
@@ -1593,7 +1633,7 @@ void Renderer::CreateSkyboxPipeline()
     PrefilterEnvMapTexture = CreateTextureCubemap(MakePathToResource("NewportLoftPrefilteredEnvMap.ktx", 't'), PrefilterEnvMapBuff);
 
     Buffer* IrridianceBuffer = nullptr;
-    IrridianceTexture = CreateTextureCubemap(MakePathToResource("NewportLoft_IrradianceMap.ktx", 't'), IrridianceBuffer, EPixelFormat::BGRA8UNorm);
+    IrridianceTexture = CreateTextureCubemap(MakePathToResource("NewportLoftIrradianceMap.ktx", 't'), IrridianceBuffer, EPixelFormat::BGRA8UNorm);
 
     Buffers.push_back(PrefilterEnvMapBuff);
     Buffers.push_back(BrdfLutBuffer);
@@ -2175,7 +2215,6 @@ void Renderer::LoadModels()
         }
     }
 
-
     CreateSphereModels();
 }
 
@@ -2287,12 +2326,12 @@ void Renderer::CreateSphereModels()
 
     Vector3D LightPositions[4];
     LightPositions[0] = Vector3D(-10.0f, 10.0f, -10.0f);
-    LightPositions[1] = Vector3D(10.0f,  10.0f, -10.0f);
+    LightPositions[1] = Vector3D(10.0f, 10.0f, -10.0f);
     LightPositions[2] = Vector3D(-10.0f, -10.0f, -10.0f);
     LightPositions[3] = Vector3D(10.0f, -10.0f, -10.0f);
 
     //for (int32 row = 0; row <= nrRows; ++row)
-    for(uint32 i = 0; i < 4; ++i)
+    for (uint32 i = 0; i < 4; ++i)
     {
         float MetallicFactor = 0;// (float)row / (float)nrRows;
         //for (int32 col = 0; col <= nrCols; ++col)
