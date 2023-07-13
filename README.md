@@ -17,7 +17,7 @@ Window Input not registering on some launches (Just re-run and it should be fixe
 
 All assets for vrixic engine should be located inside the Assets folder.. Though some assets that can be very large and can take up alot of space will not be found in there, and could cause the engine to not load up.. 
 
-Go here and download all assets and paste them in their correct directories: [Link To Assets](https://drive.google.com/drive/folders/14KS-RvI3L8ZVmmFZpA95lrP1m16thU5H?usp=sharing)
+Go here and download all assets and paste them in their correct directories: [Link To Assets](https://drive.google.com/drive/folders/1KkVMuaki745eekevE_tkIwmlm5MEXerV?usp=sharing)
 
 * Example: Textures folder should be unzipped inside the Assets/Textures/ folder directory...!
 
