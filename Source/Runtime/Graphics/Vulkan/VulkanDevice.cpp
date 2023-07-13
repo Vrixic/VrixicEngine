@@ -380,7 +380,7 @@ void VulkanDevice::CopyBufferToTextureKtx(const HCopyBufferTextureInfo& inCopyBu
             BufferImageCopies[CurrentBufferCopyIndex].imageExtent.depth = inCopyBufferToTexture.Extent.depth;
 
             uint64 BufferOffset = 0;
-            VE_ASSERT(ktxTexture_GetImageOffset(KtxTextureHandle, mipLevel, 0, faceIndex, &BufferOffset) == KTX_SUCCESS, VE_TEXT("KTX Texture: Failed to retreive image offset.."));
+            VE_FUNC_ASSERT(ktxTexture_GetImageOffset(KtxTextureHandle, mipLevel, 0, faceIndex, &BufferOffset), KTX_SUCCESS, VE_TEXT("KTX Texture: Failed to retreive image offset.."));
 
             BufferImageCopies[CurrentBufferCopyIndex].bufferOffset =BufferOffset;
             BufferImageCopies[CurrentBufferCopyIndex].bufferRowLength = 0;
@@ -752,6 +752,8 @@ VulkanSwapChain::VulkanSwapChain(VulkanDevice* inDevice, VulkanSurface* inSurfac
 
     ImageWidth = 0;
     ImageHeight = 0;
+
+    Configuration = inConfig;
 
     Create(inConfig, VK_NULL_HANDLE);
 }

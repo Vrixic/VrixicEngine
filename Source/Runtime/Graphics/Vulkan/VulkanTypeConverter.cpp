@@ -390,8 +390,8 @@ VkAttachmentDescription VulkanTypeConverter::ConvertAttachmentDescToVk(const FAt
     Desc.samples = inSamples;
     Desc.loadOp = ConvertAttachmentLoadOpToVk(inDesc.LoadOp);
     Desc.storeOp = ConvertAttachmentStoreOpToVk(inDesc.StoreOp);
-    Desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    Desc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    Desc.stencilLoadOp = ConvertAttachmentLoadOpToVk(inDesc.StencilLoadOp);
+    Desc.stencilStoreOp = ConvertAttachmentStoreOpToVk(inDesc.StencilStoreOp);
     //Desc.initialLayout = (inDesc.LoadOp == EAttachmentLoadOp::Load ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_UNDEFINED);
    // Desc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
