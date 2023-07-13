@@ -219,7 +219,7 @@ namespace GLTF
         FPBRMetallicRoughnessInfo()
             : BaseColorFactor(1),
             RoughnessFactor(1.0),
-            MetallicFactor(1.0) { }
+            MetallicFactor(1.0), BaseColorTexture(), MetallicRoughnessTexture() { }
     };
 
     struct VRIXIC_API FMaterial
@@ -251,7 +251,8 @@ namespace GLTF
             : AlphaCutoff(0.5f),
             AlphaMode(EAlphaMode::Opaque),
             bIsDoubleSided(false),
-            EmissiveFactor(0.0f) { }
+            EmissiveFactor(0.0f),
+            EmissiveTexture(), NormalTexture(), OcclusionTexture(), PBRMetallicRoughnessInfo(){ }
 
     };
 
@@ -351,7 +352,7 @@ namespace GLTF
         FOrthographicCamera OrthographicCamera;
 
         FCamera()
-            : bIsOrthographic(false) { }
+            : bIsOrthographic(false), PerspectiveCamera(), OrthographicCamera() { }
     };
 
     struct VRIXIC_API FNode
@@ -503,7 +504,7 @@ namespace GLTF
                 return;
             }
 
-            outValue = inJsonData.value(inDataKey, 0);
+            outValue = inJsonData.value(inDataKey, inFailValue);
         }
 
         static void TryLoadInt64(json& inJsonData, const char* inDataKey, int64 inFailValue, int64& outValue)
@@ -593,6 +594,8 @@ namespace GLTF
             auto It = inJsonData.find(inDataKey);
             if (It == inJsonData.end())
             {
+                outTextureInfo.Index = -1;
+                outTextureInfo.TexCoord = 0;
                 return;
             }
 
@@ -609,6 +612,9 @@ namespace GLTF
             auto It = inJsonData.find(inDataKey);
             if (It == inJsonData.end())
             {
+                outTextureInfo.Index = -1;
+                outTextureInfo.TexCoord = 0;
+                outTextureInfo.Scale = 1.0f;
                 return;
             }
 
@@ -626,6 +632,9 @@ namespace GLTF
             auto It = inJsonData.find(inDataKey);
             if (It == inJsonData.end())
             {
+                outTextureInfo.Index = -1;
+                outTextureInfo.TexCoord = 0;
+                outTextureInfo.Strength = 1.0f;
                 return;
             }
 
@@ -643,6 +652,7 @@ namespace GLTF
             auto It = inJsonData.find(inDataKey);
             if (It == inJsonData.end())
             {
+                outInfo = FPBRMetallicRoughnessInfo();
                 return;
             }
 
