@@ -97,9 +97,10 @@ public:
     // Scales the matrix
     inline void ScaleMatrix(const Vector3D& scale);
 
-
     /* DO NOT call this, need to be reworked....*/ // Makes a rotation from vector3
     //inline static Matrix4D MakeRotation(const Vector3D& rotation);
+
+    inline void Rotate(float inAngleInDegrees, Vector3D& inAxis);
 
     inline float Determinant() const;
 
@@ -354,7 +355,6 @@ inline Matrix4D Matrix4D::TurnTo(float deltaTime, float speed, const Vector3D& t
     Matrix4D Result = RotY * RotX * mat;
 
     return OrthoNormalizeMatrix(Result);
-
 }
 
 inline void Matrix4D::SetIdentity()
@@ -399,6 +399,32 @@ inline void Matrix4D::ScaleMatrix(const Vector3D& scale)
     M[0][0] *= scale.X;
     M[1][1] *= scale.Y;
     M[2][2] *= scale.Z;
+}
+
+inline void Matrix4D::Rotate(float inAngleInDegrees, Vector3D& inAxis)
+{
+    float Rads = MathUtils::DegreesToRadians(inAngleInDegrees);
+    const float C = cos(Rads);
+    const float S = sin(Rads);
+
+    inAxis.Normalize();
+    float OneMinC = 1 - C;
+    Vector3D AxisScaled = inAxis * OneMinC;
+
+    Matrix4D Temp = Matrix4D::Identity();
+    Temp(0, 0) = C + AxisScaled.X * inAxis.X;
+    Temp(0, 1) = AxisScaled.X * inAxis.Y + S * inAxis.Z;
+    Temp(0, 2) = AxisScaled.X * inAxis.Z - S * inAxis.Y;
+    
+    Temp(1, 0) = AxisScaled.Y * inAxis.X - S * inAxis.Z;
+    Temp(1, 1) = C + AxisScaled.Y * inAxis.Y;
+    Temp(1, 2) = AxisScaled.Y * inAxis.Z + S * inAxis.X;
+    
+    Temp(2, 0) = AxisScaled.Z * inAxis.X + S * inAxis.Y;
+    Temp(2, 1) = AxisScaled.Z * inAxis.Y - S * inAxis.X;
+    Temp(2, 2) = C + AxisScaled.Z * inAxis.Z;
+
+    *this = *this * Temp;
 }
 
 inline float Matrix4D::Determinant() const
