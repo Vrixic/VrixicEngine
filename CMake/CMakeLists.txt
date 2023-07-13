@@ -77,6 +77,10 @@ if (WIN32)
 		${PROJECT_EXTERNAL_DIR}/ktx/lib/ktx_read.lib
 
 		${PROJECT_EXTERNAL_DIR}/ktx/lib/objUtil.lib)
+		
+	set (DynamicLibsToCopy 
+		${PROJECT_EXTERNAL_DIR}/ktx/lib/ktx.dll
+		${PROJECT_EXTERNAL_DIR}/ktx/lib/ktx_read.dll)
 	
 	set(PROJECT_SOLUTION_DIR ${CMAKE_SOURCE_DIR}/../Build/VrixicEngineBuild)
 	set(RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOLUTION_DIR}/bin/$(Configuration)-$(Platform)/$(ProjectName)/)
@@ -117,6 +121,12 @@ if (WIN32)
 	add_custom_command(TARGET VrixicEngine POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:VrixicEngine> ${PROJECT_SOLUTION_DIR}/bin/$(Configuration)-$(Platform)/Sandbox
 	COMMENT "Copying VrixicEngine dll to Sandbox build directory")
+	
+	foreach(DynamicLib ${DynamicLibsToCopy})
+	add_custom_command(TARGET VrixicEngine POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${DynamicLib} ${PROJECT_SOLUTION_DIR}/bin/$(Configuration)-$(Platform)/Sandbox
+	COMMENT "Copying" + ${DynamicLib})
+	endforeach()
 	
 	# make sand box the start up project
 	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Sandbox)
