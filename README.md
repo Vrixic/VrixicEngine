@@ -9,6 +9,10 @@ Step 2). Double click MakeProjectBuild.bat <br />
 Step 3). Open Build/VrixicEngineBuild/VrixicEngine.sln <br />
 Step 4). Build / Run the project (F5) <br />
 
+## Executables
+
+They are found inside the SandboxReleases (Demo) folder. Just download all the assets and double-click the .exe file to run the demo. 
+
 ## Known Bugs
 
 Window Input not registering on some launches (Just re-run and it should be fixed!).
@@ -18,7 +22,5 @@ Window Input not registering on some launches (Just re-run and it should be fixe
 All assets for vrixic engine should be located inside the Assets folder.. Though some assets that can be very large and can take up alot of space will not be found in there, and could cause the engine to not load up.. 
 
 Go here and download all assets and paste them in their correct directories: [Link To Assets](https://drive.google.com/drive/folders/1KkVMuaki745eekevE_tkIwmlm5MEXerV?usp=sharing)
-
-* Example: Textures folder should be unzipped inside the Assets/Textures/ folder directory...!
 
 
