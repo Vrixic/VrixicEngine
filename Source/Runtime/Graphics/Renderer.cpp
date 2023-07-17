@@ -1877,9 +1877,58 @@ void Renderer::LoadModels()
                             int32 texcoord_accessor_index = GetAttributeAccessorIndex(MeshPrimitive.Attributes, "TEXCOORD_0");
 
                             Vector3D* position_data = nullptr;
-                            uint32* index_data_32 = (uint32*)GetBufferData(World.BufferViews.data(), IndicesAccessor.BufferView, BufferDatas);
-                            uint16* index_data_16 = (uint16*)index_data_32;
+                            uint8* index_data_8 = GetBufferData(World.BufferViews.data(), IndicesAccessor.BufferView, BufferDatas);
                             uint32 vertex_count = 0;
+
+                            uint16* NewIndexData = 0;
+                            if (IndicesAccessor.ComponentType == FAccessor::EComponentType::Byte)// || IndicesAccessor.ComponentType == FAccessor::EComponentType::UnsignedByte)
+                            {
+                                int8* IndexDataS8 = (int8*)index_data_8;
+                                NewIndexData = new uint16[Section.Count];
+                                for (uint32 i = 0; i < Section.Count; ++i)
+                                {
+                                    int8 Byte = IndexDataS8[i];
+                                    NewIndexData[i] = Byte;
+                                }
+
+                                FBufferConfig Config;
+                                Config.InitialData = NewIndexData;
+                                Config.Size = Section.Count * sizeof(uint16);
+                                Config.MemoryFlags |= FMemoryFlags::HostCached;
+                                Config.UsageFlags |= FResourceBindFlags::IndexBuffer;
+
+                                Buffer* NewIndexBuffer = RenderInterface.Get()->CreateBuffer(Config);
+                                Buffers.push_back(NewIndexBuffer);
+
+                                IndexBuffer = NewIndexBuffer;
+                                Section.IndexOffset = 0;
+
+                                delete[] NewIndexData;
+                            }
+                            if (IndicesAccessor.ComponentType == FAccessor::EComponentType::UnsignedByte)
+                            {
+                                NewIndexData = new uint16[Section.Count];
+
+                                for (uint32 i = 0; i < Section.Count; ++i)
+                                {
+                                    uint8 Byte = index_data_8[i];
+                                    NewIndexData[i] = Byte;
+                                }
+
+                                FBufferConfig Config;
+                                Config.InitialData = NewIndexData;
+                                Config.Size = Section.Count * sizeof(uint16);
+                                Config.MemoryFlags |= FMemoryFlags::HostCached;
+                                Config.UsageFlags |= FResourceBindFlags::IndexBuffer;
+
+                                Buffer* NewIndexBuffer = RenderInterface.Get()->CreateBuffer(Config);
+                                Buffers.push_back(NewIndexBuffer);
+
+                                IndexBuffer = NewIndexBuffer;
+                                Section.IndexOffset = 0;
+
+                                delete[] NewIndexData;
+                            }
 
                             if (PositionAccessorIndex != -1) {
                                 FAccessor& position_accessor = World.Accessors[PositionAccessorIndex];
@@ -1908,45 +1957,45 @@ void Renderer::LoadModels()
                             }
                             else {
                                 VE_ASSERT(false, VE_TEXT("Normals computed at runtime not supported anymore..."))
-                                    // NOTE(marco): we could compute this at runtime
-                                    std::vector<Vector3D> normals_array(vertex_count);
-                                memset(normals_array.data(), 0, normals_array.size() * sizeof(Vector3D));
+                                    //    // NOTE(marco): we could compute this at runtime
+                                    //    std::vector<Vector3D> normals_array(vertex_count);
+                                    //memset(normals_array.data(), 0, normals_array.size() * sizeof(Vector3D));
 
-                                uint32 index_count = Section.Count;
-                                for (uint32 index = 0; index < index_count; index += 3) {
-                                    uint32 i0 = IndicesAccessor.ComponentType == GLTF::FAccessor::EComponentType::UnsignedInt ? index_data_32[index] : index_data_16[index];
-                                    uint32 i1 = IndicesAccessor.ComponentType == GLTF::FAccessor::EComponentType::UnsignedInt ? index_data_32[index + 1] : index_data_16[index + 1];
-                                    uint32 i2 = IndicesAccessor.ComponentType == GLTF::FAccessor::EComponentType::UnsignedInt ? index_data_32[index + 2] : index_data_16[index + 2];
+                                    //uint32 index_count = Section.Count;
+                                    //for (uint32 index = 0; index < index_count; index += 3) {
+                                    //    uint32 i0 = IndicesAccessor.ComponentType == GLTF::FAccessor::EComponentType::UnsignedInt ? index_data_32[index] : index_data_16[index];
+                                    //    uint32 i1 = IndicesAccessor.ComponentType == GLTF::FAccessor::EComponentType::UnsignedInt ? index_data_32[index + 1] : index_data_16[index + 1];
+                                    //    uint32 i2 = IndicesAccessor.ComponentType == GLTF::FAccessor::EComponentType::UnsignedInt ? index_data_32[index + 2] : index_data_16[index + 2];
 
-                                    Vector3D p0 = position_data[i0];
-                                    Vector3D p1 = position_data[i1];
-                                    Vector3D p2 = position_data[i2];
+                                    //    Vector3D p0 = position_data[i0];
+                                    //    Vector3D p1 = position_data[i1];
+                                    //    Vector3D p2 = position_data[i2];
 
-                                    Vector3D a = p1 - p0;
-                                    Vector3D b = p2 - p0;
+                                    //    Vector3D a = p1 - p0;
+                                    //    Vector3D b = p2 - p0;
 
-                                    Vector3D normal = Vector3D::CrossProduct(a, b);
+                                    //    Vector3D normal = Vector3D::CrossProduct(a, b);
 
-                                    normals_array[i0] = normals_array[i0] + normal;
-                                    normals_array[i1] = normals_array[i1] + normal;
-                                    normals_array[i2] = normals_array[i2] + normal;
-                                }
+                                    //    normals_array[i0] = normals_array[i0] + normal;
+                                    //    normals_array[i1] = normals_array[i1] + normal;
+                                    //    normals_array[i2] = normals_array[i2] + normal;
+                                    //}
 
-                                for (uint32 vertex = 0; vertex < vertex_count; ++vertex) {
-                                    normals_array[vertex] = normals_array[vertex].Normalize();
-                                }
+                                    //for (uint32 vertex = 0; vertex < vertex_count; ++vertex) {
+                                    //    normals_array[vertex] = normals_array[vertex].Normalize();
+                                    //}
 
-                                FBufferConfig Config;
-                                Config.InitialData = normals_array.data();
-                                Config.Size = normals_array.size() * sizeof(Vector3D);
-                                Config.MemoryFlags |= FMemoryFlags::HostCached;
-                                Config.UsageFlags |= FResourceBindFlags::VertexBuffer;
+                                    //FBufferConfig Config;
+                                    //Config.InitialData = normals_array.data();
+                                    //Config.Size = normals_array.size() * sizeof(Vector3D);
+                                    //Config.MemoryFlags |= FMemoryFlags::HostCached;
+                                    //Config.UsageFlags |= FResourceBindFlags::VertexBuffer;
 
-                                /*Buffer* NormalsBuffer = RenderInterface.Get()->CreateBuffer(Config);
-                                MeshDraw.NormalBuffer = NormalsBuffer;
-                                MeshDraw.NormalOffset = 0;
+                                    /*Buffer* NormalsBuffer = RenderInterface.Get()->CreateBuffer(Config);
+                                    MeshDraw.NormalBuffer = NormalsBuffer;
+                                    MeshDraw.NormalOffset = 0;
 
-                                Buffers.push_back(NormalsBuffer);*/
+                                    Buffers.push_back(NormalsBuffer);*/
                             }
 
                             if (tangent_accessor_index != -1) {
