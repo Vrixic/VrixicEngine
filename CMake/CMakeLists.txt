@@ -63,7 +63,8 @@ if (WIN32)
 		${PROJECT_EXTERNAL_DIR}/glfw/Includes/
 		${PROJECT_EXTERNAL_DIR}/ktx/Includes/
 		${PROJECT_EXTERNAL_DIR}/ktx/other_include/
-		${PROJECT_EXTERNAL_DIR}/ktx/Includes/KHR/)
+		${PROJECT_EXTERNAL_DIR}/ktx/Includes/KHR/
+		${PROJECT_EXTERNAL_DIR}/glslang/Includes/)
 
 	# set and add all libraries 
 	set (LibraryDirectories 
@@ -71,6 +72,18 @@ if (WIN32)
 
 	set (LinkLibraries
 		${PROJECT_EXTERNAL_DIR}/glfw/lib/glfw3.lib
+		
+		${PROJECT_EXTERNAL_DIR}/glslang/lib/GenericCodeGen.lib
+		${PROJECT_EXTERNAL_DIR}/glslang/lib/glslang.lib
+		${PROJECT_EXTERNAL_DIR}/glslang/lib/glslang-default-resource-limits.lib
+		${PROJECT_EXTERNAL_DIR}/glslang/lib/HLSL.lib
+		${PROJECT_EXTERNAL_DIR}/glslang/lib/MachineIndependent.lib
+		${PROJECT_EXTERNAL_DIR}/glslang/lib/OGLCompiler.lib
+		${PROJECT_EXTERNAL_DIR}/glslang/lib/OSDependent.lib
+		${PROJECT_EXTERNAL_DIR}/glslang/lib/SPIRV.lib
+		${PROJECT_EXTERNAL_DIR}/glslang/lib/SPIRV-Tools.lib
+		${PROJECT_EXTERNAL_DIR}/glslang/lib/SPIRV-Tools-opt.lib
+		${PROJECT_EXTERNAL_DIR}/glslang/lib/SPVRemapper.lib
 
 		${PROJECT_EXTERNAL_DIR}/ktx/lib/ktx.lib
 

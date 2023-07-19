@@ -25,55 +25,30 @@ class VRIXIC_API VulkanPipelineLayout : public PipelineLayout
 {
 public:
     VulkanPipelineLayout(VulkanDevice* inDevice, const FPipelineLayoutConfig& inPipelineLayoutConfig)
-        : PipelineLayout(inPipelineLayoutConfig), Device(inDevice), PipelineLayoutHandle(VK_NULL_HANDLE), MaxSets(0)
+        : PipelineLayout(/*inPipelineLayoutConfig*/), Device(inDevice), PipelineLayoutHandle(VK_NULL_HANDLE)/*, MaxSets(0)*/
     {
+        using namespace VulkanUtils::Descriptions;
+
         DescriptorSetsLayout = new VulkanDescriptorSetsLayout(Device);
 
-        VulkanUtils::Descriptions::FDescriptorSetLayoutCreateInfo LayoutCreateInfo = { };
+        FDescriptorSetLayoutCreateInfo LayoutCreateInfo = { };
         LayoutCreateInfo.Flags = 0;
 
-        VulkanUtils::Descriptions::FDescriptorSetLayoutBinding* LayoutBinding = new VulkanUtils::Descriptions::FDescriptorSetLayoutBinding[inPipelineLayoutConfig.Bindings.size()];
-        for (uint32 i = 0; i < inPipelineLayoutConfig.Bindings.size(); i++)
+        VkDescriptorSetLayoutBinding Bindings[MAX_BINDINGS_PER_DESCRIPTOR];
+        for (uint32 i = 0; i < inPipelineLayoutConfig.NumSets; ++i)
         {
-            Convert(LayoutBinding[i], inPipelineLayoutConfig.Bindings[i]);
-        }
-
-        DescriptorSetLayoutIndex = DescriptorSetsLayout->CreateDescriptorSetLayout(LayoutBinding, inPipelineLayoutConfig.Bindings.size(), LayoutCreateInfo);
-
-        LayoutBindings.resize(inPipelineLayoutConfig.Bindings.size());
-        for (uint32 i = 0; i < inPipelineLayoutConfig.Bindings.size(); i++)
-        {
-            LayoutBindings[i].DstBinding = inPipelineLayoutConfig.Bindings[i].BindingSlot.Index;
-            LayoutBindings[i].DescriptorType = (VkDescriptorType)LayoutBinding[i].DescriptorType;
-            LayoutBindings[i].StageFlags = inPipelineLayoutConfig.Bindings[i].StageFlags;;
-        }
-
-        // DescriptorPool
-        uint32 CountPerType[11] = { 0,0,0,0,0,0,0,0,0,0,0 };
-        for (uint32 i = 0; i < inPipelineLayoutConfig.Bindings.size(); i++)
-        {
-            CountPerType[LayoutBinding[i].DescriptorType] += LayoutBinding[i].DescriptorCount;
-            MaxSets += LayoutBinding[i].DescriptorCount;
-        }
-
-        for (uint32 i = 0; i < 11; i++)
-        {
-            if (CountPerType[i] > 0)
+            // Bindless texturing set index handled differently
+            if (i == 1)
             {
-                VkDescriptorPoolSize PoolSize = { };
-                PoolSize.type = (VkDescriptorType)i;
-                PoolSize.descriptorCount = CountPerType[i];
-
-                PoolSizes.push_back(PoolSize);
+                continue;
             }
+            for (uint32 j = 0; j < inPipelineLayoutConfig.BindingDescriptors[i].NumBindings; ++j)
+            {
+                Convert(Bindings[j], inPipelineLayoutConfig.BindingDescriptors[i].Bindings[j]);
+            }
+
+            DescriptorSetsLayout->CreateDescriptorSetLayout(Bindings, inPipelineLayoutConfig.BindingDescriptors[i].NumBindings, LayoutCreateInfo);
         }
-
-        delete[] LayoutBinding;
-        //delete[] CountPerType;
-
-        DescriptorPools.resize(1);
-        DescriptorPools[0] = new VulkanDescriptorPool(Device, *DescriptorSetsLayout, MaxSets > 0 ? MaxSets : 2, PoolSizes);
-        FreePoolIndex = 0;
     }
 
     ~VulkanPipelineLayout()
@@ -82,10 +57,6 @@ public:
 
         delete DescriptorSetsLayout;
 
-        for (uint32 i = 0; i < DescriptorPools.size(); ++i)
-        {
-            delete DescriptorPools[i];
-        }
         vkDestroyPipelineLayout(*Device->GetDeviceHandle(), PipelineLayoutHandle, nullptr);
     }
 
@@ -145,24 +116,22 @@ public:
             &PipelineLayoutHandle), "[VulkanPipelineLayout]: Failed to create a empty pipeline layout!");
     }
 
-    /**
-    * Creates another decriptor pool
-    */
-    void CreateNewDescriptorPool()
+    // helpers
+    static void Convert(VulkanUtils::Descriptions::FDescriptorSetLayoutBinding& outDst, const FPipelineBinding& inSrc)
     {
-        VulkanDescriptorPool* DescriptorPool = new VulkanDescriptorPool(Device, *DescriptorSetsLayout, MaxSets > 0 ? MaxSets : 2, PoolSizes);
-        DescriptorPools.push_back(DescriptorPool);
-
-        FreePoolIndex = DescriptorPools.size() - 1;
+        outDst.Binding = inSrc.BindingIndex;
+        outDst.DescriptorType = VulkanTypeConverter::ConvertBindFlagsToVkDescriptorType(inSrc.ResourceType, inSrc.BindFlags);
+        outDst.DescriptorCount = MathUtils::Max(static_cast<uint16>(1), inSrc.NumResources);
+        outDst.StageFlags = VulkanTypeConverter::ConvertShaderFlagsToVk(inSrc.StageFlags);
     }
 
-    // helpers
-    static void Convert(VulkanUtils::Descriptions::FDescriptorSetLayoutBinding& outDst, const FPipelineBindingDescriptor& inSrc)
+    static void Convert(VkDescriptorSetLayoutBinding& outDst, const FPipelineBinding& inSrc)
     {
-        outDst.Binding = inSrc.BindingSlot.Index;
-        outDst.DescriptorType = VulkanTypeConverter::ConvertPipelineBDToVk(inSrc);
-        outDst.DescriptorCount = MathUtils::Max(1u, inSrc.NumResources);
-        outDst.StageFlags = VulkanTypeConverter::ConvertShaderFlagsToVk(inSrc.StageFlags);
+        outDst.binding = inSrc.BindingIndex;
+        outDst.descriptorType = VulkanTypeConverter::ConvertBindFlagsToVkDescriptorType(inSrc.ResourceType, inSrc.BindFlags);
+        outDst.descriptorCount = MathUtils::Max(static_cast<uint16>(1), inSrc.NumResources);
+        outDst.stageFlags = VulkanTypeConverter::ConvertShaderFlagsToVk(inSrc.StageFlags);
+        outDst.pImmutableSamplers = nullptr;
     }
 
 public:
@@ -171,33 +140,25 @@ public:
         return &PipelineLayoutHandle;
     }
 
-    inline const VulkanDescriptorPool* GetDescriptorPool() const
+    inline const VulkanDescriptorSetsLayout* GetDescriptorSetsLayoutHandle() const
     {
-        return DescriptorPools[FreePoolIndex];
+        return DescriptorSetsLayout;
     }
 
 private:
+    inline VulkanDescriptorSetsLayout* GetDescriptorSetsLayoutHandle()
+    {
+        return DescriptorSetsLayout;
+    }
+
+private:
+    friend class VulkanRenderInterface;
+
     VulkanDevice* Device;
     VkPipelineLayout PipelineLayoutHandle;
 
-    /** Vulkan Descriptor pool - main pool used for all descriptor set creations */
-    std::vector<VulkanDescriptorPool*> DescriptorPools;
-    std::vector<VkDescriptorPoolSize> PoolSizes;
-    uint32 MaxSets;
-    uint32 FreePoolIndex;
-
     /** Layout of descriptor sets */
     VulkanDescriptorSetsLayout* DescriptorSetsLayout;
-    uint32 DescriptorSetLayoutIndex;
-
-    struct VRIXIC_API VulkanLayoutBinding
-    {
-        uint32 DstBinding;
-        uint32 StageFlags;
-        VkDescriptorType DescriptorType;
-    };
-    /** all of the pipeline layout bindings */
-    std::vector<VulkanLayoutBinding> LayoutBindings;
 };
 
 /**
