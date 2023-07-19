@@ -114,10 +114,13 @@ void Renderer::Shutdown()
         RenderInterface.Get()->Free(BRDFSamplerHandle);
         RenderInterface.Get()->Free(LODSamplerHandle);
 
-        for (uint32 i = 0; i < Textures.size(); ++i)
-        {
-            RenderInterface.Get()->Free(Textures[i]);
-        }
+        RenderInterface.Get()->Free(BindlessDescriptorSet);
+        //RenderInterface.Get()->Free(BindlessPipelineLayout);
+
+        //for (uint32 i = 0; i < Textures.size(); ++i)
+        //{
+        //    RenderInterface.Get()->Free(Textures[i]);
+        //}
 
         for (uint32 i = 0; i < TexturesArray.size(); ++i)
         {
@@ -179,6 +182,7 @@ void Renderer::Shutdown()
         RenderInterface.Get()->Free(HDRFragmentShader);
         RenderInterface.Get()->Free(HDRDescSet);
 
+        RenderInterface.Get()->Free(IrradiancePipelineLayout);
         RenderInterface.Get()->Free(IrridiancePipeline);
         RenderInterface.Get()->Free(IrridianceVertexShader);
         RenderInterface.Get()->Free(IrridianceFragmentShader);
@@ -375,6 +379,14 @@ void Renderer::Render()
             //CurrentCommandBuffer->BindPipeline(PBRPipeline);
             CurrentCommandBuffer->BindPipeline(PBRTexturePipeline);
 
+            FDescriptorSetsBindInfo BindInfo = { };
+            BindInfo.DescriptorSets = BindlessDescriptorSet;
+            BindInfo.NumSets = 1;
+            BindInfo.FirstSetIndex = 1;
+            BindInfo.PipelineBindPoint = EPipelineBindPoint::Graphics;
+            BindInfo.PipelineLayoutPtr = PBRTexturePipelineLayout;
+            CurrentCommandBuffer->BindDescriptorSets(BindInfo);
+
             for (uint32 i = 0; i < OpaqueStaticMeshes.size(); ++i)
             {
                 if (SelectedStaticMesh != -1 && StaticMeshes[SelectedStaticMesh] == OpaqueStaticMeshes[i])
@@ -393,6 +405,15 @@ void Renderer::Render()
         // PBR Again for transparent models 
         // Blend Models 
         CurrentCommandBuffer->BindPipeline(PBRTexturePipeline);
+
+        FDescriptorSetsBindInfo BindInfo = { };
+        BindInfo.DescriptorSets = BindlessDescriptorSet;
+        BindInfo.NumSets = 1;
+        BindInfo.FirstSetIndex = 1;
+        BindInfo.PipelineBindPoint = EPipelineBindPoint::Graphics;
+        BindInfo.PipelineLayoutPtr = PBRTexturePipelineLayout;
+        CurrentCommandBuffer->BindDescriptorSets(BindInfo);
+
         for (uint32 i = 0; i < TransparentStaticMeshes.size(); ++i)
         {
             if (SelectedStaticMesh != -1 && StaticMeshes[SelectedStaticMesh] == TransparentStaticMeshes[i])
@@ -436,12 +457,19 @@ void Renderer::Render()
     Present();
 }
 
-Texture* Renderer::CreateTexture2D(const std::string& inTexturePath, Buffer*& outTextureBuffer, EPixelFormat inFormat)
+TextureHandle Renderer::CreateTexture2D(const std::string& inTexturePath, Buffer*& outTextureBuffer, EPixelFormat inFormat)
 {
     std::string Extension = inTexturePath.substr(inTexturePath.length() - 4);
     if (std::strcmp(Extension.c_str(), ".ktx") == 0)
     {
         return CreateTexture2DKtx(inTexturePath, outTextureBuffer);
+    }
+
+    std::string TextureName = inTexturePath.substr(inTexturePath.find_last_of('/'), inTexturePath.find_last_of('.'));
+    auto FindResult = TextureMap.Find(TextureName);
+    if (FindResult != TextureMap.End())
+    {
+        return FindResult->second;
     }
 
     FTextureConfig Config = FTextureConfig();
@@ -453,7 +481,7 @@ Texture* Renderer::CreateTexture2D(const std::string& inTexturePath, Buffer*& ou
     Config.Type = ETextureType::Texture2D;
     //Config.Layout = ETextureLayout::Undefined;
 
-    TextureHandle& TexHandle = ResourceManager::Get().LoadTexture(inTexturePath);
+    TextureResourceHandle& TexHandle = ResourceManager::Get().LoadTexture(inTexturePath);
 
     Config.Extent.Width = TexHandle.Width;
     Config.Extent.Height = TexHandle.Height;
@@ -486,13 +514,24 @@ Texture* Renderer::CreateTexture2D(const std::string& inTexturePath, Buffer*& ou
     RenderInterface.Get()->WriteToTexture(NewTextureHandle, TextureWriteInfo);
 
     Buffers.push_back(outTextureBuffer);
-    TexturesArray.push_back(NewTextureHandle);
 
-    return NewTextureHandle;
+    TexturesArray.push_back(NewTextureHandle);
+    TextureHandle Handle = TexturesArray.size() - 1;
+
+    TextureMap.Add(TextureName, Handle);
+
+    return Handle;
 }
 
-Texture* Renderer::CreateTexture2DKtx(const std::string& inTexturePath, Buffer*& outTextureBuffer)
+TextureHandle Renderer::CreateTexture2DKtx(const std::string& inTexturePath, Buffer*& outTextureBuffer)
 {
+    std::string TextureName = inTexturePath.substr(inTexturePath.find_last_of('/'), inTexturePath.find_last_of('.'));
+    auto FindResult = TextureMap.Find(TextureName);
+    if (FindResult != TextureMap.End())
+    {
+        return FindResult->second;
+    }
+
     ktxResult Result;
     ktxTexture* KtxTextureHandle;
 
@@ -551,19 +590,29 @@ Texture* Renderer::CreateTexture2DKtx(const std::string& inTexturePath, Buffer*&
 
     Buffers.push_back(outTextureBuffer);
     TexturesArray.push_back(NewTextureHandle);
+    TextureHandle Handle = TexturesArray.size() - 1;
+
+    TextureMap.Add(TextureName, Handle);
 
     // Clean up staging resources
     ktxTexture_Destroy(KtxTextureHandle);
 
-    return NewTextureHandle;
+    return Handle;
 }
 
-Texture* Renderer::CreateTextureCubemap(const std::string& inTexturePath, Buffer*& outTextureBuffer, EPixelFormat inFormat)
+TextureHandle Renderer::CreateTextureCubemap(const std::string& inTexturePath, Buffer*& outTextureBuffer, EPixelFormat inFormat)
 {
     std::string Extension = inTexturePath.substr(inTexturePath.length() - 4);
     if (std::strcmp(Extension.c_str(), ".ktx") == 0)
     {
         return CreateTextureCubemapKtx(inTexturePath, outTextureBuffer);
+    }
+
+    std::string TextureName = inTexturePath.substr(inTexturePath.find_last_of('/'), inTexturePath.find_last_of('.'));
+    auto FindResult = TextureMap.Find(TextureName);
+    if (FindResult != TextureMap.End())
+    {
+        return FindResult->second;
     }
 
     /**
@@ -577,7 +626,7 @@ Texture* Renderer::CreateTextureCubemap(const std::string& inTexturePath, Buffer
     */
     const std::string TextureNames[] = { "PositiveX.png", "NegativeX.png", "PositiveY.png", "NegativeY.png", "PositiveZ.png", "NegativeZ.png" };
 
-    TextureHandle CubemapTextureHandles[6];
+    TextureResourceHandle CubemapTextureHandles[6];
 
     for (uint32 i = 0; i < 6; ++i)
     {
@@ -626,11 +675,21 @@ Texture* Renderer::CreateTextureCubemap(const std::string& inTexturePath, Buffer
     TexturesArray.push_back(CubemapTexture);
     Buffers.push_back(outTextureBuffer);
 
-    return CubemapTexture;
+    TextureHandle Handle = TexturesArray.size() - 1;
+    TextureMap.Add(TextureName, Handle);
+
+    return Handle;
 }
 
-Texture* Renderer::CreateTextureCubemapKtx(const std::string& inTexturePath, Buffer*& outTextureBuffer)
+TextureHandle Renderer::CreateTextureCubemapKtx(const std::string& inTexturePath, Buffer*& outTextureBuffer)
 {
+    std::string TextureName = inTexturePath.substr(inTexturePath.find_last_of('/'), inTexturePath.find_last_of('.'));
+    auto FindResult = TextureMap.Find(TextureName);
+    if (FindResult != TextureMap.End())
+    {
+        return FindResult->second;
+    }
+
     ktxResult Result;
     ktxTexture* KtxTextureHandle;
 
@@ -687,17 +746,20 @@ Texture* Renderer::CreateTextureCubemapKtx(const std::string& inTexturePath, Buf
     TexturesArray.push_back(NewTexture);
     Buffers.push_back(outTextureBuffer);
 
+    TextureHandle Handle = TexturesArray.size() - 1;
+    TextureMap.Add(TextureName, Handle);
+
     // Clean up staging resources
     ktxTexture_Destroy(KtxTextureHandle);
 
     VE_CORE_LOG_INFO(VE_TEXT("[Renderer]: Created cubemap '{0}' with {1} width, {2} height. NumMips: {3}"), inTexturePath, CubemapWidth, CubemapHeight, CubemapMipLevels);
 
-    return NewTexture;
+    return Handle;
 }
 
 Shader* Renderer::LoadShader(FShaderConfig& inShaderConfig)
 {
-    if (inShaderConfig.SourceType != EShaderSourceType::String)
+    /*if (inShaderConfig.SourceType != EShaderSourceType::String)
     {
         std::string ShaderSource;
 
@@ -714,7 +776,7 @@ Shader* Renderer::LoadShader(FShaderConfig& inShaderConfig)
 
         inShaderConfig.SourceCode = ShaderSource;
         inShaderConfig.SourceType = EShaderSourceType::String;
-    }
+    }*/
 
     return RenderInterface.Get()->CreateShader(inShaderConfig);
 }
@@ -850,69 +912,15 @@ bool Renderer::OnKeyReleased(KeyReleasedEvent& inKeyReleasedEvent)
 
 void Renderer::CreatePBRPipeline()
 {
-    {
-        {
-            FPipelineLayoutConfig Config = { };
-            FPipelineBindingDescriptor Desc = { };
-            FPipelineBindingSlot Slot = { };
-
-            Slot.Index = 0;
-            Slot.SetIndex = 0;
-
-            // UNIFORM Buffer for Local Constants 
-            Desc.BindingSlot = Slot;
-            Desc.ResourceType = EResourceType::Buffer;
-            Desc.BindFlags |= FResourceBindFlags::UniformBuffer;
-            Desc.NumResources = 1;
-            Desc.StageFlags = FShaderStageFlags::DefaultStages;
-
-            Config.Bindings.push_back(Desc);
-
-            Desc.BindingSlot.Index = 1;
-            Config.Bindings.push_back(Desc); // Another for MaterialConstants 
-
-            // Diffuse Texture 
-            Desc.BindingSlot.Index = 2;
-            Desc.NumResources = 1;
-            Desc.ResourceType = EResourceType::Texture;
-            Desc.BindFlags = 0;
-            Desc.BindFlags |= FResourceBindFlags::Sampled;
-            Config.Bindings.push_back(Desc);
-
-            Desc.BindingSlot.Index = 3;
-            Config.Bindings.push_back(Desc); // Roughness Metallness Texture
-
-            Desc.BindingSlot.Index = 4;
-            Config.Bindings.push_back(Desc); // Emissive Texture
-
-            Desc.BindingSlot.Index = 5;
-            Config.Bindings.push_back(Desc); // Occlusion Texture
-
-            Desc.BindingSlot.Index = 6;
-            Config.Bindings.push_back(Desc); // Normal Texture
-
-            Desc.BindingSlot.Index = 7;
-            Config.Bindings.push_back(Desc); // Irridiance Map Texture
-
-            Desc.BindingSlot.Index = 8;
-            Config.Bindings.push_back(Desc); // Prefilter Env Map Texture
-
-            Desc.BindingSlot.Index = 9;
-            Config.Bindings.push_back(Desc); // BRDF LUT Texture
-
-            PBRTexturePipelineLayout = RenderInterface.Get()->CreatePipelineLayout(Config);
-        }
-    }
-
     // Create The PBR Pipelines
     {
         FGraphicsPipelineConfig GPConfig;
         {
             // Create a generic vertex shader as it is mandatory to have a vertex shader 
             FShaderConfig VSConfig = { };
-            VSConfig.CompileFlags |= FShaderCompileFlags::GLSL;
+            VSConfig.Flags |= FShaderFlags::GLSL;
             VSConfig.EntryPoint = "main";
-            VSConfig.SourceCode = MakePathToResource("PBR/pbr.vert", 's');
+            VSConfig.SourceCode = MakePathToResource("PBR/pbr_bindless.vert", 's');
             VSConfig.SourceType = EShaderSourceType::Filepath;
             VSConfig.Type = EShaderType::Vertex;
 
@@ -959,14 +967,16 @@ void Renderer::CreatePBRPipeline()
             Attribute.Format = EPixelFormat::RG32Float;
             VSConfig.VertexBindings[3].AddVertexAttribute(Attribute);
 
+            VSConfig.Flags |= FShaderFlags::OutputBinary;
+
             PBRVertexShader = LoadShader(VSConfig);
 
             // Create a fragment shaders as well
             {
                 FShaderConfig FragmentSConfig = { };
-                FragmentSConfig.CompileFlags |= FShaderCompileFlags::GLSL;
+                FragmentSConfig.Flags |= FShaderFlags::GLSL;
                 FragmentSConfig.EntryPoint = "main";
-                FragmentSConfig.SourceCode = MakePathToResource("PBR/pbr_khr_debug.frag", 's');
+                FragmentSConfig.SourceCode = MakePathToResource("PBR/pbr_khr_debug_bindless.frag", 's');
                 FragmentSConfig.SourceType = EShaderSourceType::Filepath;
                 FragmentSConfig.Type = EShaderType::Fragment;
 
@@ -974,10 +984,21 @@ void Renderer::CreatePBRPipeline()
             }
         }
 
+        PBRTexturePipelineLayout = CreatePipelineLayoutFromShaders(PBRVertexShader, PBRTextureFragmentShader);
+
+        {
+            FDescriptorSetsConfig SetsConfig = { };
+            SetsConfig.NumSets = 1;
+            SetsConfig.PipelineLayoutPtr = PBRTexturePipelineLayout;
+            SetsConfig.bIsBindlessSet = true;
+
+            BindlessDescriptorSet = RenderInterface.Get()->CreateDescriptorSet(SetsConfig);
+        }
+
         {
             // Create a generic vertex shader as it is mandatory to have a vertex shader 
             FShaderConfig VSConfig = { };
-            VSConfig.CompileFlags |= FShaderCompileFlags::GLSL;
+            VSConfig.Flags |= FShaderFlags::GLSL;
             VSConfig.EntryPoint = "main";
             VSConfig.SourceCode = MakePathToResource("EdgeDetection/outline.vert", 's');
             VSConfig.SourceType = EShaderSourceType::Filepath;
@@ -1031,7 +1052,7 @@ void Renderer::CreatePBRPipeline()
             // Create a fragment shaders as well
             {
                 FShaderConfig FragmentSConfig = { };
-                FragmentSConfig.CompileFlags |= FShaderCompileFlags::GLSL;
+                FragmentSConfig.Flags |= FShaderFlags::GLSL;
                 FragmentSConfig.EntryPoint = "main";
                 FragmentSConfig.SourceCode = MakePathToResource("EdgeDetection/outline.frag", 's');
                 FragmentSConfig.SourceType = EShaderSourceType::Filepath;
@@ -1193,7 +1214,7 @@ void Renderer::CreateSkyboxPipeline()
                 {
                     // Create a generic vertex shader as it is mandatory to have a vertex shader 
                     FShaderConfig VSConfig = { };
-                    VSConfig.CompileFlags |= FShaderCompileFlags::GLSL;
+                    VSConfig.Flags |= FShaderFlags::GLSL;
                     VSConfig.EntryPoint = "main";
                     VSConfig.SourceCode = MakePathToResource("Skybox/irridiance.vert", 's');
                     VSConfig.SourceType = EShaderSourceType::Filepath;
@@ -1219,17 +1240,24 @@ void Renderer::CreateSkyboxPipeline()
 
                     // Create a fragment shader as well
                     FShaderConfig FragmentSConfig = { };
-                    FragmentSConfig.CompileFlags |= FShaderCompileFlags::GLSL;
+                    FragmentSConfig.Flags |= FShaderFlags::GLSL;
                     FragmentSConfig.EntryPoint = "main";
                     FragmentSConfig.SourceCode = MakePathToResource("Skybox/irridiance.frag", 's');
-                    FragmentSConfig.SourceType = EShaderSourceType::Filename;
+                    FragmentSConfig.SourceType = EShaderSourceType::Filepath;
                     FragmentSConfig.Type = EShaderType::Fragment;
 
                     IrridianceFragmentShader = LoadShader(FragmentSConfig);
                 }
 
+                {
+                    Shader* Shaders[2];
+                    Shaders[0] = IrridianceVertexShader;
+                    Shaders[1] = IrridianceFragmentShader;
+                    IrradiancePipelineLayout = RenderInterface.Get()->CreatePipelineLayoutFromShaders((const Shader**)Shaders, 2);
+                }
+
                 GPConfig.RenderPassPtr = RenderPass;
-                GPConfig.PipelineLayoutPtr = HDRPipelineLayout;
+                GPConfig.PipelineLayoutPtr = IrradiancePipelineLayout;
                 GPConfig.FragmentShader = IrridianceFragmentShader;
                 GPConfig.VertexShader = IrridianceVertexShader;
                 GPConfig.PrimitiveTopology = EPrimitiveTopology::TriangleList;
@@ -1304,52 +1332,12 @@ void Renderer::CreateSkyboxPipeline()
         {
             if (PrefilterEnvMapPipeline == nullptr)
             {
-                {
-                    FPipelineLayoutConfig Config = { };
-                    FPipelineBindingDescriptor Desc = { };
-                    FPipelineBindingSlot Slot = { };
-
-                    Slot.Index = 0;
-                    Slot.SetIndex = 0;
-
-                    // UNIFORM Buffer for Local Constants 
-                    Desc.BindingSlot = Slot;
-                    Desc.ResourceType = EResourceType::Buffer;
-                    Desc.BindFlags |= FResourceBindFlags::UniformBuffer;
-                    Desc.NumResources = 1;
-                    Desc.StageFlags = FShaderStageFlags::VertexStage;
-
-                    Config.Bindings.push_back(Desc);
-
-                    // cubemap Texture 
-                    Desc.BindingSlot.Index = 1;
-                    Desc.NumResources = 1;
-                    Desc.ResourceType = EResourceType::Texture;
-                    Desc.BindFlags = 0;
-                    Desc.BindFlags |= FResourceBindFlags::Sampled;
-                    Desc.StageFlags = 0;
-                    Desc.StageFlags |= FShaderStageFlags::FragmentStage;
-                    Config.Bindings.push_back(Desc);
-
-                    // prefiler env map struct  
-                    Desc.BindingSlot.Index = 2;
-                    Desc.ResourceType = EResourceType::Buffer;
-                    Desc.BindFlags = 0;
-                    Desc.BindFlags |= FResourceBindFlags::UniformBuffer;
-                    Desc.NumResources = 1;
-                    Desc.StageFlags = 0;
-                    Desc.StageFlags = FShaderStageFlags::FragmentStage;
-
-                    Config.Bindings.push_back(Desc);
-
-                    PrefilterEnvMapPipelineLayout = RenderInterface.Get()->CreatePipelineLayout(Config);
-                }
 
                 FGraphicsPipelineConfig GPConfig;
                 {
                     // Create a generic vertex shader as it is mandatory to have a vertex shader 
                     FShaderConfig VSConfig = { };
-                    VSConfig.CompileFlags |= FShaderCompileFlags::GLSL;
+                    VSConfig.Flags |= FShaderFlags::GLSL;
                     VSConfig.EntryPoint = "main";
                     VSConfig.SourceCode = MakePathToResource("Skybox/prefilter_envmap.vert", 's');
                     VSConfig.SourceType = EShaderSourceType::Filepath;
@@ -1375,14 +1363,16 @@ void Renderer::CreateSkyboxPipeline()
 
                     // Create a fragment shader as well
                     FShaderConfig FragmentSConfig = { };
-                    FragmentSConfig.CompileFlags |= FShaderCompileFlags::GLSL;
+                    FragmentSConfig.Flags |= FShaderFlags::GLSL;
                     FragmentSConfig.EntryPoint = "main";
                     FragmentSConfig.SourceCode = MakePathToResource("Skybox/prefilter_envmap.frag", 's');
-                    FragmentSConfig.SourceType = EShaderSourceType::Filename;
+                    FragmentSConfig.SourceType = EShaderSourceType::Filepath;
                     FragmentSConfig.Type = EShaderType::Fragment;
 
                     PrefilterEnvMapFragmentShader = LoadShader(FragmentSConfig);
                 }
+
+                PrefilterEnvMapPipelineLayout = CreatePipelineLayoutFromShaders(PrefilterEnvMapVertexShader, PrefilterEnvMapFragmentShader);
 
                 GPConfig.RenderPassPtr = RenderPass;
                 GPConfig.PipelineLayoutPtr = PrefilterEnvMapPipelineLayout;
@@ -1466,7 +1456,7 @@ void Renderer::CreateSkyboxPipeline()
                 {
                     // Create a generic vertex shader as it is mandatory to have a vertex shader 
                     FShaderConfig VSConfig = { };
-                    VSConfig.CompileFlags |= FShaderCompileFlags::GLSL;
+                    VSConfig.Flags |= FShaderFlags::GLSL;
                     VSConfig.EntryPoint = "main";
                     VSConfig.SourceCode = MakePathToResource("Skybox/brdf_integration.vert", 's');
                     VSConfig.SourceType = EShaderSourceType::Filepath;
@@ -1476,10 +1466,10 @@ void Renderer::CreateSkyboxPipeline()
 
                     // Create a fragment shader as well
                     FShaderConfig FragmentSConfig = { };
-                    FragmentSConfig.CompileFlags |= FShaderCompileFlags::GLSL;
+                    FragmentSConfig.Flags |= FShaderFlags::GLSL;
                     FragmentSConfig.EntryPoint = "main";
                     FragmentSConfig.SourceCode = MakePathToResource("Skybox/brdf_integration.frag", 's');
-                    FragmentSConfig.SourceType = EShaderSourceType::Filename;
+                    FragmentSConfig.SourceType = EShaderSourceType::Filepath;
                     FragmentSConfig.Type = EShaderType::Fragment;
 
                     BRDFIntegrationFragmentShader = LoadShader(FragmentSConfig);
@@ -1655,17 +1645,17 @@ void Renderer::LoadModels()
                 BusterDroneModelPath += NameOfModel + ".gltf";
                 FWorld World = FGLTFLoader::LoadFromFile(BusterDroneModelPath.data());
 
+                TextureHandle* TextureHandles = new TextureHandle[World.Images.size()];
+
                 // Parsing the World Data 
                 {
                     // Load All Textures
-                    Textures.resize(World.Images.size());
                     TextureBuffers.resize(World.Images.size());
 
-                    for (uint32 i = 0; i < Textures.size(); ++i)
+                    for (uint32 i = 0; i < World.Images.size(); ++i)
                     {
                         FImage Image = World.Images[i];
-                        Textures[i] = CreateTexture2D(MakePathToResource("buster_drone/" + Image.Uri, 't').c_str(), TextureBuffers[i]);
-                        TexturesArray.pop_back();
+                        TextureHandles[i] = CreateTexture2D(MakePathToResource("buster_drone/" + Image.Uri, 't').c_str(), TextureBuffers[i]);
                         Buffers.pop_back();
                     }
                 }
@@ -2034,18 +2024,22 @@ void Renderer::LoadModels()
                             FDescriptorSetsLinkInfo LinkInfo = { };
                             LinkInfo.ArrayElementStart = 0;
                             LinkInfo.DescriptorCount = 1;
+                            LinkInfo.BindingStart = BINDLESS_TEXTURE_BINDING;
 
                             {
                                 // Bind for Diffuse texture 
-                                LinkInfo.BindingStart = 2;
+                                //LinkInfo.BindingStart = 2;
 
                                 // Set to Default value first 
-                                LinkInfo.TextureSampler = SamplerHandle;
-                                LinkInfo.ResourceHandle.TextureHandle = CP2077TextureHandle;
+                                //LinkInfo.TextureSampler = SamplerHandle;
+                                //LinkInfo.ResourceHandle.TextureHandle = TexturesArray[CP2077TextureHandle];
 
+                                MaterialData.AlbedoIndex = INVALID_TEXTURE_INDEX;
                                 if (material.PBRMetallicRoughnessInfo.BaseColorTexture.Index != -1) {
                                     FTexture& diffuse_texture = World.Textures[material.PBRMetallicRoughnessInfo.BaseColorTexture.Index];
-                                    Texture* diffuse_texture_gpu = Textures[diffuse_texture.ImageIndex];
+
+                                    TextureHandle Handle = TextureHandles[diffuse_texture.ImageIndex];
+                                    Texture* diffuse_texture_gpu = TexturesArray[Handle];
 
                                     Sampler* SamplerDef = SamplerHandle;
                                     if (diffuse_texture.SamplerIndex != -1) {
@@ -2053,28 +2047,33 @@ void Renderer::LoadModels()
                                     }
 
                                     MaterialData.Flags |= MaterialFeatures_ColorTexture;
+                                    MaterialData.AlbedoIndex = Handle;
 
+                                    LinkInfo.ArrayElementStart = Handle;
                                     LinkInfo.TextureSampler = SamplerDef;
                                     LinkInfo.ResourceHandle.TextureHandle = diffuse_texture_gpu;
 
-                                    DescriptorSet->LinkToTexture(0, LinkInfo);
+                                    BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
                                 }
 
                                 // Update the diffuse texture set 
-                                DescriptorSet->LinkToTexture(0, LinkInfo);
+                                //BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
                             }
 
                             {
                                 // Bind for MetallicRoughness texture 
-                                LinkInfo.BindingStart = 3;
+                                //LinkInfo.BindingStart = 3;
 
                                 // Set to Default value first 
-                                LinkInfo.TextureSampler = SamplerHandle;
-                                LinkInfo.ResourceHandle.TextureHandle = CP2077TextureHandle;
+                                //LinkInfo.TextureSampler = SamplerHandle;
+                                //LinkInfo.ResourceHandle.TextureHandle = TexturesArray[CP2077TextureHandle];
 
+                                MaterialData.RoughnessIndex = INVALID_TEXTURE_INDEX;
                                 if (material.PBRMetallicRoughnessInfo.MetallicRoughnessTexture.Index != -1) {
                                     FTexture& roughness_texture = World.Textures[material.PBRMetallicRoughnessInfo.MetallicRoughnessTexture.Index];
-                                    Texture* roughness_texture_gpu = Textures[roughness_texture.ImageIndex];
+
+                                    TextureHandle Handle = TextureHandles[roughness_texture.ImageIndex];
+                                    Texture* roughness_texture_gpu = TexturesArray[Handle];
 
                                     Sampler* SamplerDef = SamplerHandle;
                                     if (roughness_texture.SamplerIndex != -1) {
@@ -2082,30 +2081,36 @@ void Renderer::LoadModels()
                                     }
 
                                     // Link to textue
+                                    LinkInfo.ArrayElementStart = Handle;
                                     LinkInfo.TextureSampler = SamplerDef;
                                     LinkInfo.ResourceHandle.TextureHandle = roughness_texture_gpu;
 
                                     MaterialData.Flags |= MaterialFeatures_RoughnessTexture;
+                                    MaterialData.RoughnessIndex = Handle;
+
+                                    BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
                                 }
 
                                 // Update MetallicRoughness texture
-                                DescriptorSet->LinkToTexture(0, LinkInfo);
+                                //DescriptorSet->LinkToTexture(0, LinkInfo);
                             }
 
                             {
                                 // Bind for OcclusionTexture texture 
-                                LinkInfo.BindingStart = 4;
+                                //LinkInfo.BindingStart = 4;
 
                                 // Set to Default value first 
-                                LinkInfo.TextureSampler = SamplerHandle;
-                                LinkInfo.ResourceHandle.TextureHandle = CP2077TextureHandle;
+                                //LinkInfo.TextureSampler = SamplerHandle;
+                                //LinkInfo.ResourceHandle.TextureHandle = TexturesArray[CP2077TextureHandle];
 
+                                MaterialData.OcclusionIndex = INVALID_TEXTURE_INDEX;
                                 if (material.OcclusionTexture.Index != -1) {
                                     FTexture& occlusion_texture = World.Textures[material.OcclusionTexture.Index];
 
                                     // NOTE(marco): this could be the same as the roughness texture, but for now we treat it as a separate
                                     // texture
-                                    Texture* occlusion_texture_gpu = Textures[occlusion_texture.ImageIndex];
+                                    TextureHandle Handle = TextureHandles[occlusion_texture.ImageIndex];
+                                    Texture* occlusion_texture_gpu = TexturesArray[Handle];
 
                                     Sampler* SamplerDef = SamplerHandle;
                                     if (occlusion_texture.SamplerIndex != -1) {
@@ -2113,30 +2118,36 @@ void Renderer::LoadModels()
                                     }
 
                                     // Link to textue
+                                    LinkInfo.ArrayElementStart = Handle;
                                     LinkInfo.TextureSampler = SamplerDef;
                                     LinkInfo.ResourceHandle.TextureHandle = occlusion_texture_gpu;
 
                                     MaterialData.Flags |= MaterialFeatures_OcclusionTexture;
+                                    MaterialData.OcclusionIndex = Handle;
+
+                                    BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
                                 }
 
                                 // Update Occlusion Texture
-                                DescriptorSet->LinkToTexture(0, LinkInfo);
+                                //DescriptorSet->LinkToTexture(0, LinkInfo);
                             }
 
                             {
                                 // Bind for EmissiveTexture texture 
-                                LinkInfo.BindingStart = 5;
+                                //LinkInfo.BindingStart = 5;
 
                                 // Set to Default value first 
-                                LinkInfo.TextureSampler = SamplerHandle;
-                                LinkInfo.ResourceHandle.TextureHandle = CP2077TextureHandle;
+                                //LinkInfo.TextureSampler = SamplerHandle;
+                                //LinkInfo.ResourceHandle.TextureHandle = TexturesArray[CP2077TextureHandle];
 
+                                MaterialData.EmissiveIndex = INVALID_TEXTURE_INDEX;
                                 if (material.EmissiveTexture.Index != -1) {
                                     FTexture& emissive_texture = World.Textures[material.EmissiveTexture.Index];
 
                                     // NOTE(marco): this could be the same as the roughness texture, but for now we treat it as a separate
                                     // texture
-                                    Texture* emissive_texture_gpu = Textures[emissive_texture.ImageIndex];
+                                    TextureHandle Handle = TextureHandles[emissive_texture.ImageIndex];
+                                    Texture* emissive_texture_gpu = TexturesArray[Handle];
 
                                     Sampler* SamplerDef = SamplerHandle;
                                     if (emissive_texture.SamplerIndex != -1) {
@@ -2144,26 +2155,33 @@ void Renderer::LoadModels()
                                     }
 
                                     // Link to textue
+                                    LinkInfo.ArrayElementStart = Handle;
                                     LinkInfo.TextureSampler = SamplerDef;
                                     LinkInfo.ResourceHandle.TextureHandle = emissive_texture_gpu;
 
                                     MaterialData.Flags |= MaterialFeatures_EmissiveTexture;
+                                    MaterialData.EmissiveIndex = Handle;
+
+                                    BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
                                 }
 
-                                DescriptorSet->LinkToTexture(0, LinkInfo);
+                                //DescriptorSet->LinkToTexture(0, LinkInfo);
                             }
 
                             {
                                 // Bind for NormalTexture texture 
-                                LinkInfo.BindingStart = 6;
+                                //LinkInfo.BindingStart = 6;
 
                                 // Set to Default value first 
-                                LinkInfo.TextureSampler = SamplerHandle;
-                                LinkInfo.ResourceHandle.TextureHandle = CP2077TextureHandle;
+                                //LinkInfo.TextureSampler = SamplerHandle;
+                                //LinkInfo.ResourceHandle.TextureHandle = TexturesArray[CP2077TextureHandle];
 
+                                MaterialData.NormalIndex = INVALID_TEXTURE_INDEX;
                                 if (material.NormalTexture.Index != -1) {
                                     FTexture& normal_texture = World.Textures[material.NormalTexture.Index];
-                                    Texture* normal_texture_gpu = Textures[normal_texture.ImageIndex];
+
+                                    TextureHandle Handle = TextureHandles[normal_texture.ImageIndex];
+                                    Texture* normal_texture_gpu = TexturesArray[Handle];
 
                                     Sampler* SamplerDef = SamplerHandle;
                                     if (normal_texture.SamplerIndex != -1) {
@@ -2171,15 +2189,17 @@ void Renderer::LoadModels()
                                     }
 
                                     // Link to textue
+                                    LinkInfo.ArrayElementStart = Handle;
                                     LinkInfo.TextureSampler = SamplerDef;
                                     LinkInfo.ResourceHandle.TextureHandle = normal_texture_gpu;
 
-                                    DescriptorSet->LinkToTexture(0, LinkInfo);
+                                    BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
 
                                     MaterialData.Flags |= MaterialFeatures_NormalTexture;
+                                    MaterialData.NormalIndex = Handle;
                                 }
 
-                                DescriptorSet->LinkToTexture(0, LinkInfo);
+                                //DescriptorSet->LinkToTexture(0, LinkInfo);
                             }
 
                             MaterialData.EmissiveFactor = material.EmissiveFactor;
@@ -2200,25 +2220,28 @@ void Renderer::LoadModels()
                             }
 
                             // Link to Irridiance cube map
-                            LinkInfo.BindingStart = 7;
+                            LinkInfo.ArrayElementStart = IrridianceTexture;
                             LinkInfo.TextureSampler = SamplerHandle;
-                            LinkInfo.ResourceHandle.TextureHandle = IrridianceTexture;
+                            LinkInfo.ResourceHandle.TextureHandle = TexturesArray[IrridianceTexture];
+                            MaterialData.IrradianceIndex = IrridianceTexture;
 
-                            DescriptorSet->LinkToTexture(0, LinkInfo);
+                            BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
 
                             // Prefilter env map
-                            LinkInfo.BindingStart = 8;
+                            LinkInfo.ArrayElementStart = PrefilterEnvMapTexture;
                             LinkInfo.TextureSampler = SamplerHandle;
-                            LinkInfo.ResourceHandle.TextureHandle = PrefilterEnvMapTexture;
+                            LinkInfo.ResourceHandle.TextureHandle = TexturesArray[PrefilterEnvMapTexture];
+                            MaterialData.PrefilterMapIndex = PrefilterEnvMapTexture;
 
-                            DescriptorSet->LinkToTexture(0, LinkInfo);
+                            BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
 
                             // brdr lut 
-                            LinkInfo.BindingStart = 9;
+                            LinkInfo.ArrayElementStart = BRDFLutTexture;
                             LinkInfo.TextureSampler = SamplerHandle;
-                            LinkInfo.ResourceHandle.TextureHandle = BRDFLutTexture;
+                            LinkInfo.ResourceHandle.TextureHandle = TexturesArray[BRDFLutTexture];
+                            MaterialData.BRDFLutIndex = BRDFLutTexture;
 
-                            DescriptorSet->LinkToTexture(0, LinkInfo);
+                            BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
 
                             FBufferConfig BufferConfig = { };
                             BufferConfig.InitialData = &MaterialData;
@@ -2231,6 +2254,7 @@ void Renderer::LoadModels()
 
                             // Link to Material Buffer
                             LinkInfo.BindingStart = 1;
+                            LinkInfo.ArrayElementStart = 0;
                             LinkInfo.ResourceHandle.BufferHandle = Section.MaterialBuffer;
                             DescriptorSet->LinkToBuffer(0, LinkInfo);
 
@@ -2413,6 +2437,15 @@ void Renderer::CreateSphereModels()
             Material.AlphaMask = 0;
             Material.AlphaMaskCutoff = 0.5f;
 
+            Material.AlbedoIndex = INVALID_TEXTURE_INDEX;
+            Material.RoughnessIndex = INVALID_TEXTURE_INDEX;
+            Material.NormalIndex = INVALID_TEXTURE_INDEX;
+            Material.OcclusionIndex = INVALID_TEXTURE_INDEX;
+            Material.EmissiveIndex = INVALID_TEXTURE_INDEX;
+            Material.BRDFLutIndex = BRDFLutTexture;
+            Material.IrradianceIndex = IrridianceTexture;
+            Material.PrefilterMapIndex = PrefilterEnvMapTexture;
+
             FRenderAssetSection Section = { };
             Section.Count = NumSphereIndices;
             Section.IndexOffset = 0;
@@ -2454,25 +2487,25 @@ void Renderer::CreateSphereModels()
             LinkInfo.ResourceHandle.BufferHandle = Section.MaterialBuffer;
             Set->LinkToBuffer(0, LinkInfo);
 
-            for (uint32 i = 2; i < 7; ++i)
+            /*for (uint32 i = 2; i < 7; ++i)
             {
                 LinkInfo.BindingStart = i;
-                LinkInfo.ResourceHandle.TextureHandle = CP2077TextureHandle;
+                LinkInfo.ResourceHandle.TextureHandle = TexturesArray[CP2077TextureHandle];
                 Set->LinkToTexture(0, LinkInfo);
             }
 
             LinkInfo.BindingStart = 7;
-            LinkInfo.ResourceHandle.TextureHandle = IrridianceTexture;
+            LinkInfo.ResourceHandle.TextureHandle = TexturesArray[IrridianceTexture];
             Set->LinkToTexture(0, LinkInfo);
 
             LinkInfo.BindingStart = 9;
-            LinkInfo.ResourceHandle.TextureHandle = BRDFLutTexture;
+            LinkInfo.ResourceHandle.TextureHandle = TexturesArray[BRDFLutTexture];
             Set->LinkToTexture(0, LinkInfo);
 
             LinkInfo.TextureSampler = LODSamplerHandle;
             LinkInfo.BindingStart = 8;
-            LinkInfo.ResourceHandle.TextureHandle = PrefilterEnvMapTexture;
-            Set->LinkToTexture(0, LinkInfo);
+            LinkInfo.ResourceHandle.TextureHandle = TexturesArray[PrefilterEnvMapTexture];
+            Set->LinkToTexture(0, LinkInfo);*/
 
             StaticMesh->RenderAssetData.IndexBuffer = SphereIndexBuffer;
             StaticMesh->RenderAssetData.PositionBuffer = SphereBuffer;
@@ -2495,41 +2528,11 @@ void Renderer::CreateHighDynamicImagePipeline(const char* inFilePath)
     {
         if (HDRPipeline == nullptr)
         {
-            {
-                FPipelineLayoutConfig Config = { };
-                FPipelineBindingDescriptor Desc = { };
-                FPipelineBindingSlot Slot = { };
-
-                Slot.Index = 0;
-                Slot.SetIndex = 0;
-
-                // UNIFORM Buffer for Local Constants 
-                Desc.BindingSlot = Slot;
-                Desc.ResourceType = EResourceType::Buffer;
-                Desc.BindFlags |= FResourceBindFlags::UniformBuffer;
-                Desc.NumResources = 1;
-                Desc.StageFlags = FShaderStageFlags::FragmentStage | FShaderStageFlags::VertexStage;
-
-                Config.Bindings.push_back(Desc);
-
-                // cubemap Texture 
-                Desc.BindingSlot.Index = 1;
-                Desc.NumResources = 1;
-                Desc.ResourceType = EResourceType::Texture;
-                Desc.BindFlags = 0;
-                Desc.BindFlags |= FResourceBindFlags::Sampled;
-                Desc.StageFlags = 0;
-                Desc.StageFlags |= FShaderStageFlags::FragmentStage;
-                Config.Bindings.push_back(Desc);
-
-                HDRPipelineLayout = RenderInterface.Get()->CreatePipelineLayout(Config);
-            }
-
             FGraphicsPipelineConfig GPConfig;
             {
                 // Create a generic vertex shader as it is mandatory to have a vertex shader 
                 FShaderConfig VSConfig = { };
-                VSConfig.CompileFlags |= FShaderCompileFlags::GLSL | FShaderCompileFlags::InvertY;
+                VSConfig.Flags |= FShaderFlags::GLSL | FShaderFlags::InvertY | FShaderFlags::OutputBinary;
                 VSConfig.EntryPoint = "main";
                 VSConfig.SourceCode = MakePathToResource("Skybox/hdr_khronos.vert", 's');
                 VSConfig.SourceType = EShaderSourceType::Filepath;
@@ -2555,14 +2558,16 @@ void Renderer::CreateHighDynamicImagePipeline(const char* inFilePath)
 
                 // Create a fragment shader as well
                 FShaderConfig FragmentSConfig = { };
-                FragmentSConfig.CompileFlags |= FShaderCompileFlags::GLSL;
+                FragmentSConfig.Flags |= FShaderFlags::GLSL | FShaderFlags::OutputBinary;
                 FragmentSConfig.EntryPoint = "main";
                 FragmentSConfig.SourceCode = MakePathToResource("Skybox/hdr_khronos.frag", 's');
-                FragmentSConfig.SourceType = EShaderSourceType::Filename;
+                FragmentSConfig.SourceType = EShaderSourceType::Filepath;
                 FragmentSConfig.Type = EShaderType::Fragment;
 
                 HDRFragmentShader = LoadShader(FragmentSConfig);
             }
+
+            HDRPipelineLayout = CreatePipelineLayoutFromShaders(HDRVertexShader, HDRFragmentShader);
 
             GPConfig.RenderPassPtr = RenderPass;
             GPConfig.PipelineLayoutPtr = HDRPipelineLayout;
@@ -2636,11 +2641,11 @@ void Renderer::CreateHighDynamicImagePipeline(const char* inFilePath)
 
         //"../Assets/Textures/Skybox.hdr"
         Buffer* TextureBuffer = nullptr;
-        Texture* HDRTex = CreateTexture2D(inFilePath, TextureBuffer);
+        TextureHandle HDRTex = CreateTexture2D(inFilePath, TextureBuffer);
 
         FDescriptorSetsLinkInfo BufferLinkInfo = { };
         BufferLinkInfo.DescriptorCount = 1;
-        BufferLinkInfo.ResourceHandle.TextureHandle = HDRTex;
+        BufferLinkInfo.ResourceHandle.TextureHandle = TexturesArray[HDRTex];
         BufferLinkInfo.BindingStart = 1;
         BufferLinkInfo.ArrayElementStart = 0;
         BufferLinkInfo.TextureSampler = SamplerHandle;
@@ -3800,6 +3805,14 @@ void Renderer::CreateBrdfIntegration(const char* inCubeMapName, float inViewport
             delete FrameBufferTexture;
         }
     }
+}
+
+PipelineLayout* Renderer::CreatePipelineLayoutFromShaders(Shader* inVertexShader, Shader* inFragmentShader)
+{
+    static Shader* Shaders[2];
+    Shaders[0] = inVertexShader;
+    Shaders[1] = inFragmentShader;
+    return RenderInterface.Get()->CreatePipelineLayoutFromShaders((const Shader**)Shaders, 2);
 }
 
 void Renderer::BeginFrame()

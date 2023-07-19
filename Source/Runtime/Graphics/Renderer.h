@@ -11,6 +11,10 @@
 #include <Core/Events/MouseEvents.h>
 #include <Core/Events/KeyEvent.h>
 
+#include <Containers/Map.h>
+
+typedef uint32 TextureHandle;
+
 struct FRendererConfig
 {
     ERenderInterfaceType RenderInterfaceType;
@@ -74,15 +78,25 @@ struct VRIXIC_API alignas(16) FMaterialData
     Matrix4D ModelInv;          ////////
 
     Vector3D EmissiveFactor;    ////////
-    float    MetallicFactor;     ////////
+    float MetallicFactor;     ////////
 
-    float    RoughnessFactor;    ////////
-    float    OcclusionFactor;    ////////
-    float    AlphaMask;
-    float    AlphaMaskCutoff;
+    float RoughnessFactor;    ////////
+    float OcclusionFactor;    ////////
+    float AlphaMask;
+    float AlphaMaskCutoff;
 
-    uint32   Flags;              ////////
-    uint32   Padding[3];
+    uint32 AlbedoIndex;
+    uint32 RoughnessIndex;
+    uint32 NormalIndex;
+    uint32 OcclusionIndex;
+
+    uint32 EmissiveIndex;
+    uint32 BRDFLutIndex;
+    uint32 IrradianceIndex;
+    uint32 PrefilterMapIndex;
+
+    uint32 Flags;              ////////
+    uint32 Padding[3];
 };
 
 struct VRIXIC_API FMeshDraw
@@ -293,11 +307,11 @@ public:
     * @param outTextureBuffer the buffer that was created to copy data from and upload to image on gpu
     * @returns Texture* the texture that was created from string
     */
-    Texture* CreateTexture2D(const std::string& inTexturePath, Buffer*& outTextureBuffer, EPixelFormat inFormat = EPixelFormat::RGBA8UNorm);
-    Texture* CreateTexture2DKtx(const std::string& inTexturePath, Buffer*& outTextureBuffer);
+    TextureHandle CreateTexture2D(const std::string& inTexturePath, Buffer*& outTextureBuffer, EPixelFormat inFormat = EPixelFormat::RGBA8UNorm);
+    TextureHandle CreateTexture2DKtx(const std::string& inTexturePath, Buffer*& outTextureBuffer);
 
-    Texture* CreateTextureCubemap(const std::string& inTexturePath, Buffer*& outTextureBuffer, EPixelFormat inFormat = EPixelFormat::RGBA8UNorm);
-    Texture* CreateTextureCubemapKtx(const std::string& inTexturePath, Buffer*& outTextureBuffer);
+    TextureHandle CreateTextureCubemap(const std::string& inTexturePath, Buffer*& outTextureBuffer, EPixelFormat inFormat = EPixelFormat::RGBA8UNorm);
+    TextureHandle CreateTextureCubemapKtx(const std::string& inTexturePath, Buffer*& outTextureBuffer);
 
     /**
     * Loads a shader to be used by pipeline
@@ -346,6 +360,13 @@ public:
 
     void CreateBrdfIntegration(class CSkybox* inSkyboxAsset, float inViewportSize);
     void CreateBrdfIntegration(const char* inCubeMapName, float inViewportSize);
+
+    PipelineLayout* CreatePipelineLayoutFromShaders(Shader* inVertexShader, Shader* inFragmentShader);
+
+    Texture* GetTextureResource(const TextureHandle inHandle)
+    {
+        return TexturesArray[inHandle];
+    }
 
     static std::string MakePathToResource(const std::string& inResourceName, char inResourceType);
 
@@ -401,14 +422,16 @@ private:
     Sampler* BRDFSamplerHandle;
     Sampler* LODSamplerHandle;
     Buffer* CP2077BufferHandle;
-    Texture* CP2077TextureHandle;
+    TextureHandle CP2077TextureHandle;
 
     Buffer* VELogoBufferHandle;
-    Texture* VELogoTextureHandle;
+    TextureHandle VELogoTextureHandle;
 
     std::vector<Buffer*> TextureBuffers;
     std::vector<Texture*> TexturesArray;
-    std::vector<Texture*> Textures;
+    //std::vector<Texture*> Textures;
+    TMap<std::string, TextureHandle> TextureMap;
+
     std::vector<Sampler*> Samplers;
     std::vector<IDescriptorSets*> DescriptorSets;
     std::vector<Buffer*> Buffers;
@@ -441,10 +464,11 @@ private:
     IDescriptorSets* HDRDescSet;
 
     IPipeline* IrridiancePipeline;
+    PipelineLayout* IrradiancePipelineLayout;
     Shader* IrridianceVertexShader;
     Shader* IrridianceFragmentShader;
     IDescriptorSets* IrridianceDescSet;
-    Texture* IrridianceTexture;
+    TextureHandle IrridianceTexture;
 
     Buffer* SkyboxRefractBuffer;
 
@@ -460,8 +484,8 @@ private:
     Shader* BRDFIntegrationFragmentShader;
     IDescriptorSets* BRDFIntegrationDescSet;
 
-    Texture* BRDFLutTexture;
-    Texture* PrefilterEnvMapTexture;
+    TextureHandle BRDFLutTexture;
+    TextureHandle PrefilterEnvMapTexture;
 
     // Position | Normals -> Data stored 
     Buffer* SphereBuffer;
@@ -516,6 +540,13 @@ private:
 
     int32 SelectedStaticMesh = -1;
     int32 SelectedMaterial = -1;
+
+    // Bindless Texturing
+    static const uint32 BINDLESS_TEXTURE_BINDING = 10;
+    static const uint32 MAX_BINDLESS_TEXTURES = 1024;
+    static const uint32 INVALID_TEXTURE_INDEX = -1;
+
+    IDescriptorSets* BindlessDescriptorSet;
 };
 
 /**
@@ -532,44 +563,13 @@ public:
 
         bIsCubemapDirty = false;
 
-        // Create Pipeline Layout
-        {
-            FPipelineLayoutConfig Config = { };
-            FPipelineBindingDescriptor Desc = { };
-            FPipelineBindingSlot Slot = { };
-
-            Slot.Index = 0;
-            Slot.SetIndex = 0;
-
-            // UNIFORM Buffer for Local Constants 
-            Desc.BindingSlot = Slot;
-            Desc.ResourceType = EResourceType::Buffer;
-            Desc.BindFlags |= FResourceBindFlags::UniformBuffer;
-            Desc.NumResources = 1;
-            Desc.StageFlags = FShaderStageFlags::VertexStage;
-
-            Config.Bindings.push_back(Desc);
-
-            // cubemap Texture 
-            Desc.BindingSlot.Index = 1;
-            Desc.NumResources = 1;
-            Desc.ResourceType = EResourceType::Texture;
-            Desc.BindFlags = 0;
-            Desc.BindFlags |= FResourceBindFlags::Sampled;
-            Desc.StageFlags = 0;
-            Desc.StageFlags |= FShaderStageFlags::FragmentStage;
-            Config.Bindings.push_back(Desc);
-
-            PipelineLayoutHandle = Renderer::Get().GetRenderInterface().Get()->CreatePipelineLayout(Config);
-        }
-
         // Create Pipeline
         {
             FGraphicsPipelineConfig GPConfig;
             {
                 // Create a generic vertex shader as it is mandatory to have a vertex shader 
                 FShaderConfig VSConfig = { };
-                VSConfig.CompileFlags |= FShaderCompileFlags::GLSL;
+                VSConfig.Flags |= FShaderFlags::GLSL;
                 VSConfig.EntryPoint = "main";
                 VSConfig.SourceCode = Renderer::Get().MakePathToResource("Skybox/Skybox.vert", 's');
                 VSConfig.SourceType = EShaderSourceType::Filepath;
@@ -595,7 +595,7 @@ public:
 
                 // Create a fragment shader as well
                 FShaderConfig FragmentSConfig = { };
-                FragmentSConfig.CompileFlags |= FShaderCompileFlags::GLSL;
+                FragmentSConfig.Flags |= FShaderFlags::GLSL;
                 FragmentSConfig.EntryPoint = "main";
                 FragmentSConfig.SourceCode = Renderer::Get().MakePathToResource("Skybox/Skybox.frag", 's');
                 FragmentSConfig.SourceType = EShaderSourceType::Filepath;
@@ -603,6 +603,8 @@ public:
 
                 FragmentShader = Renderer::Get().LoadShader(FragmentSConfig);
             }
+
+            PipelineLayoutHandle = Renderer::Get().CreatePipelineLayoutFromShaders(VertexShader, FragmentShader);;
 
             GPConfig.RenderPassPtr = RenderPass;
             GPConfig.PipelineLayoutPtr = PipelineLayoutHandle;
@@ -651,7 +653,7 @@ public:
         {
             Name = inCubemapFilePath;
             CubemapTexture = Renderer::Get().CreateTextureCubemap(inCubemapFilePath.c_str(), CubemapTextureBuffer);
-            
+
             FSamplerConfig SamplerConfig = { };
             SamplerConfig.SetDefault();
 
@@ -681,7 +683,7 @@ public:
 
             LinkInfo.BindingStart = 1;
             LinkInfo.TextureSampler = CubemapSampler;
-            LinkInfo.ResourceHandle.TextureHandle = CubemapTexture;
+            LinkInfo.ResourceHandle.TextureHandle = Renderer::Get().GetTextureResource(CubemapTexture);
 
             DescriptorSet->LinkToTexture(0, LinkInfo);
         }
@@ -710,7 +712,7 @@ public:
 
             LinkInfo.BindingStart = 1;
             LinkInfo.TextureSampler = CubemapSampler;
-            LinkInfo.ResourceHandle.TextureHandle = CubemapTexture;
+            LinkInfo.ResourceHandle.TextureHandle = Renderer::Get().GetTextureResource(CubemapTexture);
 
             DescriptorSet->LinkToTexture(0, LinkInfo);
         }
@@ -746,7 +748,7 @@ public:
 public:
     Texture* GetCubemapTexture() const
     {
-        return CubemapTexture;
+        return Renderer::Get().GetTextureResource(CubemapTexture);
     }
 
     const std::string& GetName() const
@@ -769,7 +771,7 @@ private:
 
     Buffer* CubemapTextureBuffer;
     Sampler* CubemapSampler;
-    Texture* CubemapTexture;
+    TextureHandle CubemapTexture;
 
     std::string Name;
 
