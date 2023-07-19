@@ -27,7 +27,7 @@ void ResourceManager::Shutdown()
 {
 }
 
-TextureHandle& ResourceManager::LoadTexture(const std::string& inTexturePath)
+TextureResourceHandle& ResourceManager::LoadTexture(const std::string& inTexturePath)
 {
     if (TexturesMap.find(inTexturePath) != TexturesMap.end())
     {
@@ -36,7 +36,7 @@ TextureHandle& ResourceManager::LoadTexture(const std::string& inTexturePath)
 
     VE_CORE_LOG_INFO(VE_TEXT("[ResourceManager]: Loading Texture {0} "), inTexturePath);
 
-    TextureHandle Handle = { };
+    TextureResourceHandle Handle = { };
 
     // Load the texture 
     uint8* TextureMemory = stbi_load(inTexturePath.c_str(), &Handle.Width, &Handle.Height, &Handle.BitsPerPixel, 4);

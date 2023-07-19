@@ -12,7 +12,7 @@
 #include <string>
 #include <unordered_map>
 
-struct VRIXIC_API TextureHandle
+struct VRIXIC_API TextureResourceHandle
 {
     friend class ResourceManager;
 public:
@@ -24,7 +24,7 @@ public:
     uint64 SizeInBytes;
 
 public:
-    TextureHandle() : Width(-1), Height(-1), BitsPerPixel(-1), SizeInBytes(0), MemoryIndex(-1) { }
+    TextureResourceHandle() : Width(-1), Height(-1), BitsPerPixel(-1), SizeInBytes(0), MemoryIndex(-1) { }
 
     uint8* GetMemoryHandle() const
     {
@@ -65,13 +65,13 @@ public:
     * @param inTexturePath the path of the texture to load
     * @returns TextureHandle the handle to the texture allocated to memory 
     */
-    TextureHandle& LoadTexture(const std::string& inTexturePath);
+    TextureResourceHandle& LoadTexture(const std::string& inTexturePath);
 
     //void FreeTexture(TextureHandle);
 
 private:
     /** A hash_map that contains all textures */
-    std::unordered_map<std::string, TextureHandle> TexturesMap;
+    std::unordered_map<std::string, TextureResourceHandle> TexturesMap;
 
     /**
     * A view into aligned memory.. For specific uses..
