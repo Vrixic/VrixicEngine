@@ -23,4 +23,7 @@ public:
 
 protected:
     EShaderType ShaderType;
+
+    /** The path to the shader if available */
+    std::string Path;
 };

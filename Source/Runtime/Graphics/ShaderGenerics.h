@@ -17,7 +17,8 @@
 */
 enum class EShaderSourceType
 {
-    String,         // It is a string containing the shader source code
+    String,         // It is a string containing the shader source code, human readable
+    CompiledBinary, // The source is compiled already into binary (SPIR-V)
     Filename,       // it is a file name 
     Filepath,       // it is a file path to the shader 
 };
@@ -81,12 +82,13 @@ struct VRIXIC_API FShaderStageFlags
 /**
 * Flags that define how to compile a shader
 */
-struct VRIXIC_API FShaderCompileFlags
+struct VRIXIC_API FShaderFlags
 {
 public:
 #define BIT(x) (1 << x)
     enum
     {
+        /** Compilation Flags */
         /**
         * vulkan specific flag that just inverts vulkans NDCs y coord (Only for HLSL shaders )
         * for glsl shaders you have to use this viewport trick:
@@ -96,6 +98,11 @@ public:
         InvertY = BIT(0),
 
         GLSL = BIT(1), // Tells the compiler if the shader is written in glsl, if this bit is off, then its hlsl
+
+        /** Creation Flags */
+
+        /** Tells the shader factory to out put a compiled binary for the shader that will be compiled */
+        OutputBinary = BIT(8),
     };
 };
 
@@ -128,13 +135,13 @@ public:
     std::string EntryPoint;
 
     /** Shader compilation flags */
-    uint32 CompileFlags;
+    uint32 Flags;
 
     /** All of the vertex shader bindings */
     std::vector<FVertexInputDescription> VertexBindings;
 
 public:
     FShaderConfig()
-        : Type(EShaderType::Undefined), SourceType(EShaderSourceType::String), CompileFlags(0u) { }
+        : Type(EShaderType::Undefined), SourceType(EShaderSourceType::String), Flags(0u) { }
 };
 

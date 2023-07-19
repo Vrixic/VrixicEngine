@@ -8,6 +8,10 @@
 #include "Runtime/Memory/ResourceManager.h"
 #include "VulkanDevice.h"
 
+//#include <External/glslang/Include/glslang/Include/glslang_c_shader_types.h>
+#include <External/glslang/Include/glslang/Public/ShaderLang.h>
+#include <External/glslang/Include/glslang/SPIRV/spirv.hpp>
+
 struct FVertexInputDescription;
 
 /**
@@ -23,7 +27,7 @@ public:
     ~VulkanShaderPool();
 
 private:
-    VkShaderModule CreateShaderModule(const uint32* inCompiledShaderCode, uint32 inCodeSize);
+    VkShaderModule CreateShaderModule(const uint8* inCompiledShaderCode, uint64 inCodeSizeInBytes);
 
 public:
     VkShaderModule GetShaderModule(uint32 inShaderKey) const
@@ -61,6 +65,14 @@ public:
 
     void CreateVertexInputStateCreateInfo(VkPipelineVertexInputStateCreateInfo& inInputStateCreateInfo) const;
 
+    /* ------------------------------------------------------------------------------- */
+    /* -------------        Shader Parsing Helper Functions        ------------------- */
+    /* ------------------------------------------------------------------------------- */
+
+    void ParseSpirvCodeIntoPipelineLayoutConfig(FPipelineLayoutConfig& outLayoutConfig) const;
+
+    uint32 ParseSpvExecutionModel(spv::ExecutionModel inModel) const;
+
 public:
     inline std::vector<VkVertexInputAttributeDescription>& GetVertexInputAttributes()
     {
@@ -82,6 +94,16 @@ public:
         return ShaderPool->GetShaderModule(ShaderKey);
     }
 
+    inline const uint8* GetCompiledShaderBinary() const
+    {
+        return CompiledShaderBinary;
+    }
+
+    inline const uint32 GetCompiledShaderBinarySize() const
+    {
+        return CompiledShaderBinarySize;
+    }
+
 protected:
     VulkanDevice* Device;
 
@@ -91,8 +113,45 @@ protected:
     /** The shader pool that is used to create this shader */
     VulkanShaderPool* ShaderPool;
 
+    uint8* CompiledShaderBinary;
+    uint64 CompiledShaderBinarySize;
+
     std::vector<VkVertexInputAttributeDescription> InputAttributes;
     std::vector<VkVertexInputBindingDescription> InputBindings;
+
+private:
+    struct VRIXIC_API FMemberField
+    {
+        uint32 IdIndex;
+        uint32 Offset;
+
+        std::string Name;
+    };
+
+    struct VRIXIC_API FSpirvIdData
+    {
+        spv::Op SpvOp;
+        uint32 Set;
+        uint32 Binding;
+
+        // Integers / Floats
+        uint8 Width;
+        uint8 Sign;
+
+        // Arrays, Vectors, and Matrices
+        uint32 TypeIndex;
+        uint32 Count;
+
+        // Variables
+        spv::StorageClass SpvStorageClass;
+
+        // Constants
+        uint32 Value;
+
+        // Structures
+        std::string Name;
+        std::vector<FMemberField> Members;
+    };
 };
 
 /**
@@ -111,7 +170,6 @@ private:
 
 private:
     friend class VulkanShaderFactory;
-
 };
 
 /* Alias for shader variables, makes it easier to create these types of shaders, less verbose */
@@ -137,14 +195,33 @@ public:
 public:
     VulkanShader* CreateShader(VulkanShaderPool* inShaderPool, const FShaderConfig& inConfig) const;
 
-    VulkanVertexShader* CreateVertexShader(VulkanShaderPool* inShaderPool, const FShaderConfig& inConfig) const;
-    VulkanFragmentShader* CreateFragmentShader(VulkanShaderPool* inShaderPool, const FShaderConfig& inConfig) const;
+    VulkanVertexShader* CreateVertexShader(VulkanShaderPool* inShaderPool, FShaderConfig& inConfig) const;
+    VulkanFragmentShader* CreateFragmentShader(VulkanShaderPool* inShaderPool, FShaderConfig& inConfig) const;
 
 private:
-    void CompileSourceCode(const FShaderConfig& inConfig, const uint32*& outCode, uint32* outCodeSize) const;
+
+    /* ------------------------------------------------------------------------------- */
+    /* -------------     Shader File Loading Helper Functions      ------------------- */
+    /* ------------------------------------------------------------------------------- */
+
+    void LoadShaderSourceFromFilePath(const FShaderConfig& inConfig, std::string& outSource) const;
+
+    template<EShaderType T>
+    void CreateShaderCompiledBinaryFile(const TVulkanShader<T>* inVulkanShader) const;
+
+    /* ------------------------------------------------------------------------------- */
+    /* -------------      Shader Compilation Helper Functions      ------------------- */
+    /* ------------------------------------------------------------------------------- */
+
+    void CompileSourceCode(const FShaderConfig& inConfig, uint8*& outCode, uint64* outCodeSize) const;
+
+    //glslang_stage_t ConvertShaderType(EShaderType inShaderType) const;
+    EShLanguage ConvertShaderType(EShaderType inShaderType) const;
 
 private:
     VulkanDevice* Device;
+
+    static TBuiltInResource BuiltInResources;
 
     /* Handle to the resource manager that will be used to create all shaders within this factory */
     //ResourceManager* ResourceManagerHandle;

@@ -84,11 +84,6 @@ public:
     static VkDescriptorType ConvertBindFlagsToVkDescriptorType(EResourceType inResourceType, uint32 inBindFlags);
 
     /**
-    * Converts a resource type to vulkan specific descriptor type
-    */
-    static VkDescriptorType ConvertPipelineBDToVk(const FPipelineBindingDescriptor inDesc);
-
-    /**
     * Converts a shader flags to vulkan specific shader flags
     */
     static VkShaderStageFlags ConvertShaderFlagsToVk(uint32 inFlags);

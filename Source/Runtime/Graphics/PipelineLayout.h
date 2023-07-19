@@ -9,7 +9,16 @@
 
 #include <vector>
 
+/**-------------------- Constants -----------------------*/
+
+static const uint8 MAX_BINDINGS_PER_DESCRIPTOR = 16u;
+static const uint8 MAX_DESCRIPTORS_PER_LAYOUT = 8u;
+
+/**-------------------- Constants -----------------------*/
+
 /**
+*  // DEPRECATED \\
+* 
 * The binding slot or binding point of a resource or descriptor
 */
 struct VRIXIC_API FPipelineBindingSlot
@@ -31,14 +40,11 @@ public:
 /**
 * Defines a layout for a single binding of a resource that can get bound to a pipeline layout
 */
-struct VRIXIC_API FPipelineBindingDescriptor
+struct VRIXIC_API FPipelineBinding
 {
 public:
     /** Resource type of this binding: buffer, texture, etc... */
     EResourceType ResourceType;
-
-    /** amount of resources getting bound ex: 5 uniform buffers */
-    uint32 NumResources;
 
     /** Specifies an indepth overriew of where the resource type gets bound to, for ex: Vertex Buffer */
     uint32 BindFlags;
@@ -46,14 +52,70 @@ public:
     /** Specifies the shader stages that this binding will get bound to */
     uint32 StageFlags;
 
+    /** amount of resources getting bound ex: 5 uniform buffers */
+    uint16 NumResources;
+
     /** Specifies the binding slot / binding point for this descriptor */
-    FPipelineBindingSlot BindingSlot;
+    uint16 BindingIndex;
+
+public:
+    FPipelineBinding()
+        : ResourceType(EResourceType::Undefined),
+          BindFlags(0), StageFlags(0), NumResources(0), BindingIndex(0) { }
+
+    FPipelineBinding(const FPipelineBinding&) = default;
+};
+
+/**
+* Defines a set of bindings for a binding point (Set)
+*/
+struct VRIXIC_API FPipelineBindingDescriptor
+{
+public:
+    /** Bindings describing this descriptor */
+    FPipelineBinding Bindings[MAX_BINDINGS_PER_DESCRIPTOR];
+
+    /** Total Number of bindings */
+    uint16 NumBindings;
+
+    /** The binding point these bindings will be bound to (Aka. in vulkan. the descriptor set index) */
+    uint16 SetIndex;
+
+    /** Tells the internal renderer to use bindless descripting to create this pipeline binding descriptor */
+    //bool bIsBindlessDescriptor;
 
 public:
     FPipelineBindingDescriptor()
-        : ResourceType(EResourceType::Undefined), NumResources(0), BindFlags(0), StageFlags(0) { }
+        : NumBindings(0), SetIndex(0)/*, bIsBindlessDescriptor(false)*/ { }
 
     FPipelineBindingDescriptor(const FPipelineBindingDescriptor&) = default;
+
+    /**
+    * Adds the specified binding to this descriptors set of bindings 
+    * 
+    * @param inPipelineBinding the pipeline binding to add 
+    */
+    void AddBinding(const FPipelineBinding& inPipelineBinding)
+    {
+        Bindings[NumBindings++] = inPipelineBinding;
+    }
+
+    /**
+    * Adds the specified binding to the binding index specified
+    * @note: this is an unsafe helper function that can cause pipeline bindings fragments
+    *   if not used correctly, ensure you will be filling in the fragmented space caused by
+    *   adding bindings non-linearly 
+    *
+    * @param inPipelineBinding the pipeline binding to add
+    * @param inBindingIndex the index 'inPipelineBinding' should be set to
+    */
+    void AddBindingAt(const FPipelineBinding& inPipelineBinding, uint32 inBindingIndex)
+    {
+        Bindings[inBindingIndex] = inPipelineBinding;
+        inBindingIndex = inBindingIndex + 1;
+
+        NumBindings = inBindingIndex > NumBindings ? inBindingIndex : NumBindings;
+    }
 };
 
 /**
@@ -62,8 +124,46 @@ public:
 struct VRIXIC_API FPipelineLayoutConfig
 {
 public:
+    /** Consists of all sets with their bindings */
+    FPipelineBindingDescriptor BindingDescriptors[MAX_DESCRIPTORS_PER_LAYOUT];
+
     /** Consists of all the bindings */
-    std::vector<FPipelineBindingDescriptor> Bindings;
+    //std::vector<FPipelineBindingDescriptor> Bindings;
+
+    /** 
+    * Number of sets for this pipeline layout in use 
+    * @note: cannot have 2 sets whos indexes are adajacent to each other: 
+        Ex: Set One Index (0) and Second Set Index (5): will not work 
+        Ex: Set One Index (0) and Second Set Index (1): will work 
+    */
+    uint32 NumSets;
+
+public:
+    FPipelineLayoutConfig() : NumSets(0) { }
+
+    /**
+    * Adds a binding descriptor to the set index specified
+    * @note: can cause set fragments 
+    * 
+    * @param inBindingDescriptor the pipeline binding descriptor to add
+    * @param inSetIndex the index to add the descriptor to 
+    */
+    void AddBindingDescriptorAt(const FPipelineBindingDescriptor& inBindingDescriptor, uint32 inSetIndex)
+    {
+        //VE_ASSERT(inSetIndex < MAX_DESCRIPTORS_PER_LAYOUT, "[FPipelineLayoutConfig]: Cannot add pipeline bindings whos SetIndex is greater than the max sets per layout supported...");
+
+        BindingDescriptors[inSetIndex] = inBindingDescriptor;
+        inSetIndex++;
+        NumSets = inSetIndex > NumSets ? inSetIndex : NumSets;
+    }
+
+    /**
+    * @returns the pipeline binding descriptor at the specified index 
+    */
+    FPipelineBindingDescriptor& GetBindingDescriptorAt(uint32 inSetIndex)
+    {
+        return BindingDescriptors[inSetIndex];
+    }
 };
 
 /**
@@ -75,28 +175,33 @@ public:
     /**
     * @remarks creates a pipeline layout with the descriptor passed in
     */
-    PipelineLayout(const FPipelineLayoutConfig& inPipelineLayoutDescriptor)
-        : Bindings (inPipelineLayoutDescriptor.Bindings) { }
+    PipelineLayout(/*const FPipelineLayoutConfig& inPipelineLayoutDescriptor*/);
 
 public:
     /**
     * @returns uint32 number of bindings attached to this pipeline layout
     */
-    inline virtual uint32 GetNumBinding() const
+    /*inline virtual uint32 GetNumBinding() const
     {
         return (uint32)Bindings.size();
-    }
+    }*/
 
     /**
     * @returns const std::vector<PipelineBindingDescriptor>& the binding that are associated with this layout
     */
-    inline const std::vector<FPipelineBindingDescriptor>& GetBindings() const
+    /*inline const std::vector<FPipelineBindingDescriptor>& GetBindings() const
     {
         return Bindings;
-    }
+    }*/
 
 private:
+    friend class VulkanRenderInterface;
+
+    static uint8 BINDLESS_TEXTURE_DESCRIPTOR_INDEX;
+    static uint8 BINDLESS_TEXTURE_BINDING_INDEX;
+    static uint16 MAX_NUM_BINDLESS_RESOURCES;
+
     /** All of the bindings associated with this Pipeline Layout */
-    std::vector<FPipelineBindingDescriptor> Bindings;
+    /*std::vector<FPipelineBindingDescriptor> Bindings;*/
 
 };

@@ -173,6 +173,28 @@ void VulkanDevice::CreateDevice(VulkanSurface* surface)
         DeviceCreateInfo.ppEnabledExtensionNames = DeviceExtensions.data();
     }
 
+    // Check for bindless texturing and texture indexing support
+    VkPhysicalDeviceDescriptorIndexingFeatures IndexingFeatureSupport{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES, nullptr };
+    VkPhysicalDeviceFeatures2 PhysicalDeviceFeaturesTemp2 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &IndexingFeatureSupport };
+    vkGetPhysicalDeviceFeatures2(PhysicalDeviceHandle, &PhysicalDeviceFeaturesTemp2);
+    bSupportsBindlessTexturing = IndexingFeatureSupport.descriptorBindingPartiallyBound && IndexingFeatureSupport.runtimeDescriptorArray;
+
+    VkPhysicalDeviceFeatures2 PhysicalDeviceFeatures2 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
+    vkGetPhysicalDeviceFeatures2(PhysicalDeviceHandle, &PhysicalDeviceFeatures2);
+
+    DeviceCreateInfo.pNext = &PhysicalDeviceFeatures2;
+    if (bSupportsBindlessTexturing)
+    {
+        VE_CORE_LOG_INFO("[VulkanDevice]: Users graphics card supports bindless texturing....");
+        DeviceCreateInfo.pEnabledFeatures = nullptr;
+        PhysicalDeviceFeatures2.features = PhysicalDeviceFeatures;
+        PhysicalDeviceFeatures2.pNext = &IndexingFeatureSupport;
+    }
+    else
+    {
+        VE_ASSERT(false, VE_TEXT("[VulkanDevice]: Users graphics card does not supports bindless texturing...."))
+    }
+
     VK_CHECK_RESULT(vkCreateDevice(PhysicalDeviceHandle, &DeviceCreateInfo, nullptr, &LogicalDeviceHandle), "[VulkanDevice]: Failed to create a logical device!");
 
     // Iterate over each queue to learn whether it supports presenting:
@@ -337,13 +359,13 @@ void VulkanDevice::CopyBufferToTexture(const HCopyBufferTextureInfo& inCopyBuffe
             BufferImageCopies[CurrentBufferCopyIndex].imageExtent.width = inCopyBufferToTexture.Extent.width >> mipLevel;
             BufferImageCopies[CurrentBufferCopyIndex].imageExtent.height = inCopyBufferToTexture.Extent.height >> mipLevel;
             BufferImageCopies[CurrentBufferCopyIndex].imageExtent.depth = inCopyBufferToTexture.Extent.depth;
-                              
+
             BufferImageCopies[CurrentBufferCopyIndex].bufferOffset = OffsetImage + BufferOffset; // (mipLevel * BufferImageCopies[i].imageExtent.width)
             BufferImageCopies[CurrentBufferCopyIndex].bufferRowLength = 0;
             BufferImageCopies[CurrentBufferCopyIndex].bufferImageHeight = 0;
-                              
+
             BufferImageCopies[CurrentBufferCopyIndex].imageSubresource.aspectMask = ImageAspectFlags;
-                              
+
             BufferImageCopies[CurrentBufferCopyIndex].imageSubresource.mipLevel = mipLevel;
             BufferImageCopies[CurrentBufferCopyIndex].imageSubresource.baseArrayLayer = faceIndex;
             BufferImageCopies[CurrentBufferCopyIndex].imageSubresource.layerCount = 1;
@@ -382,7 +404,7 @@ void VulkanDevice::CopyBufferToTextureKtx(const HCopyBufferTextureInfo& inCopyBu
             uint64 BufferOffset = 0;
             VE_FUNC_ASSERT(ktxTexture_GetImageOffset(KtxTextureHandle, mipLevel, 0, faceIndex, &BufferOffset), KTX_SUCCESS, VE_TEXT("KTX Texture: Failed to retreive image offset.."));
 
-            BufferImageCopies[CurrentBufferCopyIndex].bufferOffset =BufferOffset;
+            BufferImageCopies[CurrentBufferCopyIndex].bufferOffset = BufferOffset;
             BufferImageCopies[CurrentBufferCopyIndex].bufferRowLength = 0;
             BufferImageCopies[CurrentBufferCopyIndex].bufferImageHeight = 0;
 

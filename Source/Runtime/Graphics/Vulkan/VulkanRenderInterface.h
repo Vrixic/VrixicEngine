@@ -210,7 +210,16 @@ public:
     *
     * @param inPipelineLayoutConfig info used to create the render pass
     */
-    virtual PipelineLayout* CreatePipelineLayout(const FPipelineLayoutConfig& inPipelineLayoutConfig) override;
+    virtual PipelineLayout* CreatePipelineLayout(const FPipelineLayoutConfig& inPipelineLayoutConfig) const override;
+
+    /**
+    * Creates a pipeline layout from all the shaders passed in
+    * @note: the shaders being passed in should be all the shaders the pipeline layout might be using
+    *
+    * @param inShaders the shaders that will be used to create the pipeline layout
+    * @param inNumShaders the number of shaders being passed in 'inShaders'
+    */
+    virtual PipelineLayout* CreatePipelineLayoutFromShaders(const Shader** inShaders, uint8 inNumShaders) const override;
 
     /**
     * Releases/Destroys the pipeline layout passed in
@@ -323,6 +332,11 @@ public:
     * @param inDescriptorSets the descriptor set(s) to free
     */
     virtual void Free(IDescriptorSets* inDescriptorSets) override;
+
+    /**
+    * @returns bool true if the graphics card supports bindless texturing, false otherwise
+    */
+    virtual bool SupportsBindlessTexturing() const override;
 
     /* ------------------------------------------------------------------------------- */
     /* -------------                     ImGui                     ------------------- */
@@ -438,6 +452,11 @@ private:
     /** contains information about vulkan renderer */
     FRendererInfo RendererInformation;
 
+    /** Bool to check if the graphics card supports bindless texturing */
+    bool bSupportsBindlessTexturing;
+
+    //static const uint32 MAX_BINDLESS_RESOURCES = 1024;
+
     /* ---------------------------------@TODO---------------------------------------- */
     /*
     * Maybe not create the resource management inside here instead allow the client to create them and use them
@@ -456,6 +475,11 @@ private:
 
     /** Main memory heap for all vulkan allocation, (Index, Vertex, storage buffers, etc...) */
     VulkanMemoryHeap* VulkanMemoryHeapMain;
+
+    /** Used when bindless is available for texture bindings */
+    VkDescriptorSetLayout BindlessDescriptorSetLayout;
+    class VulkanDescriptorPool* BindlessDescriptorPool;
+    class VulkanDescriptorPool* GlobalDescriptorPool;
 
     /** - ImGui - **/
 

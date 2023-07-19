@@ -18,7 +18,7 @@ class IDescriptorSets;
 struct VRIXIC_API FDescriptorSetsConfig
 {
 public:
-    FDescriptorSetsConfig() : NumSets(1), PipelineLayoutPtr(nullptr) { }
+    FDescriptorSetsConfig() : NumSets(1), PipelineLayoutPtr(nullptr), bIsBindlessSet(false){ }
 
     ~FDescriptorSetsConfig() { }
 
@@ -28,6 +28,9 @@ public:
 
     /** Pointer to the pipeline layout the descriptor set will use to be created */
     PipelineLayout* PipelineLayoutPtr;
+
+    /** True if the descriptor set is a bindless set, false otherwise */
+    bool bIsBindlessSet;
 };
 
 /**
@@ -37,7 +40,7 @@ struct VRIXIC_API FDescriptorSetsBindInfo
 {
 public:
     FDescriptorSetsBindInfo() 
-        : PipelineLayoutPtr(nullptr), PipelineBindPoint(EPipelineBindPoint::Graphics), DescriptorSets(nullptr), NumSets(1) { }
+        : PipelineLayoutPtr(nullptr), PipelineBindPoint(EPipelineBindPoint::Graphics), DescriptorSets(nullptr), NumSets(1), FirstSetIndex(0) { }
 
     ~FDescriptorSetsBindInfo() { }
 
@@ -53,6 +56,9 @@ public:
 
     /** Number of descriptor sets to bind */
     uint32 NumSets;
+
+    /** Refers to the first set index to use when bindings the descriptor set Ex: glsl layout(set = 1) -> FirstSet = 1*/
+    uint32 FirstSetIndex;
 };
 
 /**

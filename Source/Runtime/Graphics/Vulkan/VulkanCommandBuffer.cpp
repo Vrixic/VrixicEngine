@@ -163,7 +163,7 @@ void VulkanCommandBuffer::BindDescriptorSets(const FDescriptorSetsBindInfo& inDe
         CommandBufferHandle, 
         (VkPipelineBindPoint)inDescriptorSetBindInfo.PipelineBindPoint, 
         *PipelineLayoutPtr->GetPipelineLayoutHandle(),
-        0, 
+        inDescriptorSetBindInfo.FirstSetIndex,
         inDescriptorSetBindInfo.NumSets,
         DescriptorSets.data(),
         0,

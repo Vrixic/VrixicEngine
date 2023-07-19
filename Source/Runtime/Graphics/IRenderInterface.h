@@ -202,7 +202,16 @@ public:
     *
     * @param inPipelineLayoutConfig info used to create the render pass
     */
-    virtual PipelineLayout* CreatePipelineLayout(const FPipelineLayoutConfig& inPipelineLayoutConfig) = 0;
+    virtual PipelineLayout* CreatePipelineLayout(const FPipelineLayoutConfig& inPipelineLayoutConfig) const = 0;
+
+    /**
+    * Creates a pipeline layout from all the shaders passed in 
+    * @note: the shaders being passed in should be all the shaders the pipeline layout might be using
+    * 
+    * @param inShaders the shaders that will be used to create the pipeline layout
+    * @param inNumShaders the number of shaders being passed in 'inShaders'
+    */
+    virtual PipelineLayout* CreatePipelineLayoutFromShaders(const Shader** inShaders, uint8 inNumShaders) const = 0;
 
     /**
     * Releases/Destroys the pipeline layout passed in
@@ -316,6 +325,11 @@ public:
     * @param inDescriptorSets the descriptor set(s) to free
     */
     virtual void Free(IDescriptorSets* inDescriptorSets) = 0;
+
+    /**
+    * @returns bool true if the graphics card supports bindless texturing, false otherwise
+    */
+    virtual bool SupportsBindlessTexturing() const = 0;
 
     /* ------------------------------------------------------------------------------- */
     /* -------------                     ImGui                     ------------------- */

@@ -484,11 +484,6 @@ VkDescriptorType VulkanTypeConverter::ConvertBindFlagsToVkDescriptorType(EResour
     return (VkDescriptorType)0;
 }
 
-VkDescriptorType VulkanTypeConverter::ConvertPipelineBDToVk(const FPipelineBindingDescriptor inDesc)
-{
-    return ConvertBindFlagsToVkDescriptorType(inDesc.ResourceType, inDesc.BindFlags);
-}
-
 VkShaderStageFlags VulkanTypeConverter::ConvertShaderFlagsToVk(uint32 inFlags)
 {
     VkShaderStageFlags Flags = 0;

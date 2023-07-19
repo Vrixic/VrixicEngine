@@ -33,7 +33,6 @@ VulkanRenderInterface::VulkanRenderInterface(const FVulkanRendererConfig& inVulk
         // Create Physical Device, pick the best physical device, query some renderer information
         PhysicalDevice = new VulkanPhysicalDevice();
         PhysicalDevice->PickBestPhysicalDevice(VulkanInstance);
-
         PhysicalDevice->QueryDeviceProperties(RendererInformation);
 
         // information for device creation
@@ -67,6 +66,85 @@ void VulkanRenderInterface::Initialize()
         VulkanMemoryHeapMain = new VulkanMemoryHeap(Device, 1024);
     }
 
+    // Create Descriptor Pools
+    {
+        static const uint32 MAX_GLOBAL_POOL_ELEMENTS = 128;
+        VkDescriptorPoolSize DescriptorPoolSizes[] =
+        {
+            { VK_DESCRIPTOR_TYPE_SAMPLER, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, MAX_GLOBAL_POOL_ELEMENTS}
+        };
+        uint32 ArraySize = (sizeof(DescriptorPoolSizes) / sizeof((DescriptorPoolSizes)[0]));
+        uint32 MaxSets = MAX_GLOBAL_POOL_ELEMENTS * ArraySize;
+
+        GlobalDescriptorPool = new VulkanDescriptorPool(Device, MaxSets, DescriptorPoolSizes, ArraySize);
+    }
+    {
+        BindlessDescriptorPool = nullptr;
+        if (Device->SupportsBindlessTexturing())
+        {
+            //static const uint32 MAX_BINDLESS_RESOURCES = 1024u;
+            //static const uint32 BINDLESS_TEXTURE_BINDING_NUM = 10u;
+
+            VkDescriptorPoolSize BindlessPoolSizes[] =
+            {
+                { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, PipelineLayout::MAX_NUM_BINDLESS_RESOURCES },
+                //{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, MAX_BINDLESS_RESOURCES },
+            };
+
+            uint32 ArraySize = (sizeof(BindlessPoolSizes) / sizeof((BindlessPoolSizes)[0]));
+            uint32 MaxSets = PipelineLayout::MAX_NUM_BINDLESS_RESOURCES * ArraySize;
+
+            BindlessDescriptorPool = new VulkanDescriptorPool(Device, MaxSets, BindlessPoolSizes, ArraySize);
+
+            VkDescriptorSetLayoutBinding DescriptorSetLayoutBindings[4];
+            // Actual descriptor set layout
+            VkDescriptorSetLayoutBinding& ImageSamplerBinding = DescriptorSetLayoutBindings[0];
+            ImageSamplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            ImageSamplerBinding.descriptorCount = PipelineLayout::MAX_NUM_BINDLESS_RESOURCES;
+            ImageSamplerBinding.binding = PipelineLayout::BINDLESS_TEXTURE_BINDING_INDEX;
+            ImageSamplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+            ImageSamplerBinding.pImmutableSamplers = nullptr;
+
+            //VkDescriptorSetLayoutBinding& StorageImageBinding = DescriptorSetLayoutBindings[1];
+            //StorageImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+            //StorageImageBinding.descriptorCount = MAX_BINDLESS_RESOURCES;
+            //StorageImageBinding.binding = BINDLESS_TEXTURE_BINDING_NUM + 1;
+            //StorageImageBinding.stageFlags = VK_SHADER_STAGE_ALL;
+            //StorageImageBinding.pImmutableSamplers = nullptr;
+
+            VkDescriptorSetLayoutCreateInfo DescriptorSetLayoutCreateInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+            DescriptorSetLayoutCreateInfo.bindingCount = ArraySize;
+            DescriptorSetLayoutCreateInfo.pBindings = DescriptorSetLayoutBindings;
+            DescriptorSetLayoutCreateInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT;
+
+            // TODO: reenable variable descriptor count
+            // Binding flags
+            VkDescriptorBindingFlags BindlessFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT | /*VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT |*/ VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT_EXT;
+            VkDescriptorBindingFlags BindingFlags[4];
+
+            BindingFlags[0] = BindlessFlags;
+            BindingFlags[1] = BindlessFlags;
+
+            VkDescriptorSetLayoutBindingFlagsCreateInfoEXT ExtendedInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT, nullptr };
+            ExtendedInfo.bindingCount = ArraySize;
+            ExtendedInfo.pBindingFlags = BindingFlags;
+
+            DescriptorSetLayoutCreateInfo.pNext = &ExtendedInfo;
+
+            vkCreateDescriptorSetLayout(*Device->GetDeviceHandle(), &DescriptorSetLayoutCreateInfo, nullptr, &BindlessDescriptorSetLayout);
+        }
+    }
+
     // we could also create default resources for use???....
 }
 
@@ -76,6 +154,11 @@ void VulkanRenderInterface::Shutdown()
 
     //delete GraphicsResourceManager;
     //delete MainVulkanResourceManager;
+
+    delete GlobalDescriptorPool;
+    delete BindlessDescriptorPool;
+
+    vkDestroyDescriptorSetLayout(*Device->GetDeviceHandle(), BindlessDescriptorSetLayout, nullptr);
 
     ShutdownImGui();
 
@@ -303,12 +386,36 @@ void VulkanRenderInterface::Free(IRenderPass* inRenderPass)
     delete inRenderPass;
 }
 
-PipelineLayout* VulkanRenderInterface::CreatePipelineLayout(const FPipelineLayoutConfig& inPipelineLayoutConfig)
+PipelineLayout* VulkanRenderInterface::CreatePipelineLayout(const FPipelineLayoutConfig& inPipelineLayoutConfig) const
 {
     VulkanPipelineLayout* Layout = new VulkanPipelineLayout(Device, inPipelineLayoutConfig);
+
+    // meaning we have bindless set 
+    if (inPipelineLayoutConfig.NumSets > 1)
+    {
+        Layout->GetDescriptorSetsLayoutHandle()->DescriptorSetLayoutHandles.push_back(BindlessDescriptorSetLayout);
+        Layout->Create(nullptr);
+        Layout->GetDescriptorSetsLayoutHandle()->DescriptorSetLayoutHandles.pop_back();
+
+        return Layout;
+    }
+
     Layout->Create(nullptr);
 
     return Layout;
+}
+
+PipelineLayout* VulkanRenderInterface::CreatePipelineLayoutFromShaders(const Shader** inShaders, uint8 inNumShaders) const
+{
+    FPipelineLayoutConfig LayoutConfig = { };
+
+    for (uint8 shaderIndex = 0; shaderIndex < inNumShaders; ++shaderIndex)
+    {
+        VulkanShader* VulkShader = (VulkanShader*)inShaders[shaderIndex];
+        VulkShader->ParseSpirvCodeIntoPipelineLayoutConfig(LayoutConfig);
+    }
+
+    return CreatePipelineLayout(LayoutConfig);
 }
 
 void VulkanRenderInterface::Free(PipelineLayout* inPipelineLayout)
@@ -384,19 +491,15 @@ void VulkanRenderInterface::Free(Sampler* inSampler)
 IDescriptorSets* VulkanRenderInterface::CreateDescriptorSet(FDescriptorSetsConfig& inDescriptorSetConfig)
 {
     VulkanDescriptorSets* DescriptorSet = new VulkanDescriptorSets(Device, inDescriptorSetConfig.NumSets);
-    VulkanPipelineLayout* PipelineLayoutVk = (VulkanPipelineLayout*)inDescriptorSetConfig.PipelineLayoutPtr;
 
-    // Hard code the layout id to be 0
-    VkResult Result = PipelineLayoutVk->GetDescriptorPool()->AllocateDescriptorSetsNoAssert(DescriptorSet, 0);
-    if (Result == VK_ERROR_OUT_OF_POOL_MEMORY)
+    if (inDescriptorSetConfig.bIsBindlessSet)
     {
-        PipelineLayoutVk->CreateNewDescriptorPool();
-        PipelineLayoutVk->GetDescriptorPool()->AllocateDescriptorSets(DescriptorSet, 0);
+        VE_ASSERT(BindlessDescriptorPool->AllocateDescriptorSets(DescriptorSet, &BindlessDescriptorSetLayout), VE_TEXT("[VulkanRenderInterface]: Failed to allocate a descriptor set that is bindless..."));
+        return DescriptorSet;
     }
-    else
-    {
-        VK_CHECK_RESULT(Result, VE_TEXT("[VulkanRenderInterface]: failed to allocate a descriptor set..."));
-    }
+
+    VulkanPipelineLayout* VPipelineLayout = (VulkanPipelineLayout*)inDescriptorSetConfig.PipelineLayoutPtr;
+    VE_ASSERT(GlobalDescriptorPool->AllocateDescriptorSets(DescriptorSet, VPipelineLayout->GetDescriptorSetsLayoutHandle(), 0), VE_TEXT("[VulkanRenderInterface]: Failed to allocate a descriptor set that is bindless..."));
 
     return DescriptorSet;
 }
@@ -405,6 +508,11 @@ void VulkanRenderInterface::Free(IDescriptorSets* inDescriptorSets)
 {
     // Just delete the descriptor set(s)
     delete inDescriptorSets;
+}
+
+bool VulkanRenderInterface::SupportsBindlessTexturing() const
+{
+    return Device->SupportsBindlessTexturing();
 }
 
 void VulkanRenderInterface::InitImGui(SwapChain* inMainSwapChain, Surface* inSurface)

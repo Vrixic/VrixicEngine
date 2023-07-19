@@ -198,6 +198,11 @@ public:
         return &QueueFamilyProperties;
     }
 
+    inline const bool SupportsBindlessTexturing() const
+    {
+        return bSupportsBindlessTexturing;
+    }
+
     /**
     * Get the index of a memory type that has all the requested property bits set
     *
@@ -240,6 +245,9 @@ private:
     VulkanQueue* GraphicsQueue;
     VulkanQueue* ComputeQueue;
     VulkanQueue* TransferQueue;
+
+    /** Graphics card supports bindless texturing */
+    bool bSupportsBindlessTexturing;
 };
 
 /**
