@@ -427,7 +427,6 @@ void VulkanShader::ParseSpirvCodeIntoPipelineLayoutConfig(FPipelineLayoutConfig&
         WordIndex += WordCount;
     }
 
-    //outLayoutConfig = FPipelineLayoutConfig();
     for (uint32 idIndex = 0; idIndex < IdDatas.size(); ++idIndex)
     {
         FSpirvIdData& IdData = IdDatas[idIndex];
@@ -525,10 +524,9 @@ TVulkanShader<TShaderType>::TVulkanShader(VulkanDevice* inDevice)
 
 TBuiltInResource VulkanShaderFactory::BuiltInResources;
 
-VulkanShaderFactory::VulkanShaderFactory(VulkanDevice* inDevice/*, ResourceManager* inResourceManagerHandle*/)
+VulkanShaderFactory::VulkanShaderFactory(VulkanDevice* inDevice)
 {
     Device = inDevice;
-    //ResourceManagerHandle = inResourceManagerHandle;
 
     {
         BuiltInResources.maxLights = 32;
@@ -827,86 +825,6 @@ void VulkanShaderFactory::CompileSourceCode(const FShaderConfig& inConfig, uint8
     outCode = new uint8[*outCodeSize];
     memcpy(outCode, SpirV.data(), *outCodeSize);
 
-    {
-        // Create the compilers input structure 
-        /*glslang_stage_t ShaderStage = ConvertShaderType(inConfig.Type);
-        glslang_source_t ShaderSourceLanguage = GLSLANG_SOURCE_HLSL;
-
-        if (inConfig.Flags & FShaderFlags::GLSL)
-        {
-            ShaderSourceLanguage = GLSLANG_SOURCE_GLSL;
-        }*/
-        //const glslang_input_t ShaderCreationInput = {
-        //    ShaderSourceLanguage,
-        //    ShaderStage,
-        //    GLSLANG_CLIENT_VULKAN,
-        //    GLSLANG_TARGET_VULKAN_1_1,
-        //    GLSLANG_TARGET_SPV,
-        //    GLSLANG_TARGET_SPV_1_3,
-        //    inConfig.SourceCode.data(),
-        //    100,
-        //    GLSLANG_NO_PROFILE,
-        //    false,
-        //    false,
-        //    GLSLANG_MSG_DEFAULT_BIT,
-        //    glslang_default_resource()
-        //};
-
-        //// Create the shader with teh ShaderCreationInput structure we just created  
-        //glslang_shader_t* RawShader = glslang_shader_create(&ShaderCreationInput);
-
-        //// Firstly the shader has to go through the preprocess phase by the compiler 
-        //if (!glslang_shader_preprocess(RawShader, &ShaderCreationInput))
-        //{
-        //    VE_ASSERT(false, "Failed to Compile Shader \n\n {0} \n\n {1}",
-        //        glslang_shader_get_info_log(RawShader), glslang_shader_get_info_debug_log(RawShader));
-        //    return;
-        //}
-
-        //// Next allows the compiler to parse the shader into an internal parse tree representation
-        //if (!glslang_shader_parse(RawShader, &ShaderCreationInput))
-        //{
-        //    VE_ASSERT(false, "Failed to Parse Compiled Shader \n\n {0} \n\n {1} \n\n Preprocessed Code: \n {2}",
-        //        glslang_shader_get_info_log(RawShader), glslang_shader_get_info_debug_log(RawShader),
-        //        glslang_shader_get_preprocessed_code(RawShader));
-        //    return;
-        //}
-
-        //// Next we can link the shader to a program and generate the binary code 
-        //glslang_program_t* Program = glslang_program_create();
-        //glslang_program_add_shader(Program, RawShader);
-
-        //if (!glslang_program_link(Program, GLSLANG_MSG_SPV_RULES_BIT | GLSLANG_MSG_VULKAN_RULES_BIT))
-        //{
-        //    VE_ASSERT(false, "Failed to Link Shader \n\n {0} \n\n {1}",
-        //        glslang_program_get_info_log(Program), glslang_program_get_info_debug_log(Program));
-        //    return;
-        //}
-
-        //// Next Generate SPIRV Code 
-        //glslang_program_SPIRV_generate(Program, ShaderStage);
-
-        //// Get Code Size
-        //*outCodeSize = glslang_program_SPIRV_get_size(Program);
-
-        //// Resize then get the code 
-        //outCode = new uint32[*outCodeSize];
-        //glslang_program_SPIRV_get(Program, outCode);
-
-        //{
-        //    const char* SPIRV_Messages = glslang_program_SPIRV_get_messages(Program);
-
-        //    if (SPIRV_Messages)
-        //    {
-        //        VE_CORE_LOG_WARN("[VulkanShaderFactory]: Spirv Messages: \n {0}", SPIRV_Messages);
-        //    }
-        //}
-
-        //glslang_program_delete(Program);
-        //glslang_shader_delete(RawShader);
-    }
-
-    //glslang_finalize_process();
     glslang::FinalizeProcess();
 }
 

@@ -135,26 +135,6 @@ public:
         DescriptorSetLayoutCreateInfo.bindingCount = inBindingCount;
         DescriptorSetLayoutCreateInfo.pBindings = inLayoutBindings;
 
-        //if (Device->SupportsBindlessTexturing())
-        //{
-        //    DescriptorSetLayoutCreateInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
-
-        //    // Binding flags
-        //    VkDescriptorBindingFlags BindlessFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT | /*VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT |*/ VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT_EXT;
-        //    VkDescriptorBindingFlags BindingFlags[11];
-
-        //    for (uint32 i = 0; i < inBindingCount; ++i)
-        //    {
-        //        BindingFlags[i] = BindlessFlags;
-        //    }
-
-        //    VkDescriptorSetLayoutBindingFlagsCreateInfoEXT ExtendedInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT, nullptr };
-        //    ExtendedInfo.bindingCount = inBindingCount;
-        //    ExtendedInfo.pBindingFlags = BindingFlags;
-
-        //    DescriptorSetLayoutCreateInfo.pNext = &ExtendedInfo;
-        //}
-
         VkDescriptorSetLayout NewLayout;
         VK_CHECK_RESULT(vkCreateDescriptorSetLayout(*Device->GetDeviceHandle(), &DescriptorSetLayoutCreateInfo, nullptr, &NewLayout), "[VulkanDescriptorSetsLayout]: Failed to create a descriptor set layout!");
 
@@ -283,93 +263,6 @@ public:
     /**
     * Uses this pool to allocate a descriptor set
     *
-    * @param 1: count of descriptor sets to create
-    * @param 2: descriptor set to be filled
-    * @param 3: the layout id used to create the decriptor set
-    *
-    * @return if allocated of set(s) was successfull
-    */
-    /*bool AllocateDescriptorSets(uint32 inDescriptorSetCount, VkDescriptorSet* outDescriptorSet, uint32 inLayoutId) const
-    {
-        VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo = VulkanUtils::Initializers::DescriptorSetAllocateInfo();
-        DescriptorSetAllocateInfo.descriptorPool = DescriptorPoolHandle;
-        DescriptorSetAllocateInfo.descriptorSetCount = inDescriptorSetCount;
-        DescriptorSetAllocateInfo.pSetLayouts = DescriptorSetsLayout->GetLayoutHandle(inLayoutId);
-
-#if _DEBUG
-        VkResult Result = vkAllocateDescriptorSets(*Device->GetDeviceHandle(), &DescriptorSetAllocateInfo, outDescriptorSet);
-        VK_CHECK_RESULT(Result, "[VulkanDescriptorPool]: Failed to allocate a descriptor set!");
-
-        return Result == VK_SUCCESS;
-#else
-        return vkAllocateDescriptorSets(*Device->GetDeviceHandle(), &DescriptorSetAllocateInfo, outDescriptorSet) == VK_SUCCESS;
-#endif
-    }*/
-
-    /**
-    * Uses this pool to allocate descriptor set(s)
-    *
-    * @param 1: descriptor set to be filled
-    * @param 2: the layout id used to create the decriptor set
-    *
-    * @return if allocated of set(s) was successfull
-    */
-    /*bool AllocateDescriptorSets(VulkanDescriptorSets* outDescriptorSets, uint32 inLayoutId) const
-    {
-        VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo = VulkanUtils::Initializers::DescriptorSetAllocateInfo();
-        DescriptorSetAllocateInfo.descriptorPool = DescriptorPoolHandle;
-        DescriptorSetAllocateInfo.descriptorSetCount = outDescriptorSets->GetNumSets();
-        DescriptorSetAllocateInfo.pSetLayouts = DescriptorSetsLayout->GetLayoutHandle(inLayoutId);
-
-        VkResult Result = vkAllocateDescriptorSets(*Device->GetDeviceHandle(), &DescriptorSetAllocateInfo, outDescriptorSets->GetDescriptorSetHandles());
-        VK_CHECK_RESULT(Result, "[VulkanDescriptorPool]: Failed to allocate a descriptor set!");
-
-        return Result == VK_SUCCESS;
-    }*/
-
-    /**
-    * Uses this pool to allocate descriptor set(s)
-    *
-    * @param 1: descriptor set to be filled
-    * @param 2: the layout id used to create the decriptor set
-    *
-    * @return if allocated of set(s) was successfull
-    */
-    /*VkResult AllocateDescriptorSetsNoAssert(VulkanDescriptorSets* outDescriptorSets, uint32 inLayoutId) const
-    {
-        VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo = VulkanUtils::Initializers::DescriptorSetAllocateInfo();
-        DescriptorSetAllocateInfo.descriptorPool = DescriptorPoolHandle;
-        DescriptorSetAllocateInfo.descriptorSetCount = outDescriptorSets->GetNumSets();
-        DescriptorSetAllocateInfo.pSetLayouts = DescriptorSetsLayout->GetLayoutHandle(inLayoutId);
-
-        return vkAllocateDescriptorSets(*Device->GetDeviceHandle(), &DescriptorSetAllocateInfo, outDescriptorSets->GetDescriptorSetHandles());
-    }*/
-
-    /**
-    * Uses this pool to allocate a descriptor set
-    *
-    * @param 1: count of descriptor sets to create
-    * @param 2: descriptor set to be filled
-    * @param 3: the layout id used to create the decriptor set
-    *
-    * @return if allocated of set(s) was successfull
-    */
-    /*bool AllocateDescriptorSets(uint32 inDescriptorSetCount, VulkanDescriptorSets* outDescriptorSets, uint32 inLayoutId) const
-    {
-        VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo = VulkanUtils::Initializers::DescriptorSetAllocateInfo();
-        DescriptorSetAllocateInfo.descriptorPool = DescriptorPoolHandle;
-        DescriptorSetAllocateInfo.descriptorSetCount = inDescriptorSetCount;
-        DescriptorSetAllocateInfo.pSetLayouts = DescriptorSetsLayout->GetLayoutHandle(inLayoutId);
-
-        VkResult Result = vkAllocateDescriptorSets(*Device->GetDeviceHandle(), &DescriptorSetAllocateInfo, outDescriptorSets->GetDescriptorSetHandles());
-        VK_CHECK_RESULT(Result, "[VulkanDescriptorPool]: Failed to allocate a descriptor set!");
-
-        return Result == VK_SUCCESS;
-    }*/
-
-    /**
-    * Uses this pool to allocate a descriptor set
-    *
     * @param 1: descriptor set to be filled
     * @param 2: the descriptor layout to use to create the descriptor set
     *
@@ -488,13 +381,6 @@ public:
 private:
     void CreateDescriptorPool(std::vector<VkDescriptorPoolSize>& inPoolSizes)
     {
-        /*VkDescriptorPoolCreateInfo DescriptorPoolCreateInfo = VulkanUtils::Initializers::DescriptorPoolCreateInfo();
-        DescriptorPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT;
-        DescriptorPoolCreateInfo.maxSets = MaxDescriptorSets;
-        DescriptorPoolCreateInfo.poolSizeCount = inPoolSizes.size();
-        DescriptorPoolCreateInfo.pPoolSizes = inPoolSizes.data();
-
-        VK_CHECK_RESULT(vkCreateDescriptorPool(*Device->GetDeviceHandle(), &DescriptorPoolCreateInfo, nullptr, &DescriptorPoolHandle), "[VulkanDescriptorPool]: Failed to create a descriptor pool!");*/
         CreateDescriptorPool(inPoolSizes.data(), inPoolSizes.size());
     }
 
@@ -514,6 +400,4 @@ private:
     VkDescriptorPool DescriptorPoolHandle;
 
     uint32 MaxDescriptorSets;
-
-    //const VulkanDescriptorSetsLayout* DescriptorSetsLayout;
 };

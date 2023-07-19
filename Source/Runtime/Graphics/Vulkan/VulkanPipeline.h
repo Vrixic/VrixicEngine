@@ -25,7 +25,7 @@ class VRIXIC_API VulkanPipelineLayout : public PipelineLayout
 {
 public:
     VulkanPipelineLayout(VulkanDevice* inDevice, const FPipelineLayoutConfig& inPipelineLayoutConfig)
-        : PipelineLayout(/*inPipelineLayoutConfig*/), Device(inDevice), PipelineLayoutHandle(VK_NULL_HANDLE)/*, MaxSets(0)*/
+        : PipelineLayout(), Device(inDevice), PipelineLayoutHandle(VK_NULL_HANDLE)
     {
         using namespace VulkanUtils::Descriptions;
 

@@ -455,17 +455,12 @@ private:
     /** Bool to check if the graphics card supports bindless texturing */
     bool bSupportsBindlessTexturing;
 
-    //static const uint32 MAX_BINDLESS_RESOURCES = 1024;
-
     /* ---------------------------------@TODO---------------------------------------- */
     /*
     * Maybe not create the resource management inside here instead allow the client to create them and use them
     * how ever they like, and use the one the client might provide
     */
     /* ---------------------------------@TODO---------------------------------------- */
-    /** Vulkan Resource Management (DEPRECATED) */
-    //IResourceManager* MainVulkanResourceManager;
-    //ResourceManager* GraphicsResourceManager;
 
     /** Used to create shaders */
     VulkanShaderFactory* ShaderFactoryMain;

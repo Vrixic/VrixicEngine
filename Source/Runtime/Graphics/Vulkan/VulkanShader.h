@@ -8,7 +8,6 @@
 #include "Runtime/Memory/ResourceManager.h"
 #include "VulkanDevice.h"
 
-//#include <External/glslang/Include/glslang/Include/glslang_c_shader_types.h>
 #include <External/glslang/Include/glslang/Public/ShaderLang.h>
 #include <External/glslang/Include/glslang/SPIRV/spirv.hpp>
 
@@ -186,7 +185,7 @@ public:
     /**
     * @param inResourceManagerHandle - The resource manager that will be in use by this factory to create shader modules/handles
     */
-    VulkanShaderFactory(VulkanDevice* inDevice/*, ResourceManager* inResourceManagerHandle*/);
+    VulkanShaderFactory(VulkanDevice* inDevice);
     virtual ~VulkanShaderFactory();
 
     VulkanShaderFactory(const VulkanShaderFactory& other) = delete;
@@ -215,14 +214,10 @@ private:
 
     void CompileSourceCode(const FShaderConfig& inConfig, uint8*& outCode, uint64* outCodeSize) const;
 
-    //glslang_stage_t ConvertShaderType(EShaderType inShaderType) const;
     EShLanguage ConvertShaderType(EShaderType inShaderType) const;
 
 private:
     VulkanDevice* Device;
 
     static TBuiltInResource BuiltInResources;
-
-    /* Handle to the resource manager that will be used to create all shaders within this factory */
-    //ResourceManager* ResourceManagerHandle;
 };

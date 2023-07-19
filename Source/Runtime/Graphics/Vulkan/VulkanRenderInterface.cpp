@@ -56,9 +56,6 @@ void VulkanRenderInterface::Initialize()
 {
     // Create Resource Managements Resources
     {
-        //MainVulkanResourceManager = new VulkanResourceManager(Device);
-        //GraphicsResourceManager = new ResourceManager(MainVulkanResourceManager);
-
         ShaderFactoryMain = new VulkanShaderFactory(Device);
         ShaderPoolMain = new VulkanShaderPool(Device);
 
@@ -92,9 +89,6 @@ void VulkanRenderInterface::Initialize()
         BindlessDescriptorPool = nullptr;
         if (Device->SupportsBindlessTexturing())
         {
-            //static const uint32 MAX_BINDLESS_RESOURCES = 1024u;
-            //static const uint32 BINDLESS_TEXTURE_BINDING_NUM = 10u;
-
             VkDescriptorPoolSize BindlessPoolSizes[] =
             {
                 { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, PipelineLayout::MAX_NUM_BINDLESS_RESOURCES },
@@ -151,9 +145,6 @@ void VulkanRenderInterface::Initialize()
 void VulkanRenderInterface::Shutdown()
 {
     Device->WaitUntilIdle();
-
-    //delete GraphicsResourceManager;
-    //delete MainVulkanResourceManager;
 
     delete GlobalDescriptorPool;
     delete BindlessDescriptorPool;

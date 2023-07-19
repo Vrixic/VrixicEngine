@@ -175,24 +175,7 @@ public:
     /**
     * @remarks creates a pipeline layout with the descriptor passed in
     */
-    PipelineLayout(/*const FPipelineLayoutConfig& inPipelineLayoutDescriptor*/);
-
-public:
-    /**
-    * @returns uint32 number of bindings attached to this pipeline layout
-    */
-    /*inline virtual uint32 GetNumBinding() const
-    {
-        return (uint32)Bindings.size();
-    }*/
-
-    /**
-    * @returns const std::vector<PipelineBindingDescriptor>& the binding that are associated with this layout
-    */
-    /*inline const std::vector<FPipelineBindingDescriptor>& GetBindings() const
-    {
-        return Bindings;
-    }*/
+    PipelineLayout();
 
 private:
     friend class VulkanRenderInterface;
@@ -200,8 +183,4 @@ private:
     static uint8 BINDLESS_TEXTURE_DESCRIPTOR_INDEX;
     static uint8 BINDLESS_TEXTURE_BINDING_INDEX;
     static uint16 MAX_NUM_BINDLESS_RESOURCES;
-
-    /** All of the bindings associated with this Pipeline Layout */
-    /*std::vector<FPipelineBindingDescriptor> Bindings;*/
-
 };
