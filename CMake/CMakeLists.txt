@@ -64,7 +64,8 @@ if (WIN32)
 		${PROJECT_EXTERNAL_DIR}/ktx/Includes/
 		${PROJECT_EXTERNAL_DIR}/ktx/other_include/
 		${PROJECT_EXTERNAL_DIR}/ktx/Includes/KHR/
-		${PROJECT_EXTERNAL_DIR}/glslang/Includes/)
+		${PROJECT_EXTERNAL_DIR}/glslang/Includes/
+		${PROJECT_EXTERNAL_DIR}/enkiTS/Includes/)
 
 	# set and add all libraries 
 	set (LibraryDirectories 
