@@ -239,6 +239,14 @@ public:
     virtual IPipeline* CreatePipeline(const FGraphicsPipelineConfig& inGraphicsPipelineConfig) override;
 
     /**
+    * Creates a new graphics pipeline with the specified configurations and with a pipeline cache
+    *
+    * @param inGraphicsPipelineConfig info used to create the graphics pipeline
+    * @param inPipelineCachePath the path to the pipeline cache
+    */
+    virtual IPipeline* CreatePipelineWithCache(const FGraphicsPipelineConfig& inGraphicsPipelineConfig, const std::string& inPipelineCachePath) override;
+
+    /**
     * Releases/Destroys the pipeline passed in
     *
     * @param inPipeline the pipeline to free

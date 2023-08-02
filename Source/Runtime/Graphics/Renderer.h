@@ -646,7 +646,7 @@ public:
 
             GPConfig.BlendState.BlendOpConfigs.push_back(BOConfig);
 
-            Pipeline = Renderer::Get().GetRenderInterface().Get()->CreatePipeline(GPConfig);
+            Pipeline = Renderer::Get().GetRenderInterface().Get()->CreatePipelineWithCache(GPConfig, Renderer::Get().MakePathToResource("CubemapPipelineCache", 'p'));
         }
 
         // Create the Sampler and Texture for cubemap 

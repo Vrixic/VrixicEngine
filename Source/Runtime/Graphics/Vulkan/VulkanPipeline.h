@@ -175,6 +175,11 @@ public:
         {
             vkDestroyPipeline(*Device->GetDeviceHandle(), PipelineHandle, nullptr);
         }
+
+        if (PipelineCacheHandle != VK_NULL_HANDLE)
+        {
+            vkDestroyPipelineCache(*Device->GetDeviceHandle(), PipelineCacheHandle, nullptr);
+        }
     }
 
     VulkanPipeline(const VulkanPipeline& other) = delete;
@@ -199,12 +204,14 @@ public:
 protected:
     VulkanDevice* Device;
     VkPipeline PipelineHandle;
+    VkPipelineCache PipelineCacheHandle;
 
     VulkanPipelineLayout* PipelineLayoutPtr;
 
 protected:
     VulkanPipeline(VulkanDevice* inDevice)
-        : Device(inDevice), PipelineLayoutPtr(VK_NULL_HANDLE), PipelineHandle(VK_NULL_HANDLE) {}
+        : Device(inDevice), PipelineLayoutPtr(VK_NULL_HANDLE), 
+        PipelineHandle(VK_NULL_HANDLE), PipelineCacheHandle(VK_NULL_HANDLE){}
 };
 
 /**
@@ -227,10 +234,18 @@ public:
         vkCreateGraphicsPipelines(*Device->GetDeviceHandle(), VK_NULL_HANDLE, 1, &inCreateInfo, nullptr, &PipelineHandle);
     }
 
-    void Create(const FGraphicsPipelineConfig& inConfig)
+    void Create(const FGraphicsPipelineConfig& inConfig, const char* inPipelineCachePath = nullptr)
+    {
+        Create(inConfig, VK_NULL_HANDLE, inPipelineCachePath);
+    }
+
+    void Create(const FGraphicsPipelineConfig& inConfig, VkPipelineCache inPipelineCache, const char* inPipelineCachePath = nullptr)
     {
         // Only allow this to be called once
         VE_ASSERT(PipelineHandle == VK_NULL_HANDLE, VE_TEXT("[VulkanGraphicsPipeline]: cannot create another pipeline when one already exists!!!"));
+
+        // set pipeline cache 
+        PipelineCacheHandle = inPipelineCache;
 
         // set pipeline layout
         PipelineLayoutPtr = (VulkanPipelineLayout*)inConfig.PipelineLayoutPtr;
@@ -301,7 +316,22 @@ public:
         GraphicsPipelineCreateInfo.layout = *GetPipelineLayout()->GetPipelineLayoutHandle();
         GraphicsPipelineCreateInfo.renderPass = *RenderPass->GetRenderPassHandle();
 
-        VK_CHECK_RESULT(vkCreateGraphicsPipelines(*Device->GetDeviceHandle(), VK_NULL_HANDLE, 1, &GraphicsPipelineCreateInfo, nullptr, &PipelineHandle), VE_TEXT("[VulkanGraphicsPipeline]: Failed to create a vulkan graphics pipeline!!"));
+        VK_CHECK_RESULT(vkCreateGraphicsPipelines(*Device->GetDeviceHandle(), PipelineCacheHandle, 1, &GraphicsPipelineCreateInfo, nullptr, &PipelineHandle), VE_TEXT("[VulkanGraphicsPipeline]: Failed to create a vulkan graphics pipeline!!"));
+
+        if (inPipelineCachePath != nullptr)
+        {
+            uint64 CacheSize = 0;
+            vkGetPipelineCacheData(*Device->GetDeviceHandle(), PipelineCacheHandle, &CacheSize, nullptr);
+
+            uint8* CacheData = new uint8[CacheSize];
+            vkGetPipelineCacheData(*Device->GetDeviceHandle(), PipelineCacheHandle, &CacheSize, CacheData);
+
+            FILE* file = fopen(inPipelineCachePath, "wb");
+            fwrite(CacheData, CacheSize, 1, file);
+            fclose(file);
+
+            delete[] CacheData;
+        }
     }
 
 public:

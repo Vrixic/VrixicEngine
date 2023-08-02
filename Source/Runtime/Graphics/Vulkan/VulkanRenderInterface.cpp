@@ -422,6 +422,59 @@ IPipeline* VulkanRenderInterface::CreatePipeline(const FGraphicsPipelineConfig& 
     return Pipeline;
 }
 
+IPipeline* VulkanRenderInterface::CreatePipelineWithCache(const FGraphicsPipelineConfig& inGraphicsPipelineConfig, const std::string& inPipelineCachePath)
+{
+    VulkanGraphicsPipeline* Pipeline = new VulkanGraphicsPipeline(Device);
+
+    VkPipelineCache PipelineCache = VK_NULL_HANDLE;
+    VkPipelineCacheCreateInfo PipelineCacheCreateInfo{ VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
+
+    WIN32_FILE_ATTRIBUTE_DATA FileInformation;
+    bool bShouldCreateNewCache = GetFileAttributesExA(inPipelineCachePath.c_str(), GetFileExInfoStandard, &FileInformation);
+    if (bShouldCreateNewCache)
+    {
+        FILE* FileHandle = fopen(inPipelineCachePath.c_str(), "rb");
+
+        uint8* Data = nullptr;
+        uint64 DataSize = 0;
+        if (FileHandle) {
+
+            fseek(FileHandle, 0, SEEK_END);
+            DataSize = ftell(FileHandle);
+            fseek(FileHandle, 0, SEEK_SET);
+
+            Data = (uint8*)new uint8[DataSize];
+            fread(Data, DataSize, 1, FileHandle);
+
+            fclose(FileHandle);
+        }
+
+        VkPipelineCacheHeaderVersionOne* PipelineCacheHeader = (VkPipelineCacheHeaderVersionOne*)Data;
+
+        if (PipelineCacheHeader->deviceID == Device->GetPhysicalDeviceProperties()->deviceID &&
+            PipelineCacheHeader->vendorID == Device->GetPhysicalDeviceProperties()->vendorID &&
+            memcmp(PipelineCacheHeader->pipelineCacheUUID, Device->GetPhysicalDeviceProperties()->pipelineCacheUUID, VK_UUID_SIZE) == 0)
+        {
+            PipelineCacheCreateInfo.initialDataSize = DataSize;
+            PipelineCacheCreateInfo.pInitialData = Data;
+
+            bShouldCreateNewCache = false;
+        }
+
+        vkCreatePipelineCache(*Device->GetDeviceHandle(), &PipelineCacheCreateInfo, nullptr, &PipelineCache);
+
+        delete[] Data;
+    }
+    else
+    {
+        vkCreatePipelineCache(*Device->GetDeviceHandle(), &PipelineCacheCreateInfo, nullptr, &PipelineCache);
+        bShouldCreateNewCache = true;
+    }
+
+    Pipeline->Create(inGraphicsPipelineConfig, PipelineCache, bShouldCreateNewCache ? inPipelineCachePath.c_str() : nullptr);
+    return Pipeline;
+}
+
 void VulkanRenderInterface::Free(IPipeline* inPipeline)
 {
     // Just delete the pipeline

@@ -34,6 +34,7 @@ static constexpr const char FilePathToResources[] = "../Assets/";
 static constexpr const char FilePathToTextures[] = "../Assets/Textures/";
 static constexpr const char FilePathToModels[] = "../Assets/Models/";
 static constexpr const char FilePathToShaders[] = "../Assets/Shaders/";
+static constexpr const char FilePathToPipelineCaches[] = "../Assets/PipelineCaches/";
 
 std::string Renderer::MakePathToResource(const std::string& inResourceName, char inResourceType)
 {
@@ -45,6 +46,8 @@ std::string Renderer::MakePathToResource(const std::string& inResourceName, char
         return FilePathToModels + inResourceName;
     case 's':
         return FilePathToShaders + inResourceName;
+    case 'p':
+        return FilePathToPipelineCaches + inResourceName;
     }
 
     return "not_valud_resource_type.error";
@@ -1101,7 +1104,7 @@ void Renderer::CreatePBRPipeline()
             GPConfig.DepthState.bIsWritingEnabled = true;
             GPConfig.DepthState.CompareOp = ECompareOp::Less;
 
-            PBRTexturePipeline = RenderInterface.Get()->CreatePipeline(GPConfig);
+            PBRTexturePipeline = RenderInterface.Get()->CreatePipelineWithCache(GPConfig, MakePathToResource("PBRPipelineCache", 'p'));
 
             // Depth stencil state
             //GPConfig.DepthState.bIsTestingEnabled = true;
@@ -1118,7 +1121,7 @@ void Renderer::CreatePBRPipeline()
             GPConfig.StencilState.Back.ReferenceValue = 1;
             GPConfig.StencilState.Front = GPConfig.StencilState.Back;
 
-            PBRTexturePipelineStencil = RenderInterface.Get()->CreatePipeline(GPConfig);
+            PBRTexturePipelineStencil = RenderInterface.Get()->CreatePipelineWithCache(GPConfig, MakePathToResource("PBRStencilPipelineCache", 'p'));
 
             // Outline Pipeline Pass
             GPConfig.StencilState.Back.CompareOp = ECompareOp::NotEqual;
@@ -1131,7 +1134,7 @@ void Renderer::CreatePBRPipeline()
             GPConfig.FragmentShader = PBRTextureFragmentShaderOutline;
             GPConfig.VertexShader = PBRVertexShaderOutline;
 
-            PBRTexturePipelineOutline = RenderInterface.Get()->CreatePipeline(GPConfig);
+            PBRTexturePipelineOutline = RenderInterface.Get()->CreatePipelineWithCache(GPConfig, MakePathToResource("PBROutlinePipelineCache", 'p'));
         }
     }
 }
@@ -1296,7 +1299,7 @@ void Renderer::CreateSkyboxPipeline()
 
                 GPConfig.BlendState.BlendOpConfigs.push_back(BOConfig);
 
-                IrridiancePipeline = RenderInterface.Get()->CreatePipeline(GPConfig);
+                IrridiancePipeline = RenderInterface.Get()->CreatePipelineWithCache(GPConfig, MakePathToResource("IrridiancePipelineCache", 'p'));
             }
         }
 
@@ -1414,7 +1417,7 @@ void Renderer::CreateSkyboxPipeline()
 
                 GPConfig.BlendState.BlendOpConfigs.push_back(BOConfig);
 
-                PrefilterEnvMapPipeline = RenderInterface.Get()->CreatePipeline(GPConfig);
+                PrefilterEnvMapPipeline = RenderInterface.Get()->CreatePipelineWithCache(GPConfig, MakePathToResource("PrefilterEnvMapPipelineCache", 'p'));
             }
         }
 
@@ -1515,7 +1518,7 @@ void Renderer::CreateSkyboxPipeline()
 
                 GPConfig.BlendState.BlendOpConfigs.push_back(BOConfig);
 
-                BRDFIntegrationPipeline = RenderInterface.Get()->CreatePipeline(GPConfig);
+                BRDFIntegrationPipeline = RenderInterface.Get()->CreatePipelineWithCache(GPConfig, MakePathToResource("BRDFPipelineCache", 'p'));
             }
         }
 
@@ -2609,7 +2612,7 @@ void Renderer::CreateHighDynamicImagePipeline(const char* inFilePath)
 
             GPConfig.BlendState.BlendOpConfigs.push_back(BOConfig);
 
-            HDRPipeline = RenderInterface.Get()->CreatePipeline(GPConfig);
+            HDRPipeline = RenderInterface.Get()->CreatePipelineWithCache(GPConfig, MakePathToResource("HDRPipelineCache", 'p'));
         }
     }
 
