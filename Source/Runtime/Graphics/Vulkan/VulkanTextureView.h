@@ -10,7 +10,7 @@
 /**
 * A wrapper for VkImage and VkImage view, mainly used for depth and stenciling
 */
-class VRIXIC_API VulkanTextureView final : public Texture
+class VRIXIC_API VulkanTextureView final : public TextureResource
 {
 public:
 	/**
@@ -61,12 +61,14 @@ public:
     */
     virtual FTextureConfig GetTextureConfig() const override final;
 
+    inline void SetImageLayout(VkImageLayout inLayout) { ImageLayout = inLayout; }
+
 private:
     /**
     * Only swapchains should use this version
     */
     VulkanTextureView()
-        : Texture({}), Device(nullptr),
+        : TextureResource({}), Device(nullptr),
         ImageHandle(VK_NULL_HANDLE), ImageMemory(VK_NULL_HANDLE), ViewHandle(VK_NULL_HANDLE), ImageFormat(VK_FORMAT_UNDEFINED),
         NumArrayLayers(0), NumMipLevels(0), ImageLayout(VK_IMAGE_LAYOUT_UNDEFINED){ }
 
@@ -81,8 +83,6 @@ private:
     * @returns VkImageAspectFlags aspect flags for this texture (from its Image Format)
     */
     VkImageAspectFlags GetAspectFlags() const;
-
-    inline void SetImageLayout(VkImageLayout inLayout) { ImageLayout = inLayout; }
 
 public:
 	inline const VkImage* GetImageHandle() const

@@ -14,6 +14,7 @@
 #include <Runtime/Graphics/Vulkan/VulkanSampler.h>
 #include <Runtime/Graphics/Vulkan/VulkanSemaphore.h>
 #include <Runtime/Graphics/Vulkan/VulkanTextureView.h>
+#include "VulkanCommandBufferManager.h"
 
 #include <External/imgui/Includes/imgui.h>
 #include <External/imgui/Includes/imgui_impl_glfw.h>
@@ -54,6 +55,9 @@ VulkanRenderInterface::~VulkanRenderInterface()
 
 void VulkanRenderInterface::Initialize()
 {
+    CommandBufferManager = new VulkanCommandBufferManager(Device);
+    CommandBufferManager::Get().Init(CommandBufferManager, VGameEngine::Get()->GetTaskScheduler().GetNumTaskThreads());
+
     // Create Resource Managements Resources
     {
         ShaderFactoryMain = new VulkanShaderFactory(Device);
@@ -146,6 +150,8 @@ void VulkanRenderInterface::Shutdown()
 {
     Device->WaitUntilIdle();
 
+    delete CommandBufferManager;
+
     delete GlobalDescriptorPool;
     delete BindlessDescriptorPool;
 
@@ -200,7 +206,7 @@ void VulkanRenderInterface::WriteToBuffer(Buffer* inBuffer, uint64 inOffset, con
     MappedPointer += inOffset;
 
     memcpy(MappedPointer, inData, inDataSize);
-    memcpy(MappedPointer, inData, inDataSize);
+    //memcpy(MappedPointer, inData, inDataSize);
 }
 
 void VulkanRenderInterface::ReadFromBuffer(Buffer* inBuffer, uint64 inOffset, void* outData, uint64 inDataSize)
@@ -223,60 +229,72 @@ void VulkanRenderInterface::Free(Buffer* inBuffer)
     delete inBuffer;
 }
 
-Texture* VulkanRenderInterface::CreateTexture(const FTextureConfig& inTextureConfig)
+TextureResource* VulkanRenderInterface::CreateTexture(const FTextureConfig& inTextureConfig)
 {
     VulkanTextureView* Texture = new VulkanTextureView(Device, inTextureConfig);
     Texture->CreateDefaultImageView();
     return Texture;
 }
 
-void VulkanRenderInterface::WriteToTexture(const Texture* inTexture, const FTextureWriteInfo& inTextureWriteInfo)
+void VulkanRenderInterface::WriteToTexture(const TextureResource* inTexture, const FTextureWriteInfo& inTextureWriteInfo)
 {
     VE_ASSERT(inTexture != nullptr, VE_TEXT("{VulkanRenderInterface]: cannot write to a invalid texture...its null..."));
 
     VkCommandBuffer CommandBufferHandle = Device->GetGraphicsQueue()->CreateSingleTimeCommandBuffer(true);
 
-    HTransitionTextureLayoutInfo TransitionTextureLayoutInfo = { };
-    TransitionTextureLayoutInfo.CommandBufferHandle = CommandBufferHandle;
-    TransitionTextureLayoutInfo.TextureHandle = (VulkanTextureView*)inTexture;
-    TransitionTextureLayoutInfo.OldLayout = TransitionTextureLayoutInfo.TextureHandle->GetImageLayout();
-    TransitionTextureLayoutInfo.NewLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    TransitionTextureLayoutInfo.Subresource = (FTextureSubresourceRange*)&inTextureWriteInfo.Subresource;
+    VulkanTextureView* VulkanTexture = (VulkanTextureView*)inTexture;
 
-    Device->TransitionTextureLayout(TransitionTextureLayoutInfo);
+    // Pre copy memory barrier to perform texture layout transition
+    Device->AddImageBarrier
+    (
+        CommandBufferHandle, VulkanTexture, inTextureWriteInfo.Subresource,
+        VulkanTexture->GetImageLayout(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
+        0, VK_ACCESS_TRANSFER_WRITE_BIT, ERenderQueueType::Graphics, ERenderQueueType::Graphics
+    );
 
-    HCopyBufferTextureInfo CopyBufferToTextureInfo = { };
-    CopyBufferToTextureInfo.CommandBufferHandle = CommandBufferHandle;
-    CopyBufferToTextureInfo.TextureHandle = TransitionTextureLayoutInfo.TextureHandle;
-    CopyBufferToTextureInfo.Subresource = TransitionTextureLayoutInfo.Subresource;
-    CopyBufferToTextureInfo.Offset.x = inTextureWriteInfo.Offset.Width;
-    CopyBufferToTextureInfo.Offset.y = inTextureWriteInfo.Offset.Height;
-    CopyBufferToTextureInfo.Offset.z = inTextureWriteInfo.Offset.Depth;
-
-    VulkanBuffer* BufferHandle = (VulkanBuffer*)inTextureWriteInfo.BufferHandle;
-    CopyBufferToTextureInfo.BufferHandle = BufferHandle;
-
-    CopyBufferToTextureInfo.Extent.width = inTextureWriteInfo.Extent.Width;
-    CopyBufferToTextureInfo.Extent.height = inTextureWriteInfo.Extent.Height;
-    CopyBufferToTextureInfo.Extent.depth = inTextureWriteInfo.Extent.Depth;
-
-    if (TransitionTextureLayoutInfo.TextureHandle->GetKtxTextureHandle() != nullptr)
+    // Copy buffer data into the texture/image
     {
-        Device->CopyBufferToTextureKtx(CopyBufferToTextureInfo);
-    }
-    else
-    {
-        Device->CopyBufferToTexture(CopyBufferToTextureInfo);
+        HCopyBufferTextureInfo CopyBufferToTextureInfo = { };
+        CopyBufferToTextureInfo.CommandBufferHandle = CommandBufferHandle;
+        CopyBufferToTextureInfo.TextureHandle = VulkanTexture;
+        CopyBufferToTextureInfo.Subresource = &inTextureWriteInfo.Subresource;
+        CopyBufferToTextureInfo.Offset.x = inTextureWriteInfo.Offset.Width;
+        CopyBufferToTextureInfo.Offset.y = inTextureWriteInfo.Offset.Height;
+        CopyBufferToTextureInfo.Offset.z = inTextureWriteInfo.Offset.Depth;
+
+        VulkanBuffer* BufferHandle = (VulkanBuffer*)inTextureWriteInfo.BufferHandle;
+        CopyBufferToTextureInfo.BufferHandle = BufferHandle;
+
+        CopyBufferToTextureInfo.Extent.width = inTextureWriteInfo.Extent.Width;
+        CopyBufferToTextureInfo.Extent.height = inTextureWriteInfo.Extent.Height;
+        CopyBufferToTextureInfo.Extent.depth = inTextureWriteInfo.Extent.Depth;
+
+        if (VulkanTexture->GetKtxTextureHandle() != nullptr)
+        {
+            Device->CopyBufferToTextureKtx(CopyBufferToTextureInfo);
+        }
+        else
+        {
+            Device->CopyBufferToTexture(CopyBufferToTextureInfo);
+        }
     }
 
-    TransitionTextureLayoutInfo.OldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    TransitionTextureLayoutInfo.NewLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    Device->TransitionTextureLayout(TransitionTextureLayoutInfo);
+    // Post copy memory barrier 
+    Device->AddImageBarrier
+    (
+        CommandBufferHandle, VulkanTexture, inTextureWriteInfo.Subresource,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, 
+        ERenderQueueType::Graphics, ERenderQueueType::Graphics
+    );
 
     Device->GetGraphicsQueue()->FlushSingleTimeCommandBuffer(CommandBufferHandle, true);
+
+    /** Change the image layout for the texture passed in */
+    VulkanTexture->SetImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
-void VulkanRenderInterface::ReadFromTexture(const Texture* inTexture, const FTextureSection& inTextureSection, const ETextureLayout inFinalTextureLayout, FTextureReadInfo& outTextureReadInfo)
+void VulkanRenderInterface::ReadFromTexture(const TextureResource* inTexture, const FTextureSection& inTextureSection, const ETextureLayout inFinalTextureLayout, FTextureReadInfo& outTextureReadInfo)
 {
     VulkanTextureView* VulkanTexture = (VulkanTextureView*)inTexture;
 
@@ -335,9 +353,18 @@ void VulkanRenderInterface::ReadFromTexture(const Texture* inTexture, const FTex
     outTextureReadInfo.Data = MemoryPtr.Get();
     outTextureReadInfo.SizeInByte = ImageDataSize;
     outTextureReadInfo.Format = Format;
+
+    /** Change the image layout for the texture passed in */
+    VulkanTexture->SetImageLayout(LayoutInfo.NewLayout);
 }
 
-void VulkanRenderInterface::Free(Texture* inTexture)
+void VulkanRenderInterface::SetTextureLayout(const TextureResource* inTexture, const ETextureLayout inNewTextureLayout)
+{
+    VulkanTextureView* Texture = (VulkanTextureView*)inTexture;
+    Texture->SetImageLayout(VulkanTypeConverter::ConvertTextureLayoutToVk(inNewTextureLayout));
+}
+
+void VulkanRenderInterface::Free(TextureResource* inTexture)
 {
     // Just delete the texture
     delete inTexture;
@@ -708,10 +735,10 @@ void VulkanRenderInterface::InitImGui(SwapChain* inMainSwapChain, Surface* inSur
         // //IM_ASSERT(font != NULL);
         // 
         // Use any command queue
-        VkCommandPool CommandPool = VkCommandQueue->GetCommandPool()->GetCommandPoolHandle();
-        VkCommandBuffer CommandBuffer = *VkCommandQueue->GetCommandPool()->GetCommandBuffer(0)->GetCommandBufferHandle();
+        //VkCommandPool CommandPool = VkCommandQueue->GetCommandPool()->GetCommandPoolHandle();
+        VkCommandBuffer CommandBuffer = *CommandBufferManager->GetCommandBuffer(0, 0)->GetCommandBufferHandle(); //*VkCommandQueue->GetCommandPool()->GetCommandBuffer(0)->GetCommandBufferHandle();
 
-        VK_CHECK_RESULT(vkResetCommandPool(*Device->GetDeviceHandle(), CommandPool, 0), "[]");
+        //VK_CHECK_RESULT(vkResetCommandPool(*Device->GetDeviceHandle(), CommandPool, 0), "[]");
         VkCommandBufferBeginInfo begin_info = {};
         begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;

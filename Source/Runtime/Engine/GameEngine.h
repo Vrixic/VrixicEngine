@@ -10,7 +10,31 @@
 #include <Core/Events/KeyEvent.h>
 #include <Core/Events/MouseEvents.h>
 
+#include <External/enkiTS/Includes/TaskScheduler.h>
+
 #include<chrono>
+
+struct RunPinnedTaskLoopTask : enki::IPinnedTask {
+
+    void Execute() override {
+        while (TaskScheduler->GetIsRunning() && bShouldExecute) {
+            TaskScheduler->WaitForNewPinnedTasks(); // this thread will 'sleep' until there are new pinned tasks
+            TaskScheduler->RunPinnedTasks();
+        }
+    }
+
+    enki::TaskScheduler* TaskScheduler;
+    bool                  bShouldExecute = true;
+}; 
+
+struct AsynchronousLoadTask : enki::IPinnedTask
+{
+    void Execute() override;
+
+    class AsynchronousLoader* Loader;
+    enki::TaskScheduler* TaskScheduler;
+    bool                        bShouldExecute = true;
+};
 
 /**
 * The game engine, consists of all the modules and objects needed to run a game
@@ -79,9 +103,21 @@ public:
         return RenderTime;
     }
 
+    enki::TaskScheduler& GetTaskScheduler()
+    {
+        return TaskScheduler;
+    }
+
+    AsynchronousLoader& GetAsyncLoader()
+    {
+        return *AsyncLoader;
+    }
+
 private:
     /** The application pointer */
     static VGameEngine* GameEnginePtr;
+
+    bool bIsEngineActive;
 
     /** The Current world the engine is updating and rendering  */
     GameWorld* World;
@@ -98,4 +134,11 @@ private:
 
     // Render Time 
     float RenderTime;
+
+    // TaskBased Multi-Threaded Rendering 
+    enki::TaskScheduler TaskScheduler;
+
+    RunPinnedTaskLoopTask RunPinnedTask = { };
+    AsynchronousLoadTask AsyncLoadTask = { };
+    class AsynchronousLoader* AsyncLoader;
 };

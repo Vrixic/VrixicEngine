@@ -70,7 +70,7 @@ struct VRIXIC_API FTextureConfig
 {
 public:
     /** Uses this texture to allocate a new texture view from it, if it is nullptr, then it will create a new Image (Ex.. VKImage), otherwise use existing image and just create a new ImageView */
-    class Texture* TextureHandle;
+    class TextureResource* TextureHandle;
 
     /** Indicates the texture type, is it a 1D or 2D, etc.. texture */
     ETextureType Type;
@@ -148,12 +148,15 @@ public:
 
     /** Image Offset */
     FExtent3D Offset;
+
+    /** Zero-Based buffer offset */
+    uint64 InitialBufferOffset;
     
     /** Specifies mipmap levels, and array layer ranges...etc...*/
     FTextureSubresourceRange Subresource;
 
 public:
-    FTextureWriteInfo() : BufferHandle(nullptr), Extent(0u, 0u, 1u) { }
+    FTextureWriteInfo() : BufferHandle(nullptr), Extent(0u, 0u, 1u), InitialBufferOffset(0u){ }
 };
 
 /**

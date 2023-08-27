@@ -1,5 +1,5 @@
 /**
-* This file is part of the "Vrixic Engine" project (Copyright (c) 2022-2023 by Vrij Patel) 
+* This file is part of the "Vrixic Engine" project (Copyright (c) 2022-2023 by Vrij Patel)
 * See "LICENSE.txt" for license information.
 */
 
@@ -11,26 +11,27 @@
 #include "VulkanPipeline.h"
 #include "VulkanFence.h"
 #include "VulkanTypeConverter.h"
+#include "VulkanTextureView.h"
+#include "VulkanSemaphore.h"
 
 /* ------------------------------------------------------------------------------- */
 /* -----------------------         Command Buffer         ------------------------ */
 /* ------------------------------------------------------------------------------- */
 VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice* device, VulkanCommandPool* commandPool, uint32 imageIndex)
-	: Device(device), CommandPool(commandPool), ImageIndex(imageIndex), CommandBufferHandle(VK_NULL_HANDLE), WaitFence(nullptr)
+    : Device(device), CommandPool(commandPool), ImageIndex(imageIndex), CommandBufferHandle(VK_NULL_HANDLE), WaitFence(nullptr)
 {
     CreateWaitFence();
 }
 
 VulkanCommandBuffer::~VulkanCommandBuffer()
 {
-	//for (uint32 i = 0; i < WaitSemaphores.size(); ++i)
-	//{
-	//	vkDestroySemaphore(Device->GetDeviceHandle(), WaitSemaphores[i], nullptr);
-	//}
     Device->WaitUntilIdle();
 
-    delete WaitFence;
-	//vkDestroyFence(*Device->GetDeviceHandle(), WaitFence, nullptr);
+    if (CommandBufferHandle != VK_NULL_HANDLE)
+    {
+        vkFreeCommandBuffers(*Device->GetDeviceHandle(), CommandPool->GetCommandPoolHandle(), AllocatedBufferCount, &CommandBufferHandle);
+        delete WaitFence;
+    }
 }
 
 void VulkanCommandBuffer::Begin() const
@@ -116,7 +117,7 @@ void VulkanCommandBuffer::BeginRenderPass(const FRenderPassBeginInfo& inRenderPa
     VulkanRenderPass* RenderPass = (VulkanRenderPass*)inRenderPassBeginInfo.RenderPassPtr;
     VulkanFrameBuffer* FrameBuffer = (VulkanFrameBuffer*)inRenderPassBeginInfo.FrameBuffer;
     VkRenderPassBeginInfo RenderPassBeginInfo = VulkanUtils::Initializers::RenderPassBeginInfo(RenderPass->GetRenderPassHandle(), nullptr);
-    
+
     const VkRect2D* RenderArea = RenderPass->GetRenderLayout()->GetRenderArea();
     RenderPassBeginInfo.renderArea.offset.x = RenderArea->offset.x;
     RenderPassBeginInfo.renderArea.offset.y = RenderArea->offset.y;
@@ -134,7 +135,7 @@ void VulkanCommandBuffer::BeginRenderPass(const FRenderPassBeginInfo& inRenderPa
 void VulkanCommandBuffer::EndRenderPass() const
 {
     VE_PROFILE_VULKAN_FUNCTION();
-    
+
     vkCmdEndRenderPass(CommandBufferHandle);
 }
 
@@ -142,7 +143,7 @@ void VulkanCommandBuffer::BindPipeline(const IPipeline* inPipeline)
 {
     VE_ASSERT(inPipeline->GetBindPoint() != EPipelineBindPoint::Undefined, VE_TEXT("[VulkanCommandBuffer]: Trying to bind a pipeline that is undefined, it has to be Graphics as thats whats only supported right now!"))
 
-    VulkanPipeline* Pipeline = (VulkanPipeline*)inPipeline;
+        VulkanPipeline* Pipeline = (VulkanPipeline*)inPipeline;
     vkCmdBindPipeline(CommandBufferHandle, (VkPipelineBindPoint)inPipeline->GetBindPoint(), *Pipeline->GetPipelineHandle());
 }
 
@@ -160,15 +161,15 @@ void VulkanCommandBuffer::BindDescriptorSets(const FDescriptorSetsBindInfo& inDe
     }
 
     vkCmdBindDescriptorSets(
-        CommandBufferHandle, 
-        (VkPipelineBindPoint)inDescriptorSetBindInfo.PipelineBindPoint, 
+        CommandBufferHandle,
+        (VkPipelineBindPoint)inDescriptorSetBindInfo.PipelineBindPoint,
         *PipelineLayoutPtr->GetPipelineLayoutHandle(),
         inDescriptorSetBindInfo.FirstSetIndex,
         inDescriptorSetBindInfo.NumSets,
         DescriptorSets.data(),
         0,
         nullptr
-        );
+    );
 }
 
 void VulkanCommandBuffer::Draw(uint32 inNumVertices, uint32 inFirstVertexIndex)
@@ -191,6 +192,62 @@ void VulkanCommandBuffer::DrawIndexedInstanced(uint32 inNumIndices, uint32 inNum
     vkCmdDrawIndexed(CommandBufferHandle, inNumIndices, inNumInstances, inFirstIndex, inVertexOffset, inFirstInstanceIndex);
 }
 
+void VulkanCommandBuffer::UploadTextureData(const TextureResource* inTexture, const FTextureWriteInfo& inTextureWriteInfo)
+{
+    VE_ASSERT(inTexture != nullptr, VE_TEXT("{VulkanCommandBuffer]: cannot write to a invalid texture...its null..."));
+
+    VulkanTextureView* VulkanTexture = (VulkanTextureView*)inTexture;
+
+    // Pre copy memory barrier to perform texture layout transition
+    Device->AddImageBarrier
+    (
+        CommandBufferHandle, VulkanTexture, inTextureWriteInfo.Subresource,
+        VulkanTexture->GetImageLayout(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        0, VK_ACCESS_TRANSFER_WRITE_BIT, ERenderQueueType::Graphics, ERenderQueueType::Graphics
+    );
+
+    // Copy buffer data into the texture/image
+    {
+        HCopyBufferTextureInfo CopyBufferToTextureInfo = { };
+        CopyBufferToTextureInfo.CommandBufferHandle = CommandBufferHandle;
+        CopyBufferToTextureInfo.TextureHandle = VulkanTexture;
+        CopyBufferToTextureInfo.Subresource = &inTextureWriteInfo.Subresource;
+        CopyBufferToTextureInfo.Offset.x = inTextureWriteInfo.Offset.Width;
+        CopyBufferToTextureInfo.Offset.y = inTextureWriteInfo.Offset.Height;
+        CopyBufferToTextureInfo.Offset.z = inTextureWriteInfo.Offset.Depth;
+
+        CopyBufferToTextureInfo.InitialBufferOffset = inTextureWriteInfo.InitialBufferOffset;
+
+        VulkanBuffer* BufferHandle = (VulkanBuffer*)inTextureWriteInfo.BufferHandle;
+        CopyBufferToTextureInfo.BufferHandle = BufferHandle;
+
+        CopyBufferToTextureInfo.Extent.width = inTextureWriteInfo.Extent.Width;
+        CopyBufferToTextureInfo.Extent.height = inTextureWriteInfo.Extent.Height;
+        CopyBufferToTextureInfo.Extent.depth = inTextureWriteInfo.Extent.Depth;
+
+        if (VulkanTexture->GetKtxTextureHandle() != nullptr)
+        {
+            Device->CopyBufferToTextureKtx(CopyBufferToTextureInfo);
+        }
+        else
+        {
+            Device->CopyBufferToTexture(CopyBufferToTextureInfo);
+        }
+    }
+
+    // Post copy memory barrier 
+    Device->AddImageBarrierExt
+    (
+        CommandBufferHandle, VulkanTexture, inTextureWriteInfo.Subresource,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, *Device->GetTransferQueue(), *Device->GetGraphicsQueue(),
+        ERenderQueueType::Transfer, ERenderQueueType::Graphics
+    );
+
+    /** Change the image layout for the texture passed in */
+    VulkanTexture->SetImageLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+}
+
 void VulkanCommandBuffer::CreateWaitFence()
 {
     VE_ASSERT(WaitFence == nullptr, VE_TEXT("[VulkanCommandBuffer]: Potential GPU Memory Leak!! Cannot create a wait fence twice!!"));
@@ -205,20 +262,20 @@ void VulkanCommandBuffer::CreateWaitFence()
 
 void VulkanCommandBuffer::AllocateCommandBuffer()
 {
-	VkCommandBufferAllocateInfo CommandBufferAllocateInfo = VulkanUtils::Initializers::CommandBufferAllocateInfo();
-	CommandBufferAllocateInfo.commandPool = CommandPool->GetCommandPoolHandle();
-	CommandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	CommandBufferAllocateInfo.commandBufferCount = 1;
+    VkCommandBufferAllocateInfo CommandBufferAllocateInfo = VulkanUtils::Initializers::CommandBufferAllocateInfo();
+    CommandBufferAllocateInfo.commandPool = CommandPool->GetCommandPoolHandle();
+    CommandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    CommandBufferAllocateInfo.commandBufferCount = 1;
 
     AllocatedBufferCount = 1;
 
-	VK_CHECK_RESULT(vkAllocateCommandBuffers(*Device->GetDeviceHandle(), &CommandBufferAllocateInfo, &CommandBufferHandle), "[VulkanCommandBuffer]: Failed to create a command buffer!");
+    VK_CHECK_RESULT(vkAllocateCommandBuffers(*Device->GetDeviceHandle(), &CommandBufferAllocateInfo, &CommandBufferHandle), "[VulkanCommandBuffer]: Failed to create a command buffer!");
 }
 
 void VulkanCommandBuffer::AllocateCommandBuffer(const FCommandBufferConfig& inConfig)
 {
     VE_ASSERT(CommandBufferHandle == VK_NULL_HANDLE, VE_TEXT("[VulkanCommandBuffer]: Potential GPU Memory Leak!! Cannot create command buffer twice!!"));
-    
+
     VkCommandBufferAllocateInfo CommandBufferAllocateInfo = VulkanUtils::Initializers::CommandBufferAllocateInfo();
     CommandBufferAllocateInfo.commandPool = CommandPool->GetCommandPoolHandle();
     CommandBufferAllocateInfo.level = VulkanTypeConverter::ConvertCmdBuffFlagsToVk(inConfig.Flags);
@@ -235,11 +292,9 @@ void VulkanCommandBuffer::FreeCommandBuffer()
 
     Device->WaitUntilIdle();
 
-	vkFreeCommandBuffers(*Device->GetDeviceHandle(), CommandPool->GetCommandPoolHandle(), AllocatedBufferCount, &CommandBufferHandle);
+    vkFreeCommandBuffers(*Device->GetDeviceHandle(), CommandPool->GetCommandPoolHandle(), AllocatedBufferCount, &CommandBufferHandle);
     CommandBufferHandle = VK_NULL_HANDLE;
 
-    //vkDestroyFence(*Device->GetDeviceHandle(), WaitFence, nullptr);
-    //WaitFence = VK_NULL_HANDLE;
     delete WaitFence;
     WaitFence = nullptr;
 
@@ -248,13 +303,13 @@ void VulkanCommandBuffer::FreeCommandBuffer()
 
 void VulkanCommandBuffer::BeginCommandBuffer() const
 {
-	VkCommandBufferBeginInfo CommandBufferBeginInfo = VulkanUtils::Initializers::CommandBufferBeginInfo(nullptr);
-	VK_CHECK_RESULT(vkBeginCommandBuffer(CommandBufferHandle, &CommandBufferBeginInfo), "[VulkanCommandBuffer]: Failed to begin a command buffer!");
+    VkCommandBufferBeginInfo CommandBufferBeginInfo = VulkanUtils::Initializers::CommandBufferBeginInfo(nullptr);
+    VK_CHECK_RESULT(vkBeginCommandBuffer(CommandBufferHandle, &CommandBufferBeginInfo), "[VulkanCommandBuffer]: Failed to begin a command buffer!");
 }
 
 void VulkanCommandBuffer::EndCommandBuffer() const
 {
-	VK_CHECK_RESULT(vkEndCommandBuffer(CommandBufferHandle), "[VulkanCommandBuffer]: Failed to end a command buffer!");
+    VK_CHECK_RESULT(vkEndCommandBuffer(CommandBufferHandle), "[VulkanCommandBuffer]: Failed to end a command buffer!");
 }
 //
 //void VulkanCommandBuffer::BeginRenderPass(const VulkanRenderPass* renderPass, VulkanFrameBuffer* frameBuffer)
@@ -283,20 +338,21 @@ void VulkanCommandBuffer::EndCommandBuffer() const
 //	vkCmdEndRenderPass(CommandBufferHandle);
 //}
 
-void VulkanCommandBuffer::AddWaitSemaphore(VkSemaphore* semaphore)
+void VulkanCommandBuffer::AddWaitSemaphore(VkSemaphore* inSemaphore)
 {
-	WaitSemaphores.push_back(*semaphore);
+    VE_ASSERT(inSemaphore == nullptr, VE_TEXT("[VulkanCommandBuffer]: Cannot add a null wait sempahore...!"));
+    WaitSemaphores.push_back(*inSemaphore);
 }
 
 void VulkanCommandBuffer::SetWaitFence() const
 {
-	//VK_CHECK_RESULT(vkWaitForFences(*Device->GetDeviceHandle(), 1, &WaitFence, VK_TRUE, UINT64_MAX), "[VulkanCommandBuffer]: Failed to set a fence to wait!");
+    //VK_CHECK_RESULT(vkWaitForFences(*Device->GetDeviceHandle(), 1, &WaitFence, VK_TRUE, UINT64_MAX), "[VulkanCommandBuffer]: Failed to set a fence to wait!");
     WaitFence->Wait(UINT64_MAX);
 }
 
 void VulkanCommandBuffer::ResetWaitFence() const
 {
-	//VK_CHECK_RESULT(vkResetFences(*Device->GetDeviceHandle(), 1, &WaitFence), "[VulkanCommandBuffer]: Failed to reset a fence!");
+    //VK_CHECK_RESULT(vkResetFences(*Device->GetDeviceHandle(), 1, &WaitFence), "[VulkanCommandBuffer]: Failed to reset a fence!");
     WaitFence->Reset();
 }
 
@@ -305,32 +361,32 @@ void VulkanCommandBuffer::ResetWaitFence() const
 /* ------------------------------------------------------------------------------- */
 
 VulkanCommandPool::VulkanCommandPool(VulkanDevice* device)
-	: Device(device), CommandPoolHandle(VK_NULL_HANDLE) { }
+    : Device(device), CommandPoolHandle(VK_NULL_HANDLE) { }
 
 VulkanCommandPool::~VulkanCommandPool()
 {
-	Device->WaitUntilIdle();
+    Device->WaitUntilIdle();
 
-	DestroyBuffers();
-	vkDestroyCommandPool(*Device->GetDeviceHandle(), CommandPoolHandle, nullptr);
+    DestroyBuffers();
+    vkDestroyCommandPool(*Device->GetDeviceHandle(), CommandPoolHandle, nullptr);
 }
 
 VulkanCommandBuffer* VulkanCommandPool::CreateCommandBuffer(uint32 imageIndex)
 {
-	VulkanCommandBuffer* CommandBuffer = new VulkanCommandBuffer(Device, this, imageIndex);
-	CommandBuffers.push_back(CommandBuffer);
+    VulkanCommandBuffer* CommandBuffer = new VulkanCommandBuffer(Device, this, imageIndex);
+    CommandBuffers.push_back(CommandBuffer);
 
-	return CommandBuffer;
+    return CommandBuffer;
 }
 
 void VulkanCommandPool::CreateCommandPool(uint32 queueFamilyIndex)
 {
     VE_ASSERT(CommandPoolHandle == VK_NULL_HANDLE, VE_TEXT("[VulkanCommandPool]: Potential GPU Memory Leak! A vulkan command pool can only be created once!!"));
 
-	VkCommandPoolCreateInfo CommandPoolInfo = VulkanUtils::Initializers::CommandPoolCreateInfo(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-		queueFamilyIndex, nullptr);
+    VkCommandPoolCreateInfo CommandPoolInfo = VulkanUtils::Initializers::CommandPoolCreateInfo(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+        queueFamilyIndex, nullptr);
 
-	VK_CHECK_RESULT(vkCreateCommandPool(*Device->GetDeviceHandle(), &CommandPoolInfo, nullptr, &CommandPoolHandle), "[VulkanCommandPool]: Failed to create a command pool!");
+    VK_CHECK_RESULT(vkCreateCommandPool(*Device->GetDeviceHandle(), &CommandPoolInfo, nullptr, &CommandPoolHandle), "[VulkanCommandPool]: Failed to create a command pool!");
 }
 
 void VulkanCommandPool::EraseCommandBuffer(VulkanCommandBuffer* inCmdBuffer)
@@ -346,14 +402,18 @@ void VulkanCommandPool::EraseCommandBuffer(VulkanCommandBuffer* inCmdBuffer)
     }
 }
 
+void VulkanCommandPool::Reset()
+{
+    vkResetCommandPool(*Device->GetDeviceHandle(), CommandPoolHandle, 0);
+}
+
 void VulkanCommandPool::DestroyBuffers()
 {
-	for (uint32 i = 0; i < CommandBuffers.size(); ++i)
-	{
-		CommandBuffers[i]->FreeCommandBuffer();
-		delete CommandBuffers[i];
-	}
+    for (uint32 i = 0; i < CommandBuffers.size(); ++i)
+    {
+        delete CommandBuffers[i];
+    }
 
-	CommandBuffers.clear();
+    CommandBuffers.clear();
 }
 

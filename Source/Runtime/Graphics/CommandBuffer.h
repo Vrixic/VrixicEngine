@@ -191,6 +191,15 @@ public:
     */
     virtual void DrawIndexedInstanced(uint32 inNumIndices, uint32 inNumInstances, uint32 inFirstIndex = 0, uint32 inVertexOffset = 0, uint32 inFirstInstanceIndex = 0) = 0;
 
+    /**
+     * Copies the data from the buffer provided and uploads it into the texture
+     * @Note: this function only uploads the data and leaves the texture in a non-shader readable layout
+     *
+     * @param inTexture the texture that will contain the data after copy
+     * @param inTextureWriteInfo contains information used to write to the texture
+     */
+    virtual void UploadTextureData(const TextureResource* inTexture, const FTextureWriteInfo& inTextureWriteInfo) = 0;
+
 public:
     /* ------------------------------------------------------------------------------- */
     /* -------------                 Synchronization               ------------------- */

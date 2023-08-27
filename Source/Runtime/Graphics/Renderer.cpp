@@ -17,6 +17,7 @@
 #include <Runtime/Memory/Core/MemoryManager.h>
 #include <Runtime/Memory/ResourceManager.h>
 #include <Runtime/File/GLTFLoader.h>
+#include <Runtime/File/AsynchronousLoader.h>
 
 #include <External/glfw/Includes/GLFW/glfw3.h>
 #include <Runtime/Core/Math/Quat.h>
@@ -98,12 +99,14 @@ void Renderer::Init(const FRendererConfig& inRendererConfig)
         break;
     }
 
-    //CameraTranslation.Z = -25.0f;
+    CameraTranslation.Z = -5.0f;
     ViewMatrixWorld = Matrix4D::Identity();
     ViewMatrixWorld.SetTranslation(Vector3D(0.0f, 0.0f, 0.0f));
     GlobalMatrix = Matrix4D::Identity();
     LightPosition = Vector4D(-10.0f, 10.0f, 10.0f, 1.0f);
     DebugFlags = 0;
+
+    NumTexturesToUpdate = 0;
 }
 
 void Renderer::Shutdown()
@@ -167,10 +170,10 @@ void Renderer::Shutdown()
         RenderInterface.Get()->Free(ImGuiTexturePipelineLayout);
 
         // Clean up render resources
-        for (uint32 i = 0; i < CommandBuffers.size(); i++)
-        {
-            RenderInterface.Get()->Free(CommandBuffers[i]);
-        }
+        //for (uint32 i = 0; i < CommandBuffers.size(); i++)
+        //{
+        //    RenderInterface.Get()->Free(CommandBuffers[i]);
+        //}
 
         for (uint32 i = 0; i < FrameBuffers.size(); i++)
         {
@@ -213,6 +216,8 @@ void Renderer::RenderStaticMesh(ICommandBuffer* inCurrentCommandBuffer, CStaticM
     {
         const FRenderAssetSection& Section = RenderData.RenderAssetSections[SectionIndex];
         FMaterialData& Material = inStaticMesh->GetMaterial(SectionIndex);
+
+        if (!Material.IsValid()) continue;
 
         Material.ModelInv = (inStaticMesh->GetWorldTransform() * Material.Model).Inverse();
 
@@ -341,10 +346,13 @@ void Renderer::Render()
     UniformData.Light = LightPosition.ToVector3D();
     UniformData.DebugFlags = DebugFlags;
 
-    for (uint32 i = 0; i < 4; ++i)
+    for (uint32 i = 0; i < LightStaticMeshes.size(); ++i)
     {
-        UniformData.LightPositions[i] = LightStaticMeshes[i]->GetWorldTransform()[3].ToVector3D();
-        UniformData.LightColors[i] = LightStaticMeshes[i]->GetMaterial(0).BaseColorFactor.ToVector3D();
+        if (LightStaticMeshes[i] != nullptr)
+        {
+            UniformData.LightPositions[i] = LightStaticMeshes[i]->GetWorldTransform()[3].ToVector3D();
+            UniformData.LightColors[i] = LightStaticMeshes[i]->GetMaterial(0).BaseColorFactor.ToVector3D();
+        }
     }
 
     // Upload to buffer
@@ -352,7 +360,7 @@ void Renderer::Render()
 
     {
         // The the newest command buffer we will draw to 
-        ICommandBuffer* CurrentCommandBuffer = CommandBuffers[CurrentImageIndex];
+        ICommandBuffer* CurrentCommandBuffer = CommandBufferManager::Get().GetCommandBuffer(CurrentImageIndex, 0); // CommandBuffers[CurrentImageIndex];
 
         // Being encoding command to this command buffer
         CurrentCommandBuffer->Begin();
@@ -428,7 +436,7 @@ void Renderer::Render()
             RenderStaticMesh(CurrentCommandBuffer, MeshDraw);
         }
 
-        for (uint32 i = 0; i < 4; ++i)
+        for (uint32 i = 0; i < LightStaticMeshes.size(); ++i)
         {
             if (SelectedStaticMesh != -1 && StaticMeshes[SelectedStaticMesh] == LightStaticMeshes[i])
             {
@@ -491,7 +499,7 @@ TextureHandle Renderer::CreateTexture2D(const std::string& inTexturePath, Buffer
 
     Config.Format = inFormat;
 
-    Texture* NewTextureHandle = RenderInterface.Get()->CreateTexture(Config);
+    TextureResource* NewTextureHandle = RenderInterface.Get()->CreateTexture(Config);
 
     NewTextureHandle->SetPath(inTexturePath);
 
@@ -564,7 +572,7 @@ TextureHandle Renderer::CreateTexture2DKtx(const std::string& inTexturePath, Buf
 
     Config.Format = (EPixelFormat)((ktxTexture2*)(KtxTextureHandle))->vkFormat;
 
-    Texture* NewTextureHandle = RenderInterface.Get()->CreateTexture(Config);
+    TextureResource* NewTextureHandle = RenderInterface.Get()->CreateTexture(Config);
     NewTextureHandle->SetPath(inTexturePath);
 
     uint8* KtxTextureData = ktxTexture_GetData(KtxTextureHandle);
@@ -650,7 +658,7 @@ TextureHandle Renderer::CreateTextureCubemap(const std::string& inTexturePath, B
     TextureConfig.MipLevels = 1;
     TextureConfig.NumArrayLayers = 6;
 
-    Texture* CubemapTexture = RenderInterface.Get()->CreateTexture(TextureConfig);
+    TextureResource* CubemapTexture = RenderInterface.Get()->CreateTexture(TextureConfig);
     CubemapTexture->SetPath(inTexturePath);
 
     FBufferConfig BufferConfig;
@@ -729,7 +737,7 @@ TextureHandle Renderer::CreateTextureCubemapKtx(const std::string& inTexturePath
     TextureConfig.MipLevels = CubemapMipLevels;
     TextureConfig.NumArrayLayers = 6;
     TextureConfig.KtxTextureHandle = KtxTextureHandle;
-    Texture* NewTexture = RenderInterface.Get()->CreateTexture(TextureConfig);
+    TextureResource* NewTexture = RenderInterface.Get()->CreateTexture(TextureConfig);
     NewTexture->SetPath(inTexturePath);
 
     // Copy Buffer Memory Into Image 
@@ -1649,6 +1657,7 @@ void Renderer::LoadModels()
                 FWorld World = FGLTFLoader::LoadFromFile(BusterDroneModelPath.data());
 
                 TextureHandle* TextureHandles = new TextureHandle[World.Images.size()];
+                uint32 TexHandleStart = TexturesArray.size();
 
                 // Parsing the World Data 
                 {
@@ -1658,7 +1667,11 @@ void Renderer::LoadModels()
                     for (uint32 i = 0; i < World.Images.size(); ++i)
                     {
                         FImage Image = World.Images[i];
-                        TextureHandles[i] = CreateTexture2D(MakePathToResource("buster_drone/" + Image.Uri, 't').c_str(), TextureBuffers[i]);
+                        //TextureHandles[i] = CreateTexture2D(MakePathToResource("buster_drone/" + Image.Uri, 't').c_str(), TextureBuffers[i]);
+                        TexturesArray.push_back(nullptr);
+                        TextureHandles[i] = TexturesArray.size()-1;
+                        VGameEngine::Get()->GetAsyncLoader().RequestTextureData(MakePathToResource("buster_drone/" + Image.Uri, 't'), TextureHandles[i], EPixelFormat::RGBA8UNorm);
+                        //TexturesToUpdate[NumTexturesToUpdate++] = TextureHandles[i];
                         Buffers.pop_back();
                     }
                 }
@@ -1898,7 +1911,7 @@ void Renderer::LoadModels()
 
                                 delete[] NewIndexData;
                             }
-                            if (IndicesAccessor.ComponentType == FAccessor::EComponentType::UnsignedByte)
+                            else if (IndicesAccessor.ComponentType == FAccessor::EComponentType::UnsignedByte)
                             {
                                 NewIndexData = new uint16[Section.Count];
 
@@ -2042,7 +2055,7 @@ void Renderer::LoadModels()
                                     FTexture& diffuse_texture = World.Textures[material.PBRMetallicRoughnessInfo.BaseColorTexture.Index];
 
                                     TextureHandle Handle = TextureHandles[diffuse_texture.ImageIndex];
-                                    Texture* diffuse_texture_gpu = TexturesArray[Handle];
+                                    TextureResource* diffuse_texture_gpu = TexturesArray[Handle];
 
                                     Sampler* SamplerDef = SamplerHandle;
                                     if (diffuse_texture.SamplerIndex != -1) {
@@ -2056,7 +2069,7 @@ void Renderer::LoadModels()
                                     LinkInfo.TextureSampler = SamplerDef;
                                     LinkInfo.ResourceHandle.TextureHandle = diffuse_texture_gpu;
 
-                                    BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
+                                    //BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
                                 }
 
                                 // Update the diffuse texture set 
@@ -2076,7 +2089,7 @@ void Renderer::LoadModels()
                                     FTexture& roughness_texture = World.Textures[material.PBRMetallicRoughnessInfo.MetallicRoughnessTexture.Index];
 
                                     TextureHandle Handle = TextureHandles[roughness_texture.ImageIndex];
-                                    Texture* roughness_texture_gpu = TexturesArray[Handle];
+                                    TextureResource* roughness_texture_gpu = TexturesArray[Handle];
 
                                     Sampler* SamplerDef = SamplerHandle;
                                     if (roughness_texture.SamplerIndex != -1) {
@@ -2091,7 +2104,7 @@ void Renderer::LoadModels()
                                     MaterialData.Flags |= MaterialFeatures_RoughnessTexture;
                                     MaterialData.RoughnessIndex = Handle;
 
-                                    BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
+                                    //BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
                                 }
 
                                 // Update MetallicRoughness texture
@@ -2113,7 +2126,7 @@ void Renderer::LoadModels()
                                     // NOTE(marco): this could be the same as the roughness texture, but for now we treat it as a separate
                                     // texture
                                     TextureHandle Handle = TextureHandles[occlusion_texture.ImageIndex];
-                                    Texture* occlusion_texture_gpu = TexturesArray[Handle];
+                                    TextureResource* occlusion_texture_gpu = TexturesArray[Handle];
 
                                     Sampler* SamplerDef = SamplerHandle;
                                     if (occlusion_texture.SamplerIndex != -1) {
@@ -2128,7 +2141,7 @@ void Renderer::LoadModels()
                                     MaterialData.Flags |= MaterialFeatures_OcclusionTexture;
                                     MaterialData.OcclusionIndex = Handle;
 
-                                    BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
+                                    //BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
                                 }
 
                                 // Update Occlusion Texture
@@ -2150,7 +2163,7 @@ void Renderer::LoadModels()
                                     // NOTE(marco): this could be the same as the roughness texture, but for now we treat it as a separate
                                     // texture
                                     TextureHandle Handle = TextureHandles[emissive_texture.ImageIndex];
-                                    Texture* emissive_texture_gpu = TexturesArray[Handle];
+                                    TextureResource* emissive_texture_gpu = TexturesArray[Handle];
 
                                     Sampler* SamplerDef = SamplerHandle;
                                     if (emissive_texture.SamplerIndex != -1) {
@@ -2165,7 +2178,7 @@ void Renderer::LoadModels()
                                     MaterialData.Flags |= MaterialFeatures_EmissiveTexture;
                                     MaterialData.EmissiveIndex = Handle;
 
-                                    BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
+                                    //BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
                                 }
 
                                 //DescriptorSet->LinkToTexture(0, LinkInfo);
@@ -2184,7 +2197,7 @@ void Renderer::LoadModels()
                                     FTexture& normal_texture = World.Textures[material.NormalTexture.Index];
 
                                     TextureHandle Handle = TextureHandles[normal_texture.ImageIndex];
-                                    Texture* normal_texture_gpu = TexturesArray[Handle];
+                                    TextureResource* normal_texture_gpu = TexturesArray[Handle];
 
                                     Sampler* SamplerDef = SamplerHandle;
                                     if (normal_texture.SamplerIndex != -1) {
@@ -2196,7 +2209,7 @@ void Renderer::LoadModels()
                                     LinkInfo.TextureSampler = SamplerDef;
                                     LinkInfo.ResourceHandle.TextureHandle = normal_texture_gpu;
 
-                                    BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
+                                    //BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
 
                                     MaterialData.Flags |= MaterialFeatures_NormalTexture;
                                     MaterialData.NormalIndex = Handle;
@@ -2245,6 +2258,8 @@ void Renderer::LoadModels()
                             MaterialData.BRDFLutIndex = BRDFLutTexture;
 
                             BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
+
+                            //MaterialData.Flags = 0;
 
                             FBufferConfig BufferConfig = { };
                             BufferConfig.InitialData = &MaterialData;
@@ -2516,7 +2531,7 @@ void Renderer::CreateSphereModels()
             StaticMesh->RenderAssetData.NormalBuffer = SphereBuffer;
             StaticMesh->RenderAssetData.TexCoordBuffer = SphereBuffer;
             StaticMesh->SetName(Name + std::to_string(i));//std::to_string(row) + std::to_string(col));
-            StaticMeshes.push_back(StaticMesh);
+            //StaticMeshes.push_back(StaticMesh);
             LightStaticMeshes.push_back(StaticMesh);
         }
     }
@@ -2707,7 +2722,7 @@ void Renderer::CreateCubemap(const char* inCubeMapName, const IPipeline* inPipel
         TextureConfig.NumArrayLayers = 1;
         TextureConfig.NumSamples = 1;
 
-        Texture* FrameBufferTexture = RenderInterface.Get()->CreateTexture(TextureConfig);
+        TextureResource* FrameBufferTexture = RenderInterface.Get()->CreateTexture(TextureConfig);
 
         // Create the frame buffer with the texture we would like to use 
         FFrameBufferConfig FrameBufferConfig = { };
@@ -2935,7 +2950,7 @@ void Renderer::CreateIrradianceMap(const char* inCubeMapName, float inViewportSi
         TextureConfig.NumArrayLayers = 1;
         TextureConfig.NumSamples = 1;
 
-        Texture* FrameBufferTexture = RenderInterface.Get()->CreateTexture(TextureConfig);
+        TextureResource* FrameBufferTexture = RenderInterface.Get()->CreateTexture(TextureConfig);
 
         // Create the frame buffer with the texture we would like to use 
         FFrameBufferConfig FrameBufferConfig = { };
@@ -3147,7 +3162,7 @@ void Renderer::CreateCubemapFromHighDynamicImage(const char* inCubeMapName, floa
         TextureConfig.NumArrayLayers = 1;
         TextureConfig.NumSamples = 1;
 
-        Texture* FrameBufferTexture = RenderInterface.Get()->CreateTexture(TextureConfig);
+        TextureResource* FrameBufferTexture = RenderInterface.Get()->CreateTexture(TextureConfig);
 
         // Create the frame buffer with the texture we would like to use 
         FFrameBufferConfig FrameBufferConfig = { };
@@ -3357,7 +3372,7 @@ void Renderer::CreatePrefilterEnvMap(const char* inCubeMapName, float inViewport
         TextureConfig.NumArrayLayers = 1;
         TextureConfig.NumSamples = 1;
 
-        Texture* FrameBufferTexture = RenderInterface.Get()->CreateTexture(TextureConfig);
+        TextureResource* FrameBufferTexture = RenderInterface.Get()->CreateTexture(TextureConfig);
 
         // Create the frame buffer with the texture we would like to use 
         FFrameBufferConfig FrameBufferConfig = { };
@@ -3634,7 +3649,7 @@ void Renderer::CreateBrdfIntegration(const char* inCubeMapName, float inViewport
         TextureConfig.NumArrayLayers = 1;
         TextureConfig.NumSamples = 1;
 
-        Texture* FrameBufferTexture = RenderInterface.Get()->CreateTexture(TextureConfig);
+        TextureResource* FrameBufferTexture = RenderInterface.Get()->CreateTexture(TextureConfig);
 
         // Create the frame buffer with the texture we would like to use 
         FFrameBufferConfig FrameBufferConfig = { };
@@ -3818,10 +3833,43 @@ PipelineLayout* Renderer::CreatePipelineLayoutFromShaders(Shader* inVertexShader
     return RenderInterface.Get()->CreatePipelineLayoutFromShaders((const Shader**)Shaders, 2);
 }
 
+void Renderer::AddTextureToUpdate(const TextureHandle& inTextureHandle)
+{
+    std::lock_guard<std::mutex> LockGaurd(TextureUpdateMutex);
+
+    TexturesToUpdate[NumTexturesToUpdate++] = inTextureHandle;
+}
+
+void Renderer::AddTextureUpdateCommands(uint32 inThreadIndex)
+{
+    std::lock_guard<std::mutex> LockGaurd(TextureUpdateMutex);
+
+    if (NumTexturesToUpdate == 0)
+    {
+        return;
+    }
+
+    FDescriptorSetsLinkInfo LinkInfo = { };
+
+    LinkInfo.DescriptorCount = 1;
+    LinkInfo.BindingStart = BINDLESS_TEXTURE_BINDING;
+    LinkInfo.TextureSampler = SamplerHandle;
+
+    for (uint32 i = 0; i < NumTexturesToUpdate; ++i)
+    {
+        LinkInfo.ArrayElementStart = TexturesToUpdate[i];
+        LinkInfo.ResourceHandle.TextureHandle = GetTextureResource(TexturesToUpdate[i]);
+        RenderInterface.Get()->SetTextureLayout(LinkInfo.ResourceHandle.TextureHandle, ETextureLayout::ShaderReadOnlyOptimal);
+        BindlessDescriptorSet->LinkToTexture(0, LinkInfo);
+    }
+
+    NumTexturesToUpdate = 0;
+}
+
 void Renderer::BeginFrame()
 {
     // Firstly complete that last command buffer draw commands 
-    ICommandBuffer* LastCommandBuffer = CommandBuffers[CurrentImageIndex];
+    ICommandBuffer* LastCommandBuffer = CommandBufferManager::Get().GetCommandBuffer(CurrentImageIndex, 0); //CommandBuffers[CurrentImageIndex];
 
     // Use a fence to wait until the command buffer has finished execution before using it again
     // Start of frame we would want to wait until last frame has finished 
@@ -3833,7 +3881,13 @@ void Renderer::BeginFrame()
 
 void Renderer::Present()
 {
-    ICommandBuffer* CurrentCommandBuffer = CommandBuffers[CurrentImageIndex];
+    ICommandBuffer* CurrentCommandBuffer = CommandBufferManager::Get().GetCommandBuffer(CurrentImageIndex, 0); //CommandBuffers[CurrentImageIndex];
+
+    // ------------------------------------------ 
+    // This function does not do what it is supposed to, this is just temporary fucntionality
+    // added for testing multithreading and creation of asynchronous textures 
+    // ------------------------------------------ 
+    AddTextureUpdateCommands(0);
 
     // Reset our current command buffer wait fence 
     // so that when it is used next it will already be resetted 
@@ -4289,17 +4343,17 @@ void Renderer::CreateVulkanRenderInterface(bool inEnableRenderDoc)
     // Create the device 
     Device->CreateDevice((VulkanSurface*)SurfacePtr);
 
-    // Initliaze the interface 
-    RenderInterface.Get()->Initialize();
-
     // Create the swapchain
     FSwapChainConfig SwapChainConfiguration = FSwapChainConfig::CreateDefaultConfig();
     SwapChainConfiguration.bEnableVSync = true;
     SwapChainMain = RenderInterface.Get()->CreateSwapChain(SwapChainConfiguration, SurfacePtr);
 
+    // Initliaze the interface 
+    RenderInterface.Get()->Initialize();
+
     // Create command buffers
     {
-        FCommandBufferConfig Config = { };
+        /*FCommandBufferConfig Config = { };
         Config.CommandQueue = RenderInterface.Get()->GetCommandQueue();
         Config.Flags = FCommandBufferLevelFlags::Primary;
         Config.NumBuffersToAllocate = 1;
@@ -4310,7 +4364,7 @@ void Renderer::CreateVulkanRenderInterface(bool inEnableRenderDoc)
             CommandBuffers[i] = RenderInterface.Get()->CreateCommandBuffer(Config);
         }
 
-        VE_CORE_LOG_INFO("Successfully created draw command buffers...");
+        VE_CORE_LOG_INFO("Successfully created draw command buffers...");*/
     }
 
     // Create synchronization objects (Semaphores)
@@ -4412,7 +4466,7 @@ void Renderer::CreateVulkanRenderInterface(bool inEnableRenderDoc)
         FrameBuffers.resize(SwapChainMain->GetImageCount());
 
         FFrameBufferAttachment DepthStencilAttachment = { };
-        DepthStencilAttachment.Attachment = (Texture*)DepthStencilView;
+        DepthStencilAttachment.Attachment = (TextureResource*)DepthStencilView;
 
         FFrameBufferAttachment ColorAttachment = { };
 
@@ -4639,7 +4693,7 @@ void Renderer::CreateVulkanRenderInterface(bool inEnableRenderDoc)
     CreateSkyboxPipeline();
     CreatePBRPipeline();
 
-    LoadModels();
+    //LoadModels();
 
     CurrentImageIndex = 0;
 
@@ -4684,7 +4738,7 @@ bool Renderer::OnRenderViewportResized_Vulkan(const FExtent2D& inNewRenderViewpo
         }
 
         FFrameBufferAttachment DepthStencilAttachment = { };
-        DepthStencilAttachment.Attachment = (Texture*)DepthStencilView;
+        DepthStencilAttachment.Attachment = (TextureResource*)DepthStencilView;
 
         FFrameBufferAttachment ColorAttachment = { };
 
@@ -4721,21 +4775,21 @@ bool Renderer::OnRenderViewportResized_Vulkan(const FExtent2D& inNewRenderViewpo
 
     // Command buffers need to be recreated as they may store references to the recreated frame buffer
     {
-        for (uint32 i = 0; i < CommandBuffers.size(); i++)
-        {
-            RenderInterface.Get()->Free(CommandBuffers[i]);
-        }
-
-        FCommandBufferConfig Config = { };
-        Config.CommandQueue = RenderInterface.Get()->GetCommandQueue();
-        Config.Flags = FCommandBufferLevelFlags::Primary;
-        Config.NumBuffersToAllocate = 1;
-
-        CommandBuffers.resize(SwapChainMain->GetImageCount());
-        for (uint32 i = 0; i < SwapChainMain->GetImageCount(); i++)
-        {
-            CommandBuffers[i] = RenderInterface.Get()->CreateCommandBuffer(Config);
-        }
+        //for (uint32 i = 0; i < CommandBuffers.size(); i++)
+        //{
+        //    RenderInterface.Get()->Free(CommandBuffers[i]);
+        //}
+        //
+        //FCommandBufferConfig Config = { };
+        //Config.CommandQueue = RenderInterface.Get()->GetCommandQueue();
+        //Config.Flags = FCommandBufferLevelFlags::Primary;
+        //Config.NumBuffersToAllocate = 1;
+        //
+        //CommandBuffers.resize(SwapChainMain->GetImageCount());
+        //for (uint32 i = 0; i < SwapChainMain->GetImageCount(); i++)
+        //{
+        //    CommandBuffers[i] = RenderInterface.Get()->CreateCommandBuffer(Config);
+        //}
 
         // Tell the render interface that window just resized 
         RenderInterface.Get()->OnRenderViewportResized(SwapChainMain, inNewRenderViewport);

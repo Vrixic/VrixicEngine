@@ -270,8 +270,8 @@ void VulkanDevice::CreateDevice(VulkanSurface* surface)
 
     /* Create the Queue */
     GraphicsQueue = new VulkanQueue(this, GraphicsQueueFamilyIndex, GraphicsQueueNodeIndex);
-    ComputeQueue = new VulkanQueue(this, ComputeQueueFamilyIndex, ComputeQueueNodeIndex);
-    TransferQueue = new VulkanQueue(this, TransferQueueFamilyIndex, TransferQueueNodeIndex);
+    ComputeQueue = new VulkanQueue(this, ComputeQueueFamilyIndex, ComputeQueueNodeIndex, ERenderQueueType::Compute);
+    TransferQueue = new VulkanQueue(this, TransferQueueFamilyIndex, TransferQueueNodeIndex, ERenderQueueType::Transfer);
 }
 
 /* For Destorying vulkan */
@@ -329,6 +329,58 @@ void VulkanDevice::TransitionTextureLayout(const HTransitionTextureLayoutInfo& i
         nullptr, 1, &ImageMemoryBarrier);
 }
 
+void VulkanDevice::AddImageBarrier(VkCommandBuffer& inCmdBuffer, VulkanTextureView* inTexture, const FTextureSubresourceRange& inSubresourceRange, VkImageLayout inOldLayout, VkImageLayout inNewLayout, VkAccessFlags inSrcAccessMask, VkAccessFlags inDstAccessMask, ERenderQueueType inSrcQueueType, ERenderQueueType inDstQueueType)
+{
+    // Create a Image Memory Barrier 
+    VkImageMemoryBarrier ImageMemoryBarrier = VulkanUtils::Initializers::ImageMemoryBarrier();
+    ImageMemoryBarrier.oldLayout = inOldLayout;
+    ImageMemoryBarrier.newLayout = inNewLayout;
+    ImageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    ImageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    ImageMemoryBarrier.image = *inTexture->GetImageHandle();
+    ImageMemoryBarrier.subresourceRange.aspectMask = inTexture->GetAspectFlags();
+    ImageMemoryBarrier.subresourceRange.baseMipLevel = inSubresourceRange.BaseMipLevel;
+    ImageMemoryBarrier.subresourceRange.levelCount = inSubresourceRange.NumMipLevels;
+    ImageMemoryBarrier.subresourceRange.baseArrayLayer = inSubresourceRange.BaseArrayLayer;
+    ImageMemoryBarrier.subresourceRange.layerCount = inSubresourceRange.NumArrayLayers;
+
+    VkPipelineStageFlags SrcStageMask = GetPipelineStageFlags(inSrcAccessMask, inSrcQueueType);
+    VkPipelineStageFlags DstStageMask = GetPipelineStageFlags(inDstAccessMask, inDstQueueType);
+
+    ImageMemoryBarrier.srcAccessMask = inSrcAccessMask;
+    ImageMemoryBarrier.dstAccessMask = inDstAccessMask;
+
+    vkCmdPipelineBarrier(inCmdBuffer,
+        SrcStageMask, DstStageMask, 0, 0, nullptr, 0,
+        nullptr, 1, &ImageMemoryBarrier);
+}
+
+void VulkanDevice::AddImageBarrierExt(VkCommandBuffer& inCmdBuffer, VulkanTextureView* inTexture, const FTextureSubresourceRange& inSubresourceRange, VkImageLayout inOldLayout, VkImageLayout inNewLayout, VkAccessFlags inSrcAccessMask, VkAccessFlags inDstAccessMask, VulkanQueue& inSrcQueue, VulkanQueue& inDstQueue, ERenderQueueType inSrcQueueType, ERenderQueueType inDstQueueType)
+{
+    // Create a Image Memory Barrier 
+    VkImageMemoryBarrier ImageMemoryBarrier = VulkanUtils::Initializers::ImageMemoryBarrier();
+    ImageMemoryBarrier.oldLayout = inOldLayout;
+    ImageMemoryBarrier.newLayout = inNewLayout;
+    ImageMemoryBarrier.srcQueueFamilyIndex = inSrcQueue.GetFamilyIndex();
+    ImageMemoryBarrier.dstQueueFamilyIndex = inDstQueue.GetFamilyIndex();
+    ImageMemoryBarrier.image = *inTexture->GetImageHandle();
+    ImageMemoryBarrier.subresourceRange.aspectMask = inTexture->GetAspectFlags();
+    ImageMemoryBarrier.subresourceRange.baseMipLevel = inSubresourceRange.BaseMipLevel;
+    ImageMemoryBarrier.subresourceRange.levelCount = inSubresourceRange.NumMipLevels;
+    ImageMemoryBarrier.subresourceRange.baseArrayLayer = inSubresourceRange.BaseArrayLayer;
+    ImageMemoryBarrier.subresourceRange.layerCount = inSubresourceRange.NumArrayLayers;
+
+    VkPipelineStageFlags SrcStageMask = GetPipelineStageFlags(inSrcAccessMask, inSrcQueueType);
+    VkPipelineStageFlags DstStageMask = GetPipelineStageFlags(inDstAccessMask, inDstQueueType);
+
+    ImageMemoryBarrier.srcAccessMask = inSrcAccessMask;
+    ImageMemoryBarrier.dstAccessMask = inDstAccessMask;
+
+    vkCmdPipelineBarrier(inCmdBuffer,
+        SrcStageMask, DstStageMask, 0, 0, nullptr, 0,
+        nullptr, 1, &ImageMemoryBarrier);
+}
+
 void VulkanDevice::CopyBufferToTexture(const HCopyBufferTextureInfo& inCopyBufferToTexture)
 {
     /**
@@ -360,7 +412,7 @@ void VulkanDevice::CopyBufferToTexture(const HCopyBufferTextureInfo& inCopyBuffe
             BufferImageCopies[CurrentBufferCopyIndex].imageExtent.height = inCopyBufferToTexture.Extent.height >> mipLevel;
             BufferImageCopies[CurrentBufferCopyIndex].imageExtent.depth = inCopyBufferToTexture.Extent.depth;
 
-            BufferImageCopies[CurrentBufferCopyIndex].bufferOffset = OffsetImage + BufferOffset; // (mipLevel * BufferImageCopies[i].imageExtent.width)
+            BufferImageCopies[CurrentBufferCopyIndex].bufferOffset = inCopyBufferToTexture.InitialBufferOffset + OffsetImage + BufferOffset; // (mipLevel * BufferImageCopies[i].imageExtent.width)
             BufferImageCopies[CurrentBufferCopyIndex].bufferRowLength = 0;
             BufferImageCopies[CurrentBufferCopyIndex].bufferImageHeight = 0;
 
@@ -477,12 +529,81 @@ uint32_t VulkanDevice::GetMemoryTypeIndex(uint32_t inTypeBits, VkMemoryPropertyF
     }
 }
 
+VkPipelineStageFlags VulkanDevice::GetPipelineStageFlags(VkAccessFlags inAccessFlags, ERenderQueueType inQueueType)
+{
+    VkPipelineStageFlags Flags = 0;
+
+    switch (inQueueType) {
+    case ERenderQueueType::Graphics:
+    {
+        if ((inAccessFlags & (VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)) != 0)
+            Flags |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+
+        if ((inAccessFlags & (VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT)) != 0) {
+            Flags |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+            Flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            /*if ( pRenderer->pActiveGpuSettings->mGeometryShaderSupported ) {
+                flags |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
+            }
+            if ( pRenderer->pActiveGpuSettings->mTessellationSupported ) {
+                flags |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
+                flags |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
+            }*/
+            Flags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+            /** Maybe Add raytracing???*/
+        }
+
+        if ((inAccessFlags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT) != 0)
+            Flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+        if ((inAccessFlags & (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)) != 0)
+            Flags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+        if ((inAccessFlags & (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)) != 0)
+            Flags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+
+        break;
+    }
+    case ERenderQueueType::Compute:
+    {
+        if ((inAccessFlags & (VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)) != 0 ||
+            (inAccessFlags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT) != 0 ||
+            (inAccessFlags & (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)) != 0 ||
+            (inAccessFlags & (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)) != 0)
+            return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+
+        if ((inAccessFlags & (VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT)) != 0)
+            Flags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+        break;
+    }
+    case ERenderQueueType::Transfer: return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+    default: break;
+    }
+
+    // Compatible with both compute and graphics queues
+    if ((inAccessFlags & VK_ACCESS_INDIRECT_COMMAND_READ_BIT) != 0)
+        Flags |= VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+
+    if ((inAccessFlags & (VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT)) != 0)
+        Flags |= VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+    if ((inAccessFlags & (VK_ACCESS_HOST_READ_BIT | VK_ACCESS_HOST_WRITE_BIT)) != 0)
+        Flags |= VK_PIPELINE_STAGE_HOST_BIT;
+
+    if (Flags == 0)
+        Flags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+
+    return Flags;
+}
+
 /* ------------------------------------------------------------------------------- */
 /* -----------------------             Queue             ------------------------- */
 /* ------------------------------------------------------------------------------- */
 
-VulkanQueue::VulkanQueue(VulkanDevice* device, uint32 queueFamilyIndex, uint32 queueIndex)
-    : Device(device), FamilyIndex(queueFamilyIndex), QueueIndex(queueIndex)
+VulkanQueue::VulkanQueue(VulkanDevice* device, uint32 queueFamilyIndex, uint32 queueIndex, ERenderQueueType inQueueType)
+    : ICommandQueue(inQueueType), Device(device), FamilyIndex(queueFamilyIndex), QueueIndex(queueIndex)
 {
     VE_PROFILE_VULKAN_FUNCTION();
 
@@ -492,6 +613,12 @@ VulkanQueue::VulkanQueue(VulkanDevice* device, uint32 queueFamilyIndex, uint32 q
     // Create the Command Pool associated with this queue
     CommandPool = new VulkanCommandPool(device);
     CommandPool->CreateCommandPool(FamilyIndex);
+
+    WaitStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    if (inQueueType == ERenderQueueType::Transfer)
+    {
+        WaitStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    }
 }
 
 VulkanQueue::~VulkanQueue()
@@ -501,6 +628,35 @@ VulkanQueue::~VulkanQueue()
         delete CommandPool;
         CommandPool = nullptr;
     }
+}
+
+void VulkanQueue::Submit(ICommandBuffer* inCommandBuffer, uint32 inNumWaitSemaphores, ISemaphore* inWaitSemaphores, uint32 inNumSignalSemaphores, ISemaphore* inSignalSemaphores, IFence* inWaitFence)
+{
+    VE_PROFILE_VULKAN_FUNCTION();
+
+    VulkanCommandBuffer* CommandBuff = (VulkanCommandBuffer*)inCommandBuffer;
+    VulkanSemaphore* SignalSemaphores = (VulkanSemaphore*)inSignalSemaphores;
+    VulkanSemaphore* WaitSemaphores = (VulkanSemaphore*)inWaitSemaphores;
+
+    // Pipeline stage at which the queue submission will wait (via pWaitSemaphores)
+    //VkPipelineStageFlags WaitStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    // The submit info structure specifies a command buffer queue submission batch
+    VkSubmitInfo SubmitInfo = VulkanUtils::Initializers::SubmitInfo();
+    SubmitInfo.pWaitDstStageMask = &WaitStageMask;  // Pointer to the list of pipeline stages that the semaphore waits will occur at
+    SubmitInfo.waitSemaphoreCount = inNumWaitSemaphores;
+    SubmitInfo.signalSemaphoreCount = inNumSignalSemaphores;
+    SubmitInfo.pCommandBuffers = CommandBuff->GetCommandBufferHandle();// Command buffers(s) to execute in this batch (submission)
+    SubmitInfo.commandBufferCount = 1;                           // One command buffer
+
+    // SRS - on other platforms use original bare code with local semaphores/fences for illustrative purposes
+    SubmitInfo.pWaitSemaphores = WaitSemaphores->GetSemaphoresHandle();      // Semaphore(s) to wait upon before the submitted command buffer starts executing
+    SubmitInfo.pSignalSemaphores = SignalSemaphores->GetSemaphoresHandle();     // Semaphore(s) to be signaled when command buffers have completed
+
+    // get vulkan specific fence
+    VulkanFence* WaitFence = (VulkanFence*)inWaitFence;
+
+    // Submit to the graphics queue passing a wait fence
+    VK_CHECK_RESULT(vkQueueSubmit(Queue, 1, &SubmitInfo, WaitFence->GetFenceHandle()), "[VulkanQueue]: Failed to submit a command buffer to graphics queue!");
 }
 
 void VulkanQueue::Submit(ICommandBuffer* inCommandBuffer, uint32 inNumSignalSemaphores, ISemaphore* inSignalSemaphores)
@@ -516,10 +672,42 @@ void VulkanQueue::Submit(ICommandBuffer* inCommandBuffer, uint32 inNumSignalSema
     SubmitQueue(CommandBuff, 0, VK_NULL_HANDLE);
 }
 
+void VulkanQueue::Submit(ICommandBuffer* inCommandBuffer, IFence* inWaitFence)
+{
+    VE_PROFILE_VULKAN_FUNCTION();
+
+    VulkanCommandBuffer* CommandBuff = (VulkanCommandBuffer*)inCommandBuffer;
+
+    // Pipeline stage at which the queue submission will wait (via pWaitSemaphores)
+    //VkPipelineStageFlags WaitStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    // The submit info structure specifies a command buffer queue submission batch
+    VkSubmitInfo SubmitInfo = VulkanUtils::Initializers::SubmitInfo();
+    SubmitInfo.pWaitDstStageMask = &WaitStageMask;  // Pointer to the list of pipeline stages that the semaphore waits will occur at
+    SubmitInfo.waitSemaphoreCount = 0;
+    SubmitInfo.signalSemaphoreCount = 0;
+    SubmitInfo.pCommandBuffers = CommandBuff->GetCommandBufferHandle();// Command buffers(s) to execute in this batch (submission)
+    SubmitInfo.commandBufferCount = 1;                           // One command buffer
+
+    // SRS - on other platforms use original bare code with local semaphores/fences for illustrative purposes
+    SubmitInfo.pWaitSemaphores = nullptr;      // Semaphore(s) to wait upon before the submitted command buffer starts executing
+    SubmitInfo.pSignalSemaphores = nullptr;     // Semaphore(s) to be signaled when command buffers have completed
+
+    // get vulkan specific fence
+    VulkanFence* WaitFence = (VulkanFence*)inWaitFence;
+
+    // Submit to the graphics queue passing a wait fence
+    VK_CHECK_RESULT(vkQueueSubmit(Queue, 1, &SubmitInfo, WaitFence->GetFenceHandle()), "[VulkanQueue]: Failed to submit a command buffer to graphics queue!");
+}
+
 void VulkanQueue::SetWaitFence(IFence* inWaitFence, uint64 inTimeout) const
 {
     VulkanFence* Fence = (VulkanFence*)inWaitFence;
     Fence->Wait(inTimeout);
+}
+
+bool VulkanQueue::GetWaitFenceStatus(IFence* inWaitFence) const
+{
+    return vkGetFenceStatus(*Device->GetDeviceHandle(), ((VulkanFence*)inWaitFence)->GetFenceHandle()) == VK_SUCCESS;
 }
 
 void VulkanQueue::ResetWaitFence(IFence* inWaitFence) const
@@ -538,7 +726,7 @@ void VulkanQueue::SubmitQueue(VulkanCommandBuffer* commandBuffer, uint32 numSign
     VE_PROFILE_VULKAN_FUNCTION();
 
     // Pipeline stage at which the queue submission will wait (via pWaitSemaphores)
-    VkPipelineStageFlags WaitStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    //VkPipelineStageFlags WaitStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     // The submit info structure specifies a command buffer queue submission batch
     VkSubmitInfo SubmitInfo = VulkanUtils::Initializers::SubmitInfo();
     SubmitInfo.pWaitDstStageMask = &WaitStageMask;               // Pointer to the list of pipeline stages that the semaphore waits will occur at
@@ -1095,9 +1283,9 @@ void VulkanSwapChain::AcquireNextImageIndex(ISemaphore* inLastCommandBuffer, uin
     VK_CHECK_RESULT(fpAcquireNextImageKHR(*Device->GetDeviceHandle(), SwapChainHandle, UINT64_MAX, *Semaphore->GetSemaphoresHandle(), (VkFence)nullptr, outIndex), "[VulkanSwapchain]: Failed to acquire the next swap chain image index...!");
 }
 
-Texture* VulkanSwapChain::GetTextureAt(uint32 inTextureIndex) const
+TextureResource* VulkanSwapChain::GetTextureAt(uint32 inTextureIndex) const
 {
-    return (Texture*)ImageViews[inTextureIndex];
+    return (TextureResource*)ImageViews[inTextureIndex];
 }
 
 EPixelFormat VulkanSwapChain::GetColorFormat() const

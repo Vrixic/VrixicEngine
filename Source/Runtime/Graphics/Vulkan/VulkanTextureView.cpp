@@ -28,7 +28,7 @@
 //}
 
 VulkanTextureView::VulkanTextureView(VulkanDevice* inDevice, const FTextureConfig& inTextureConfig)
-    : Texture(inTextureConfig), Device(inDevice), ImageHandle(VK_NULL_HANDLE),
+    : TextureResource(inTextureConfig), Device(inDevice), ImageHandle(VK_NULL_HANDLE),
     ImageMemory(VK_NULL_HANDLE), ViewHandle(VK_NULL_HANDLE), KtxTextureHandle(nullptr)
 {
     NumMipLevels = inTextureConfig.MipLevels;
@@ -130,7 +130,7 @@ FTextureConfig VulkanTextureView::GetTextureConfig() const
     FTextureConfig TextureConfig = { };
     TextureConfig.BindFlags = GetBindFlags();
     TextureConfig.Type = GetType();
-    TextureConfig.TextureHandle = (Texture*)this;
+    TextureConfig.TextureHandle = (TextureResource*)this;
     TextureConfig.Extent = GetExtent();
     TextureConfig.MipLevels = NumMipLevels;
     TextureConfig.NumArrayLayers = NumArrayLayers;

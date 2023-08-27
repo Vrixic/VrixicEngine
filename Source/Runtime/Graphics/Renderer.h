@@ -11,9 +11,15 @@
 #include <Core/Events/MouseEvents.h>
 #include <Core/Events/KeyEvent.h>
 
+#include "ICommandBufferManager.h"
+
 #include <Containers/Map.h>
 
+#include <mutex>
+
+static const uint32 UINT32InvalidIndex = 0xffffffff;
 typedef uint32 TextureHandle;
+static const uint32 InvalidTextureHandle = UINT32InvalidIndex;
 
 struct FRendererConfig
 {
@@ -43,7 +49,7 @@ struct UniformBufferLocalConstants
 
     static uint32 GetStaticSize()
     {
-        return 2u * sizeof(Matrix4D) + sizeof(Vector4D) + 4 + sizeof(Vector3D) * 9;
+        return (2 * sizeof(Matrix4D)) + (sizeof(Vector4D) * 2) + (sizeof(Vector3D) * 8u);
     }
 };
 
@@ -66,6 +72,305 @@ enum MaterialFeatures {
 
     MaterialFeatures_TangentVertexAttribute = 1 << 5,
     MaterialFeatures_TexcoordVertexAttribute = 1 << 6,
+};
+
+class CStaticMesh;
+
+/**
+* The main renderer used to renderer everything
+*/
+class VRIXIC_API Renderer
+{
+public:
+    /**
+    * Returns the one and only Instance to the Renderer
+    */
+    static Renderer& Get()
+    {
+        static Renderer Instance;
+        return Instance;
+    }
+
+    void Init(const FRendererConfig& inRendererConfig);
+
+    void Shutdown();
+
+    const TPointer<IRenderInterface>& GetRenderInterface() const
+    {
+        return RenderInterface;
+    }
+
+public:
+    void RenderStaticMesh(ICommandBuffer* CurrentCommandBuffer, CStaticMesh* inStaticMesh);
+    void Render();
+
+    /**
+    * Creates a texture from the string specified
+    * @param outTextureBuffer the buffer that was created to copy data from and upload to image on gpu
+    * @returns Texture* the texture that was created from string
+    */
+    TextureHandle CreateTexture2D(const std::string& inTexturePath, Buffer*& outTextureBuffer, EPixelFormat inFormat = EPixelFormat::RGBA8UNorm);
+    TextureHandle CreateTexture2DKtx(const std::string& inTexturePath, Buffer*& outTextureBuffer);
+
+    TextureHandle CreateTextureCubemap(const std::string& inTexturePath, Buffer*& outTextureBuffer, EPixelFormat inFormat = EPixelFormat::RGBA8UNorm);
+    TextureHandle CreateTextureCubemapKtx(const std::string& inTexturePath, Buffer*& outTextureBuffer);
+
+    /**
+    * Loads a shader to be used by pipeline
+    */
+    Shader* LoadShader(FShaderConfig& inShaderConfig);
+
+    /**
+    * Should be called when the window resizes, creates new swapchain and frame buffers
+    *
+    * @param inNewRenderViewport the new window/viewport size
+    */
+    bool OnRenderViewportResized(const FExtent2D& inNewRenderViewport);
+
+    bool OnMouseButtonPressed(MouseButtonPressedEvent& inMouseEvent);
+    bool OnMouseButtonReleased(MouseButtonReleasedEvent& inMouseEvent);
+    bool OnMouseMoved(MouseMovedEvent& inMouseEvent);
+    bool OnMouseScrolled(MouseScrolledEvent& inMouseEvent);
+
+    bool OnKeyPressed(KeyPressedEvent& inKeyPressedEvent);
+    bool OnKeyReleased(KeyReleasedEvent& inKeyReleasedEvent);
+
+    /** Helper Functions */
+    void CreatePBRPipeline();
+
+    void CreateSkyboxPipeline();
+
+    void LoadModels();
+
+    /**
+    *
+    */
+    void CreateSphereMeshData(float inRadius, uint32 inNumStacks, uint32 inNumSectors, std::vector<float>& outVerts, std::vector<float>& outNormals, std::vector<uint32>& outIndices, std::vector<float>& outTexCoords);
+    void CreateSphereModels();
+
+    void CreateHighDynamicImagePipeline(const char* inFilePath);
+    uint32 ConvertBGRA_To_RGBA(uint32 inBGRA);
+    void CreateCubemap(const char* inCubeMapName, const IPipeline* inPipeline, PipelineLayout* inPipelineLayout, IDescriptorSets* inDescriptorSet, float inViewportSize);
+
+    void CreateIrradianceMap(class CSkybox* inSkyboxAsset, float inViewportSize);
+    void CreateIrradianceMap(const char* inCubeMapName, float inViewportSize);
+
+    void CreateCubemapFromHighDynamicImage(const char* inCubeMapName, float inViewportSize);
+
+    void CreatePrefilterEnvMap(class CSkybox* inSkyboxAsset, float inViewportSize);
+    void CreatePrefilterEnvMap(const char* inCubeMapName, float inViewportSize);
+
+    void CreateBrdfIntegration(class CSkybox* inSkyboxAsset, float inViewportSize);
+    void CreateBrdfIntegration(const char* inCubeMapName, float inViewportSize);
+
+    PipelineLayout* CreatePipelineLayoutFromShaders(Shader* inVertexShader, Shader* inFragmentShader);
+
+    void AddTextureToUpdate(const TextureHandle& inTextureHandle);
+
+    void AddTextureUpdateCommands(uint32 inThreadIndex);
+
+    TextureResource*& GetTextureResource(const TextureHandle inHandle)
+    {
+        return TexturesArray[inHandle];
+    }
+
+    static std::string MakePathToResource(const std::string& inResourceName, char inResourceType);
+
+    inline SwapChain* GetSwapchain() const
+    {
+        return SwapChainMain;
+    }
+
+    inline uint32 GetCurrentFrame() const
+    {
+        return CurrentImageIndex;
+    }
+
+private:
+    void BeginFrame();
+    void Present();
+
+    void DrawEditorTools();
+
+    void CreateVulkanRenderInterface(bool inEnableRenderDoc);
+
+    bool OnRenderViewportResized_Vulkan(const FExtent2D& inNewRenderViewport);
+
+private:
+    /** The render interface is the object that connects us to a graphics API.. such as.. Vulkan, DirectX, etc.. */
+    TPointer<IRenderInterface> RenderInterface;
+
+    /** A pointer to the surface in use by the renderer (OS Specific) */
+    Surface* SurfacePtr;
+
+    /** The swapchain that is in use by the renderer*/
+    SwapChain* SwapChainMain;
+
+    /** The main commandbuffers that get presented to the queue that are associated with the images given from the swapchain */
+    /** Command Buffers will be created by the render interface of the CommandBufferManager for multi-threaded safety */
+    //std::vector<ICommandBuffer*> CommandBuffers;
+
+    /** Specifies the current swapchain image that command buffers will encode */
+    uint32 CurrentImageIndex;
+
+    /** Swap chain image presentation */
+    ISemaphore* PresentationCompleteSemaphore;
+
+    /** Command buffer submission and execution */
+    ISemaphore* RenderCompleteSemaphore;
+
+    /** Depth and Stencil buffering */
+    TextureResource* DepthStencilView;
+
+    IRenderPass* RenderPass;
+    IRenderPass* BRDFIntegrationRenderPass;
+
+    /** List of available frame buffers (same as number of swap chain images) */
+    std::vector<IFrameBuffer*> FrameBuffers;
+
+    /** The main render viewport */
+    FRenderViewport MainRenderViewport;
+    FRenderScissor MainRenderScissor;
+
+    /** Rendering Others */
+    IDescriptorSets* TextureSet;
+
+    Sampler* SamplerHandle;
+    Sampler* BRDFSamplerHandle;
+    Sampler* LODSamplerHandle;
+    Buffer* CP2077BufferHandle;
+    TextureHandle CP2077TextureHandle;
+
+    Buffer* VELogoBufferHandle;
+    TextureHandle VELogoTextureHandle;
+
+    std::vector<Buffer*> TextureBuffers;
+    std::vector<TextureResource*> TexturesArray;
+    //std::vector<Texture*> Textures;
+    TMap<std::string, TextureHandle> TextureMap;
+
+    std::vector<Sampler*> Samplers;
+    std::vector<IDescriptorSets*> DescriptorSets;
+    std::vector<Buffer*> Buffers;
+    std::vector<uint8*> BufferDatas;
+
+    // Includes texture mapping: normals, tangent, ....
+    PipelineLayout* PBRTexturePipelineLayout;
+    IPipeline* PBRTexturePipeline;
+    IPipeline* PBRTexturePipelineStencil;
+    IPipeline* PBRTexturePipelineOutline;
+    Shader* PBRVertexShader;
+    Shader* PBRTextureFragmentShader;
+    Shader* PBRVertexShaderOutline;
+    Shader* PBRTextureFragmentShaderOutline;
+
+    Buffer* CubeVertexBuffer;
+    Buffer* CubeVertexTexcoordBuffer;
+    Buffer* CubeIndexBuffer;
+
+    Buffer* QuadVertexBuffer;
+    Buffer* QuadVertexTexcoordBuffer;
+
+    class CSkybox* SkyboxAsset;
+
+    PipelineLayout* HDRPipelineLayout;
+    IPipeline* HDRPipeline;
+    Shader* HDRVertexShader;
+    Shader* HDRFragmentShader;
+    Buffer* HDRTextureBuffer;
+    IDescriptorSets* HDRDescSet;
+
+    IPipeline* IrridiancePipeline;
+    PipelineLayout* IrradiancePipelineLayout;
+    Shader* IrridianceVertexShader;
+    Shader* IrridianceFragmentShader;
+    IDescriptorSets* IrridianceDescSet;
+    TextureHandle IrridianceTexture;
+
+    Buffer* SkyboxRefractBuffer;
+
+    IPipeline* PrefilterEnvMapPipeline;
+    Shader* PrefilterEnvMapVertexShader;
+    Shader* PrefilterEnvMapFragmentShader;
+    IDescriptorSets* PrefilterEnvMapDescSet;
+    PipelineLayout* PrefilterEnvMapPipelineLayout;
+    Buffer* PrefilterEnvMapBuffer;
+
+    IPipeline* BRDFIntegrationPipeline;
+    Shader* BRDFIntegrationVertexShader;
+    Shader* BRDFIntegrationFragmentShader;
+    IDescriptorSets* BRDFIntegrationDescSet;
+
+    TextureHandle BRDFLutTexture;
+    TextureHandle PrefilterEnvMapTexture;
+
+    // Position | Normals -> Data stored 
+    Buffer* SphereBuffer;
+    Buffer* SphereIndexBuffer;
+    uint32 NormalOffset; // offset from the start of the buffer to the normals 
+    uint32 SphereTexCoordOffset;
+    uint32 NumSphereVerts;
+    uint32 NumSphereIndices;
+    uint32 NumSphereNormals;
+
+    Buffer* LocalConstantsBuffer;
+    Buffer* IBLDataBuffer;
+    Buffer* HDRConstantsBuffer;
+    Buffer* MaterialConstantsBuffer;
+    UniformBufferLocalConstants LocalConstants;
+
+    std::vector<CStaticMesh*> StaticMeshes;
+    std::vector<CStaticMesh*> OpaqueStaticMeshes;
+    std::vector<CStaticMesh*> TransparentStaticMeshes;
+    std::vector<CStaticMesh*> LightStaticMeshes;
+
+    float MouseDeltaX = 0.0f;
+    float MouseDeltaY = 0.0f;
+
+    uint16 LastMouseX = 0u;
+    uint16 LastMouseY = 0u;
+
+    bool TranslationKeyDowns[4];
+
+    float CameraMoveSpeed = 0.25f;
+    const float CameraTurnSpeed = 50.0f;
+    Vector3D CameraTranslation;
+
+    Vector3D CameraRotation;
+
+    Matrix4D ViewMatrixWorld;
+
+    bool bIsCameraRotationControlled;
+    bool bLeftButtonPressed;
+
+    Vector3D EulerRotation;
+    Vector4D LightPosition;
+
+    Matrix4D GlobalMatrix;
+
+    Vector3D CameraEye, CameraTarget, CameraUp;
+
+    PipelineLayout* ImGuiTexturePipelineLayout;
+    IDescriptorSets* ImGuiTextureDescSet;
+
+    uint32 DebugFlags;
+
+    int32 SelectedStaticMesh = -1;
+    int32 SelectedMaterial = -1;
+
+    // Bindless Texturing
+    static const uint32 BINDLESS_TEXTURE_BINDING = 10;
+    static const uint32 MAX_BINDLESS_TEXTURES = 1024;
+    static const uint32 INVALID_TEXTURE_INDEX = -1;
+
+    IDescriptorSets* BindlessDescriptorSet;
+
+    TextureHandle TexturesToUpdate[128];
+    uint32 NumTexturesToUpdate;
+    std::mutex TextureUpdateMutex;
+
+    // Command Buffer ready to be updated
+    std::vector<ICommandBuffer*> QueuedCommandBuffers;
 };
 
 /**
@@ -97,6 +402,36 @@ struct VRIXIC_API alignas(16) FMaterialData
 
     uint32 Flags;              ////////
     uint32 Padding[3];
+
+    bool IsValid()
+    {
+        if (Flags & MaterialFeatures_ColorTexture && Renderer::Get().GetTextureResource(AlbedoIndex) == nullptr)
+        {
+            return false;
+        }
+
+        if (Flags & MaterialFeatures_NormalTexture && Renderer::Get().GetTextureResource(NormalIndex) == nullptr)
+        {
+            return false;
+        }
+
+        if (Flags & MaterialFeatures_RoughnessTexture && Renderer::Get().GetTextureResource(RoughnessIndex) == nullptr)
+        {
+            return false;
+        }
+
+        if (Flags & MaterialFeatures_OcclusionTexture && Renderer::Get().GetTextureResource(OcclusionIndex) == nullptr)
+        {
+            return false;
+        }
+
+        if (Flags & MaterialFeatures_EmissiveTexture && Renderer::Get().GetTextureResource(EmissiveIndex) == nullptr)
+        {
+            return false;
+        }
+
+        return true;
+    }
 };
 
 struct VRIXIC_API FMeshDraw
@@ -272,281 +607,6 @@ private:
     bool bIsTransparent;
 
     friend class Renderer;
-};
-
-/**
-* The main renderer used to renderer everything
-*/
-class VRIXIC_API Renderer
-{
-public:
-    /**
-    * Returns the one and only Instance to the Renderer
-    */
-    static Renderer& Get()
-    {
-        static Renderer Instance;
-        return Instance;
-    }
-
-    void Init(const FRendererConfig& inRendererConfig);
-
-    void Shutdown();
-
-    const TPointer<IRenderInterface>& GetRenderInterface() const
-    {
-        return RenderInterface;
-    }
-
-public:
-    void RenderStaticMesh(ICommandBuffer* CurrentCommandBuffer, CStaticMesh* inStaticMesh);
-    void Render();
-
-    /**
-    * Creates a texture from the string specified
-    * @param outTextureBuffer the buffer that was created to copy data from and upload to image on gpu
-    * @returns Texture* the texture that was created from string
-    */
-    TextureHandle CreateTexture2D(const std::string& inTexturePath, Buffer*& outTextureBuffer, EPixelFormat inFormat = EPixelFormat::RGBA8UNorm);
-    TextureHandle CreateTexture2DKtx(const std::string& inTexturePath, Buffer*& outTextureBuffer);
-
-    TextureHandle CreateTextureCubemap(const std::string& inTexturePath, Buffer*& outTextureBuffer, EPixelFormat inFormat = EPixelFormat::RGBA8UNorm);
-    TextureHandle CreateTextureCubemapKtx(const std::string& inTexturePath, Buffer*& outTextureBuffer);
-
-    /**
-    * Loads a shader to be used by pipeline
-    */
-    Shader* LoadShader(FShaderConfig& inShaderConfig);
-
-    /**
-    * Should be called when the window resizes, creates new swapchain and frame buffers
-    *
-    * @param inNewRenderViewport the new window/viewport size
-    */
-    bool OnRenderViewportResized(const FExtent2D& inNewRenderViewport);
-
-    bool OnMouseButtonPressed(MouseButtonPressedEvent& inMouseEvent);
-    bool OnMouseButtonReleased(MouseButtonReleasedEvent& inMouseEvent);
-    bool OnMouseMoved(MouseMovedEvent& inMouseEvent);
-    bool OnMouseScrolled(MouseScrolledEvent& inMouseEvent);
-
-    bool OnKeyPressed(KeyPressedEvent& inKeyPressedEvent);
-    bool OnKeyReleased(KeyReleasedEvent& inKeyReleasedEvent);
-
-    /** Helper Functions */
-    void CreatePBRPipeline();
-
-    void CreateSkyboxPipeline();
-
-    void LoadModels();
-
-    /**
-    *
-    */
-    void CreateSphereMeshData(float inRadius, uint32 inNumStacks, uint32 inNumSectors, std::vector<float>& outVerts, std::vector<float>& outNormals, std::vector<uint32>& outIndices, std::vector<float>& outTexCoords);
-    void CreateSphereModels();
-
-    void CreateHighDynamicImagePipeline(const char* inFilePath);
-    uint32 ConvertBGRA_To_RGBA(uint32 inBGRA);
-    void CreateCubemap(const char* inCubeMapName, const IPipeline* inPipeline, PipelineLayout* inPipelineLayout, IDescriptorSets* inDescriptorSet, float inViewportSize);
-
-    void CreateIrradianceMap(class CSkybox* inSkyboxAsset, float inViewportSize);
-    void CreateIrradianceMap(const char* inCubeMapName, float inViewportSize);
-
-    void CreateCubemapFromHighDynamicImage(const char* inCubeMapName, float inViewportSize);
-
-    void CreatePrefilterEnvMap(class CSkybox* inSkyboxAsset, float inViewportSize);
-    void CreatePrefilterEnvMap(const char* inCubeMapName, float inViewportSize);
-
-    void CreateBrdfIntegration(class CSkybox* inSkyboxAsset, float inViewportSize);
-    void CreateBrdfIntegration(const char* inCubeMapName, float inViewportSize);
-
-    PipelineLayout* CreatePipelineLayoutFromShaders(Shader* inVertexShader, Shader* inFragmentShader);
-
-    Texture* GetTextureResource(const TextureHandle inHandle)
-    {
-        return TexturesArray[inHandle];
-    }
-
-    static std::string MakePathToResource(const std::string& inResourceName, char inResourceType);
-
-private:
-    void BeginFrame();
-    void Present();
-
-    void DrawEditorTools();
-
-    void CreateVulkanRenderInterface(bool inEnableRenderDoc);
-
-    bool OnRenderViewportResized_Vulkan(const FExtent2D& inNewRenderViewport);
-
-private:
-    /** The render interface is the object that connects us to a graphics API.. such as.. Vulkan, DirectX, etc.. */
-    TPointer<IRenderInterface> RenderInterface;
-
-    /** A pointer to the surface in use by the renderer (OS Specific) */
-    Surface* SurfacePtr;
-
-    /** The swapchain that is in use by the renderer*/
-    SwapChain* SwapChainMain;
-
-    /** The main commandbuffers that get presented to the queue that are associated with the images given from the swapchain */
-    std::vector<ICommandBuffer*> CommandBuffers;
-
-    /** Specifies the current swapchain image that command buffers will encode */
-    uint32 CurrentImageIndex;
-
-    /** Swap chain image presentation */
-    ISemaphore* PresentationCompleteSemaphore;
-
-    /** Command buffer submission and execution */
-    ISemaphore* RenderCompleteSemaphore;
-
-    /** Depth and Stencil buffering */
-    Texture* DepthStencilView;
-
-    IRenderPass* RenderPass;
-    IRenderPass* BRDFIntegrationRenderPass;
-
-    /** List of available frame buffers (same as number of swap chain images) */
-    std::vector<IFrameBuffer*> FrameBuffers;
-
-    /** The main render viewport */
-    FRenderViewport MainRenderViewport;
-    FRenderScissor MainRenderScissor;
-
-    /** Rendering Others */
-    IDescriptorSets* TextureSet;
-
-    Sampler* SamplerHandle;
-    Sampler* BRDFSamplerHandle;
-    Sampler* LODSamplerHandle;
-    Buffer* CP2077BufferHandle;
-    TextureHandle CP2077TextureHandle;
-
-    Buffer* VELogoBufferHandle;
-    TextureHandle VELogoTextureHandle;
-
-    std::vector<Buffer*> TextureBuffers;
-    std::vector<Texture*> TexturesArray;
-    //std::vector<Texture*> Textures;
-    TMap<std::string, TextureHandle> TextureMap;
-
-    std::vector<Sampler*> Samplers;
-    std::vector<IDescriptorSets*> DescriptorSets;
-    std::vector<Buffer*> Buffers;
-    std::vector<uint8*> BufferDatas;
-
-    // Includes texture mapping: normals, tangent, ....
-    PipelineLayout* PBRTexturePipelineLayout;
-    IPipeline* PBRTexturePipeline;
-    IPipeline* PBRTexturePipelineStencil;
-    IPipeline* PBRTexturePipelineOutline;
-    Shader* PBRVertexShader;
-    Shader* PBRTextureFragmentShader;
-    Shader* PBRVertexShaderOutline;
-    Shader* PBRTextureFragmentShaderOutline;
-
-    Buffer* CubeVertexBuffer;
-    Buffer* CubeVertexTexcoordBuffer;
-    Buffer* CubeIndexBuffer;
-
-    Buffer* QuadVertexBuffer;
-    Buffer* QuadVertexTexcoordBuffer;
-
-    class CSkybox* SkyboxAsset;
-
-    PipelineLayout* HDRPipelineLayout;
-    IPipeline* HDRPipeline;
-    Shader* HDRVertexShader;
-    Shader* HDRFragmentShader;
-    Buffer* HDRTextureBuffer;
-    IDescriptorSets* HDRDescSet;
-
-    IPipeline* IrridiancePipeline;
-    PipelineLayout* IrradiancePipelineLayout;
-    Shader* IrridianceVertexShader;
-    Shader* IrridianceFragmentShader;
-    IDescriptorSets* IrridianceDescSet;
-    TextureHandle IrridianceTexture;
-
-    Buffer* SkyboxRefractBuffer;
-
-    IPipeline* PrefilterEnvMapPipeline;
-    Shader* PrefilterEnvMapVertexShader;
-    Shader* PrefilterEnvMapFragmentShader;
-    IDescriptorSets* PrefilterEnvMapDescSet;
-    PipelineLayout* PrefilterEnvMapPipelineLayout;
-    Buffer* PrefilterEnvMapBuffer;
-
-    IPipeline* BRDFIntegrationPipeline;
-    Shader* BRDFIntegrationVertexShader;
-    Shader* BRDFIntegrationFragmentShader;
-    IDescriptorSets* BRDFIntegrationDescSet;
-
-    TextureHandle BRDFLutTexture;
-    TextureHandle PrefilterEnvMapTexture;
-
-    // Position | Normals -> Data stored 
-    Buffer* SphereBuffer;
-    Buffer* SphereIndexBuffer;
-    uint32 NormalOffset; // offset from the start of the buffer to the normals 
-    uint32 SphereTexCoordOffset;
-    uint32 NumSphereVerts;
-    uint32 NumSphereIndices;
-    uint32 NumSphereNormals;
-
-    Buffer* LocalConstantsBuffer;
-    Buffer* IBLDataBuffer;
-    Buffer* HDRConstantsBuffer;
-    Buffer* MaterialConstantsBuffer;
-    UniformBufferLocalConstants LocalConstants;
-
-    std::vector<CStaticMesh*> StaticMeshes;
-    std::vector<CStaticMesh*> OpaqueStaticMeshes;
-    std::vector<CStaticMesh*> TransparentStaticMeshes;
-    std::vector<CStaticMesh*> LightStaticMeshes;
-
-    float MouseDeltaX = 0.0f;
-    float MouseDeltaY = 0.0f;
-
-    uint16 LastMouseX = 0u;
-    uint16 LastMouseY = 0u;
-
-    bool TranslationKeyDowns[4];
-
-    float CameraMoveSpeed = 0.25f;
-    const float CameraTurnSpeed = 50.0f;
-    Vector3D CameraTranslation;
-
-    Vector3D CameraRotation;
-
-    Matrix4D ViewMatrixWorld;
-
-    bool bIsCameraRotationControlled;
-    bool bLeftButtonPressed;
-
-    Vector3D EulerRotation;
-    Vector4D LightPosition;
-
-    Matrix4D GlobalMatrix;
-
-    Vector3D CameraEye, CameraTarget, CameraUp;
-
-    PipelineLayout* ImGuiTexturePipelineLayout;
-    IDescriptorSets* ImGuiTextureDescSet;
-
-    uint32 DebugFlags;
-
-    int32 SelectedStaticMesh = -1;
-    int32 SelectedMaterial = -1;
-
-    // Bindless Texturing
-    static const uint32 BINDLESS_TEXTURE_BINDING = 10;
-    static const uint32 MAX_BINDLESS_TEXTURES = 1024;
-    static const uint32 INVALID_TEXTURE_INDEX = -1;
-
-    IDescriptorSets* BindlessDescriptorSet;
 };
 
 /**
@@ -746,7 +806,7 @@ public:
     }
 
 public:
-    Texture* GetCubemapTexture() const
+    TextureResource* GetCubemapTexture() const
     {
         return Renderer::Get().GetTextureResource(CubemapTexture);
     }

@@ -132,7 +132,7 @@ public:
     *
     * @param inTextureConfig  info used to create the texture
     */
-    virtual Texture* CreateTexture(const FTextureConfig& inTextureConfig) override;
+    virtual TextureResource* CreateTexture(const FTextureConfig& inTextureConfig) override;
 
     /**
     * Copies the data from the buffer provided and puts it into the texture
@@ -140,7 +140,7 @@ public:
     * @param inTexture the texture that will contain the data after copy
     * @param inTextureWriteInfo contains information used to write to the texture
     */
-    virtual void WriteToTexture(const Texture* inTexture, const FTextureWriteInfo& inTextureWriteInfo) override;
+    virtual void WriteToTexture(const TextureResource* inTexture, const FTextureWriteInfo& inTextureWriteInfo) override;
 
     /**
     * Reads image data from the specified texture
@@ -149,14 +149,23 @@ public:
     * @param inTextureSection the section to be read from the texture
     * @param outTextureReadInfo contains the read information from the texture
     */
-    virtual void ReadFromTexture(const Texture* inTexture, const FTextureSection& inTextureSection, const ETextureLayout inFinalTextureLayout, FTextureReadInfo& outTextureReadInfo) override;
+    virtual void ReadFromTexture(const TextureResource* inTexture, const FTextureSection& inTextureSection, const ETextureLayout inFinalTextureLayout, FTextureReadInfo& outTextureReadInfo) override;
+
+    /**
+    * Sets the passed in textures layout to the one that is specified
+    * @param inTexture the texture whos layout will be changed
+    * @param inNewTextureLayout the new texture layout
+    *
+    * @note this function should only be used when necessary
+    */
+    virtual void SetTextureLayout(const TextureResource* inTexture, const ETextureLayout inNewTextureLayout) override;
 
     /**
     * Releases/Destroys the texture passed in
     *
     * @param inTexture the texture to free
     */
-    virtual void Free(Texture* inTexture) override;
+    virtual void Free(TextureResource* inTexture) override;
 
     /* ------------------------------------------------------------------------------- */
     /* -------------                  Frame Buffers                ------------------- */
@@ -412,6 +421,11 @@ public:
         return Device->GetPresentQueue();
     }
 
+    virtual ICommandQueue* GetTransferQueue()
+    {
+        return Device->GetTransferQueue();
+    }
+
     /** --  IRenderInterface End -- */
 
     VkInstance GetVulkanInstance() const
@@ -483,6 +497,8 @@ private:
     VkDescriptorSetLayout BindlessDescriptorSetLayout;
     class VulkanDescriptorPool* BindlessDescriptorPool;
     class VulkanDescriptorPool* GlobalDescriptorPool;
+
+    class VulkanCommandBufferManager* CommandBufferManager;
 
     /** - ImGui - **/
 

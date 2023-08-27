@@ -131,7 +131,7 @@ public:
     *
     * @param inTextureConfig  info used to create the texture
     */
-    virtual Texture* CreateTexture(const FTextureConfig& inTextureConfig) = 0;
+    virtual TextureResource* CreateTexture(const FTextureConfig& inTextureConfig) = 0;
 
     /**
     * Copies the data from the buffer provided and puts it into the texture
@@ -139,7 +139,7 @@ public:
     * @param inTexture the texture that will contain the data after copy
     * @param inTextureWriteInfo contains information used to write to the texture
     */
-    virtual void WriteToTexture(const Texture* inTexture, const FTextureWriteInfo& inTextureWriteInfo) = 0;
+    virtual void WriteToTexture(const TextureResource* inTexture, const FTextureWriteInfo& inTextureWriteInfo) = 0;
 
     /**
     * Reads image data from the specified texture
@@ -148,14 +148,23 @@ public:
     * @param inTextureSection the section to be read from the texture 
     * @param outTextureReadInfo contains the read information from the texture 
     */
-    virtual void ReadFromTexture(const Texture* inTexture, const FTextureSection& inTextureSection, const ETextureLayout inFinalTextureLayout, FTextureReadInfo& outTextureReadInfo) = 0;
+    virtual void ReadFromTexture(const TextureResource* inTexture, const FTextureSection& inTextureSection, const ETextureLayout inFinalTextureLayout, FTextureReadInfo& outTextureReadInfo) = 0;
+
+    /**
+    * Sets the passed in textures layout to the one that is specified 
+    * @param inTexture the texture whos layout will be changed
+    * @param inNewTextureLayout the new texture layout
+    * 
+    * @note this function should only be used when necessary 
+    */
+    virtual void SetTextureLayout(const TextureResource* inTexture, const ETextureLayout inNewTextureLayout) = 0;
 
     /**
     * Releases/Destroys the texture passed in
     *
     * @param inTexture the texture to free
     */
-    virtual void Free(Texture* inTexture) = 0;
+    virtual void Free(TextureResource* inTexture) = 0;
 
     /* ------------------------------------------------------------------------------- */
     /* -------------                  Frame Buffers                ------------------- */
@@ -385,4 +394,6 @@ public:
     * @returns ICommandQueue* the queue used for submission
     */
     virtual ICommandQueue* GetCommandQueue() = 0;
+
+    virtual ICommandQueue* GetTransferQueue() = 0;
 };

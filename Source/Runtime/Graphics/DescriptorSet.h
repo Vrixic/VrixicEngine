@@ -77,7 +77,7 @@ public:
         Buffer* BufferHandle;
 
         /** The texture to bind to the descriptor set(s) */
-        Texture* TextureHandle;
+        TextureResource* TextureHandle;
 
         UResourceHandle() : BufferHandle(nullptr) { } 
     };

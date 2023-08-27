@@ -5,6 +5,7 @@
 
 #include "GameEngine.h"
 #include <Runtime/Graphics/Renderer.h>
+#include <Runtime/File/AsynchronousLoader.h>
 
 #include <Core/Application.h>
 #include <Misc/Assert.h>
@@ -12,7 +13,7 @@
 VGameEngine* VGameEngine::GameEnginePtr = nullptr;
 
 VGameEngine::VGameEngine()
-    : World(nullptr), RenderTime(0), FrameRate(0), TickTime(0)
+    : World(nullptr), RenderTime(0), FrameRate(0), TickTime(0), bIsEngineActive(false)
 {
     VE_ASSERT(GameEnginePtr == nullptr, "Game Engine should not be created twice! Game Engine already exists!");
     GameEnginePtr = this;
@@ -28,9 +29,32 @@ void VGameEngine::Init()
     // Initialize the renderer 
     FRendererConfig Config = {};
     Config.RenderInterfaceType = ERenderInterfaceType::Vulkan;
-    Config.bEnableRenderDoc = false;
+    Config.bEnableRenderDoc = true;
+
+    enki::TaskSchedulerConfig TSConfig = { };
+    TSConfig.numTaskThreadsToCreate += 1;
+    TaskScheduler.Initialize(TSConfig);
 
     Renderer::Get().Init(Config);
+
+    AsyncLoader = new AsynchronousLoader();
+    AsyncLoader->Init(&TaskScheduler);
+
+    // Start Multithreading IO
+    // Create IO threads at the end
+    RunPinnedTask.threadNum = TaskScheduler.GetNumTaskThreads() - 1;
+    RunPinnedTask.TaskScheduler = &TaskScheduler;
+    TaskScheduler.AddPinnedTask(&RunPinnedTask);
+
+    // Send Async load task to external thread FILE_IO
+    AsyncLoadTask.threadNum = RunPinnedTask.threadNum;
+    AsyncLoadTask.TaskScheduler = &TaskScheduler;
+    AsyncLoadTask.Loader = AsyncLoader;
+    TaskScheduler.AddPinnedTask(&AsyncLoadTask);
+
+    Renderer::Get().LoadModels();
+
+    bIsEngineActive = true;
 }
 
 void VGameEngine::Tick()
@@ -65,7 +89,19 @@ void VGameEngine::Tick()
 
 void VGameEngine::Shutdown()
 {
-    Renderer::Get().Shutdown();
+    if (bIsEngineActive)
+    {
+        RunPinnedTask.bShouldExecute = false;
+        AsyncLoadTask.bShouldExecute = false;
+
+        TaskScheduler.WaitforAllAndShutdown();
+        //AsyncLoader->Shutdown();
+        delete AsyncLoader;
+
+        Renderer::Get().Shutdown();
+
+        bIsEngineActive = false;
+    }
 }
 
 void VGameEngine::OnWindowEvent(WindowEvent& inWindowEvent)
@@ -114,4 +150,11 @@ bool VGameEngine::OnKeyPressed(KeyPressedEvent& inKeyPressedEvent)
 bool VGameEngine::OnKeyReleased(KeyReleasedEvent& inKeyReleasedEvent)
 {
     return Renderer::Get().OnKeyReleased(inKeyReleasedEvent);
+}
+
+void AsynchronousLoadTask::Execute() {
+    // Do file IO
+    while (bShouldExecute) {
+        Loader->Update();
+    }
 }

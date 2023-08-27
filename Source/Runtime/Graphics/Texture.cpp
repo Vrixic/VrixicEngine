@@ -5,35 +5,35 @@
 
 #include "Texture.h"
 
-Texture::Texture(const FTextureConfig& inTextureConfig)
+TextureResource::TextureResource(const FTextureConfig& inTextureConfig)
     : Type(inTextureConfig.Type), BindFlags(inTextureConfig.BindFlags), Extent(inTextureConfig.Extent) { }
 
-void Texture::SetPath(const std::string& inTexturePath)
+void TextureResource::SetPath(const std::string& inTexturePath)
 {
     Path = inTexturePath;
 }
 
-inline EResourceType Texture::GetResourceType() const
+inline EResourceType TextureResource::GetResourceType() const
 {
     return EResourceType::Texture;
 }
 
-inline ETextureType Texture::GetType() const
+inline ETextureType TextureResource::GetType() const
 {
     return Type;
 }
 
-inline uint32 Texture::GetBindFlags() const
+inline uint32 TextureResource::GetBindFlags() const
 {
     return BindFlags;
 }
 
-inline const FExtent3D& Texture::GetExtent() const
+inline const FExtent3D& TextureResource::GetExtent() const
 {
     return Extent;
 }
 
-inline const std::string& Texture::GetPath() const
+inline const std::string& TextureResource::GetPath() const
 {
     return Path;
 }

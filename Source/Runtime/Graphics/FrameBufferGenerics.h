@@ -23,7 +23,7 @@ struct VRIXIC_API FFrameBufferAttachment
 {
 public:
     /** The ouput texture attachment for the frame buffer */
-    Texture* Attachment;
+    TextureResource* Attachment;
 
 public:
     FFrameBufferAttachment()

@@ -10,7 +10,7 @@
 /**
 * A texture resource : vulkan -> VkImage 
 */
-class VRIXIC_API Texture : RenderResource
+class VRIXIC_API TextureResource : RenderResource
 {
 public:
     friend class Renderer;
@@ -49,7 +49,7 @@ public:
     virtual FTextureConfig GetTextureConfig() const = 0;
 
 protected:
-    Texture(const FTextureConfig& inTextureConfig);
+    TextureResource(const FTextureConfig& inTextureConfig);
 
 private:
     void SetPath(const std::string& inTexturePath);

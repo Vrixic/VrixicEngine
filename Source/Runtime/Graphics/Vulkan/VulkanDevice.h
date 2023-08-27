@@ -70,6 +70,9 @@ public:
     /** The image offset (Zero based) into the texture data */
     VkOffset3D Offset;
 
+    /** Zero-Based offset that is applied to the buffer offset | called the initial buffer offset */
+    uint64 InitialBufferOffset;
+
     /** The extent of the sub texture region */
     VkExtent3D Extent;
 
@@ -82,6 +85,7 @@ public:
     {
         Offset = { 0, 0, 0 };
         Extent = { 0, 0, 1 };
+        InitialBufferOffset = 0;
     }
 };
 
@@ -124,6 +128,9 @@ public:
     * @param inTransitionImageLayoutInfo contains information needed to complete the transition
     */
     void TransitionTextureLayout(const HTransitionTextureLayoutInfo& inTransitionImageLayoutInfo);
+
+    void AddImageBarrier(VkCommandBuffer& inCmdBuffer, VulkanTextureView* inTexture, const FTextureSubresourceRange& inSubresourceRange, VkImageLayout inOldLayout, VkImageLayout inNewLayout, VkAccessFlags inSrcAccessMask, VkAccessFlags inDstAccessMask, ERenderQueueType inSrcQueueType, ERenderQueueType inDstQueueType);
+    void AddImageBarrierExt(VkCommandBuffer& inCmdBuffer, VulkanTextureView* inTexture, const FTextureSubresourceRange& inSubresourceRange, VkImageLayout inOldLayout, VkImageLayout inNewLayout, VkAccessFlags inSrcAccessMask, VkAccessFlags inDstAccessMask, VulkanQueue& inSrcQueue, VulkanQueue& inDstQueue, ERenderQueueType inSrcQueueType, ERenderQueueType inDstQueueType);
 
     /**
     * Copies the specified buffer data to the texture specified
@@ -217,6 +224,9 @@ public:
     uint32_t GetMemoryTypeIndex(uint32_t inTypeBits, VkMemoryPropertyFlags inProperties, VkBool32* outMemTypeFound) const;
 
 private:
+    static VkPipelineStageFlags GetPipelineStageFlags(VkAccessFlags inAccessFlags, ERenderQueueType inQueueType);
+
+private:
     /** Representation of GPU */
     VkDevice LogicalDeviceHandle;
 
@@ -265,7 +275,7 @@ public:
     *
     * @remarks Sets up queue submission
     */
-    VulkanQueue(VulkanDevice* inDevice, uint32 inQueueFamilyIndex, uint32 inQueueIndex);
+    VulkanQueue(VulkanDevice* inDevice, uint32 inQueueFamilyIndex, uint32 inQueueIndex, ERenderQueueType inQueueType = ERenderQueueType::Graphics);
 
     ~VulkanQueue();
 
@@ -279,8 +289,30 @@ public:
     *  uses the command buffers fence to submit the buffer
     *
     * @param inCommandBuffer the command buffer that will get submitted
+    * @param inNumWaitSemaphores number of wait semaphores
+    * @param inWaitSemaphores the wait semaphore(s)
+    * @param numSignalSemaphores number of signal semaphores
+    * @param inSignalSemaphores the signal semaphore(s)
+    * @param inWaitFence the wait fence
+    */
+    virtual void Submit(ICommandBuffer* inCommandBuffer, uint32 inNumWaitSemaphores, ISemaphore* inWaitSemaphores, uint32 inNumSignalSemaphores, ISemaphore* inSignalSemaphores, IFence* inWaitFence) override;
+
+    /**
+    * Submits the specified command buffer to a queue (Can be any type of queue, ex: graphics, compute),
+    *  uses the command buffers fence to submit the buffer
+    *
+    * @param inCommandBuffer the command buffer that will get submitted
     */
     virtual void Submit(ICommandBuffer* inCommandBuffer, uint32 inNumSignalSemaphores, ISemaphore* inSignalSemaphores) override;
+
+    /**
+    * Submits the specified command buffer to a queue (Can be any type of queue, ex: graphics, compute),
+    *  uses the command buffers fence to submit the buffer
+    *
+    * @param inCommandBuffer the command buffer that will get submitted
+    * @param inWaitFence the wait fence
+    */
+    virtual void Submit(ICommandBuffer* inCommandBuffer, IFence* inWaitFence) override;
 
     /**
     * Sets a wait fence that will block the CPU execution until the fence has been signaled
@@ -289,6 +321,13 @@ public:
     * @param inTimeout this is the waiting timeout in nanoseconds
     */
     virtual void SetWaitFence(IFence* inWaitFence, uint64 inTimeout) const override;
+
+    /**
+    * Checks the wait fence passed in to see if it has been signaled
+    *
+    * @returns bool - true if the fence has already been signaled, false otherwise
+    */
+    virtual bool GetWaitFenceStatus(IFence* inWaitFence) const override;
 
     /**
     * Resets a wait fence
@@ -354,7 +393,10 @@ public:
 
     inline uint32 GetFamilyIndex() const { return FamilyIndex; }
 
-    inline VulkanCommandPool* GetCommandPool() const { return CommandPool; }
+    inline VulkanCommandPool* GetCommandPool() const 
+    { 
+        return CommandPool; 
+    }
 
 private:
     /** The Device this queue belongs to */
@@ -366,6 +408,8 @@ private:
 
     /** The family index into the family of queues */
     uint32 FamilyIndex;
+
+    VkPipelineStageFlags WaitStageMask;
 
     /** The command pool associated with this queue */
     VulkanCommandPool* CommandPool;
@@ -527,7 +571,7 @@ public:
     *
     * @returns Texture* the texture at the index specified
     */
-    virtual Texture* GetTextureAt(uint32 inTextureIndex) const override;
+    virtual TextureResource* GetTextureAt(uint32 inTextureIndex) const override;
 
     inline uint32 GetImageCount() const override
     {

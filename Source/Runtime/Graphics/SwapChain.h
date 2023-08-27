@@ -71,7 +71,7 @@ public:
     *
     * @returns Texture* the texture at the index specified
     */
-    virtual Texture* GetTextureAt(uint32 inTextureIndex) const = 0;
+    virtual TextureResource* GetTextureAt(uint32 inTextureIndex) const = 0;
 
     /**
     * @return Surface& the handle to the surface that is associated with the swapchain
