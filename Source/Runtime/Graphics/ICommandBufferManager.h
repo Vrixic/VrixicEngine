@@ -1,6 +1,6 @@
 #pragma once
 #include "CommandBuffer.h"
-#include <Core/Misc/Interface.h>
+#include <Core/Misc/IManager.h>
 #include <Misc/Assert.h>
 #include <Misc/Defines/StringDefines.h>
 
@@ -20,26 +20,32 @@ public:
     virtual ICommandBuffer* GetSecondaryCommandBuffer(uint32 inFrameIndex, uint32 inThreadIndex) = 0;
 };
 
-class CommandBufferManager
+/**
+* Configuration used to initialize 'CommandBufferManager'
+*/
+struct FCommandBufferManagerConfig
+{
+public:
+    ICommandBufferManager* Manager = nullptr;
+    uint32 NumThreads = 0;
+};
+
+class CommandBufferManager : public IManager
 {
 private:
     friend class Renderer;
     friend class VulkanRenderInterface;
 
-    /**
-    * Returns the one and only Instance to CommandBufferManager
-    */
-    static CommandBufferManager& Get()
-    {
-        static CommandBufferManager Instance;
-        return Instance;
-    }
+    VRIXIC_STATIC_MANAGER(CommandBufferManager)
 
-    void Init(ICommandBufferManager* inManager, uint32 inNumThreads)
+    virtual void Init(void* inConfig) override
     {
-        VE_ASSERT(Manager == nullptr, VE_TEXT("[CommandBufferManager]: Cannot initialize the command buffer manager twice..."));
-        Manager = inManager;
-        Manager->Init(inNumThreads);
+        VE_ASSERT(inConfig != nullptr, VE_TEXT("[CommandBufferManager]: Cannot initialize Command Buffer Manager without a valid configuration..."));
+        VE_ASSERT(Manager == nullptr, VE_TEXT("[CommandBufferManager]: Cannot initialize Command Buffer Manager twice..."));
+
+        FCommandBufferManagerConfig& Config = *((FCommandBufferManagerConfig*)(inConfig));
+        Manager = Config.Manager;
+        Manager->Init(Config.NumThreads);
     }
 
     void Shutdown()

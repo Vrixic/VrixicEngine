@@ -5,6 +5,7 @@
 
 #pragma once
 #include <Core/Core.h>
+#include <Core/Misc/IManager.h>
 #include <Misc/Assert.h>
 #include <Misc/Defines/StringDefines.h>
 #include <Runtime/Graphics/Vertex.h>
@@ -40,24 +41,20 @@ private:
 /**
 * Base Resource manager class which different types of resource manager can inherit from
 */
-class VRIXIC_API ResourceManager
+class VRIXIC_API ResourceManager : public IManager
 {
 public:
-    static ResourceManager& Get()
-    {
-        static ResourceManager Instance;
-        return Instance;
-    }
+    VRIXIC_STATIC_MANAGER(ResourceManager)
 
     /**
     * Initializes the Resource Manager
     */
-    void Init();
+    virtual void Init(void* inConfig = nullptr) override;
 
     /**
     * Shuts dows the resource manager
     */
-    void Shutdown();
+    virtual void Shutdown() override;
 
     /**
     * Loads a texture using the path passed in 
@@ -68,6 +65,10 @@ public:
     TextureResourceHandle& LoadTexture(const std::string& inTexturePath);
 
     //void FreeTexture(TextureHandle);
+
+private:
+    ResourceManager();
+    ~ResourceManager();
 
 private:
     /** A hash_map that contains all textures */

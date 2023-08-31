@@ -8,7 +8,14 @@
 
 #include <External/stb/Includes/stb_image.h>
 
-void ResourceManager::Init()
+ResourceManager::ResourceManager() { } 
+
+ResourceManager::~ResourceManager()
+{
+    Shutdown();
+}
+
+void ResourceManager::Init(void* inConfig)
 {
     TextureMemoryView = { };
     TextureMemoryView.MemorySize = MEBIBYTES_TO_BYTES(450);

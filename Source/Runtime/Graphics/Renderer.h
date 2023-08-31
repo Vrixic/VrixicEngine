@@ -83,7 +83,7 @@ public:
     std::vector<CStaticMesh*> Meshes;
 
 public:
-    virtual void Render(ICommandBuffer* inCommandBuffer) override;
+    virtual void Render(ICommandBuffer* inCommandBuffer) override { }
 };
 
 struct FGBufferPass : public FFrameGraphRenderPass
@@ -92,7 +92,7 @@ public:
     std::vector<CStaticMesh*> Meshes;
 
 public:
-    virtual void Render(ICommandBuffer* inCommandBuffer) override;
+    virtual void Render(ICommandBuffer* inCommandBuffer) override { }
 };
 
 struct FLightPass : public FFrameGraphRenderPass
@@ -101,7 +101,7 @@ public:
     CStaticMesh* Mesh; // Quad
 
 public:
-    virtual void Render(ICommandBuffer* inCommandBuffer) override;
+    virtual void Render(ICommandBuffer* inCommandBuffer) override { }
 };
 
 struct FTransparentPass : public FFrameGraphRenderPass
@@ -110,7 +110,7 @@ public:
     std::vector<CStaticMesh*> Meshes;
 
 public:
-    virtual void Render(ICommandBuffer* inCommandBuffer) override;
+    virtual void Render(ICommandBuffer* inCommandBuffer) override { }
 };
 
 /**
