@@ -12,6 +12,7 @@
 #include <Core/Events/KeyEvent.h>
 
 #include "ICommandBufferManager.h"
+#include "FrameGraph/FrameGraph.h"
 
 #include <Containers/Map.h>
 
@@ -75,6 +76,42 @@ enum MaterialFeatures {
 };
 
 class CStaticMesh;
+
+struct FDepthPrePass : public FFrameGraphRenderPass
+{
+public:
+    std::vector<CStaticMesh*> Meshes;
+
+public:
+    virtual void Render(ICommandBuffer* inCommandBuffer) override;
+};
+
+struct FGBufferPass : public FFrameGraphRenderPass
+{
+public:
+    std::vector<CStaticMesh*> Meshes;
+
+public:
+    virtual void Render(ICommandBuffer* inCommandBuffer) override;
+};
+
+struct FLightPass : public FFrameGraphRenderPass
+{
+public:
+    CStaticMesh* Mesh; // Quad
+
+public:
+    virtual void Render(ICommandBuffer* inCommandBuffer) override;
+};
+
+struct FTransparentPass : public FFrameGraphRenderPass
+{
+public:
+    std::vector<CStaticMesh*> Meshes;
+
+public:
+    virtual void Render(ICommandBuffer* inCommandBuffer) override;
+};
 
 /**
 * The main renderer used to renderer everything
@@ -371,6 +408,15 @@ private:
 
     // Command Buffer ready to be updated
     std::vector<ICommandBuffer*> QueuedCommandBuffers;
+
+    // Frame Graph
+    class FrameGraphBuilder* GraphBuilder;
+    class FrameGraph* RenderGraph;
+
+    FDepthPrePass DepthPrePass;
+    FGBufferPass GBufferPass;
+    FLightPass LightPass;
+    FTransparentPass TransparentPass;
 };
 
 /**

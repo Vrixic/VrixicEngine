@@ -5,8 +5,13 @@
 
 #pragma once
 #include "FileReader.h"
+#include <Misc/Assert.h>
 
 #include <string>
+
+#if defined(_WIN64)
+#include <windows.h>
+#endif
 
 /**
 * Static class which has helper functions for reading files
@@ -17,7 +22,7 @@ public:
     /**
     * Loads a text file into a string
     */
-    static bool LoadFileToString(std::string& outResult, std::string& inFilePath)
+    static bool LoadFileToString(std::string& outResult, const std::string& inFilePath)
     {
         FileReader Reader(inFilePath); //= FileManager::GetInstance().CreateFileReader(inFilePath);
         if (!Reader.IsOpen())

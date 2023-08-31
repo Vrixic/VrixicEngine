@@ -61,7 +61,7 @@ public:
 	*/
 	int32 Remove(const KeyType& inKey)
 	{
-		int32 RemoveCount = Map.erase();
+		int32 RemoveCount = Map.erase(inKey);
 		if (RemoveCount != 0)
 		{
 			Size--;
@@ -97,6 +97,11 @@ public:
 		return Size;
 	}
 
+	inline auto Begin() const
+	{
+		return Map.begin();
+	}
+
 	inline auto End() const
 	{
 		return Map.end();
@@ -106,5 +111,5 @@ private:
 	std::unordered_map<KeyType, ValueType> Map;
 
 	/** Count of pair values stored in the map */
-	int32 Size;
+	int32 Size = 0;
 };

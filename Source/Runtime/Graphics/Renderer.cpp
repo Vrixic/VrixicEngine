@@ -107,12 +107,82 @@ void Renderer::Init(const FRendererConfig& inRendererConfig)
     DebugFlags = 0;
 
     NumTexturesToUpdate = 0;
+
+    GraphBuilder = new FrameGraphBuilder();
+    GraphBuilder->Init();
+
+    RenderGraph = new FrameGraph();
+    RenderGraph->Init(GraphBuilder);
+
+    RenderGraph->Parse("../Sandbox/Configuration/RenderFrameGraph.json");
+    RenderGraph->Compile();
+
+    /**
+    * @note try to implement everything in forms of data and tranforms (Data oriend design)
+    * @TODO: Create a pipeline JSON format type to easily parse and create render pipelines 
+    * which will be associated with their appropiate render pass and material, desc set, setings, etc...
+    * 
+    * Update FrameGraph to not hold raw pointers (DUMB Mistake) we need HANDLES -> Use Stack Allocator by your memory managers implementation...
+    * 
+    * @note almost time for a deferred renderer.... :))))))!
+    * @note also start making cards on jira for the engine, much better than keeping notes ...!
+    */
+
+    // Create Depth PrePass
+    for (uint32 i = 0; i < StaticMeshes.size(); ++i)
+    {
+        if (DepthPrePass.Meshes[i]->bIsTransparent) continue;
+
+        DepthPrePass.Meshes.push_back(StaticMeshes[i]);
+        GBufferPass.Meshes.push_back(StaticMeshes[i]);
+    }
+
+    // Create LightMesh
+    /*CStaticMesh* LightStaticMesh = new CStaticMesh();
+    {
+        FMaterialData Data = { };
+        Data.
+
+        FRenderAssetSection Section = { };
+        Section.Count = 3;
+
+        {
+            FBufferConfig BufferConfig = { };
+            BufferConfig.InitialData = &Data;
+            BufferConfig.Size = sizeof(FMaterialData);
+            BufferConfig.MemoryFlags |= FMemoryFlags::HostCached;
+            BufferConfig.UsageFlags |= FResourceBindFlags::UniformBuffer;
+
+            Section.MaterialBuffer = RenderInterface.Get()->CreateBuffer(BufferConfig);
+            Buffers.push_back(Section.MaterialBuffer);
+        }
+
+        LightStaticMesh->AddNewMaterial(Data, &Section);
+    }
+
+    LightStaticMesh->RenderAssetData.IndexBuffer = IndexBuffer;
+    LightStaticMesh->RenderAssetData.PositionBuffer = PositionBuffer;
+    LightStaticMesh->RenderAssetData.TangentBuffer = TangentBuffer;
+    LightStaticMesh->RenderAssetData.NormalBuffer = NormalBuffer;
+    LightStaticMesh->RenderAssetData.TexCoordBuffer = TexCoordBuffer;
+
+    LightStaticMesh->SetName(Mesh.Name);
+    LightStaticMesh->SetIsTransparent(bIsStaticMeshBlendable);
+    StaticMeshes.push_back(LightStaticMesh);
+
+
+    LightPass.Mesh = LightStaticMesh;*/
 }
 
 void Renderer::Shutdown()
 {
     if (RenderInterface.IsValid())
     {
+        GraphBuilder->Shutdown();
+        RenderGraph->Shutdown();
+
+        delete GraphBuilder;
+        delete RenderGraph;
         delete SkyboxAsset;
 
         RenderInterface.Get()->Free(TextureSet);
