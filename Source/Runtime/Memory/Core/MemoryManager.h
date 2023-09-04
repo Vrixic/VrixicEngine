@@ -23,6 +23,13 @@
 *			make a new one.
 */
 
+struct FMemoryManagerConfig
+{
+public:
+    /** Size in mebibyte (MiB) */
+    uint64 Size = 100;
+};
+
 class VRIXIC_API MemoryManager : public IManager
 {
 public:
@@ -34,7 +41,7 @@ public:
     * Initialize the manager, allocates 100 mebibytes of memory by default,
     *	for more memory call Resize() once known
     */
-    void StartUp()
+    virtual void Init(void* inConfig = nullptr) override
     {
         VE_ASSERT(!bIsActive, VE_TEXT("[MemoryManager]: Memory manager should not be created again.... MemoryManager::StartUp() SHOULD only be called once!"));
         if (bIsActive)
@@ -43,12 +50,23 @@ public:
         }
 
         bIsActive = true;
-        PreInit();
-    }
 
-    virtual void Init(void* inConfig = nullptr) override
-    {
-        StartUp();
+        MemoryHeapSize = MEBIBYTES_TO_BYTES(100);
+        MemoryPageHeapSize = MEBIBYTES_TO_BYTES(50);
+
+        if (inConfig != nullptr)
+        {
+            MemoryHeapSize = ((FMemoryManagerConfig*)(inConfig))->Size;
+        }
+
+        VE_ASSERT(MemoryHeapSize != 0, VE_TEXT("[Memory Manager]: Memory manager cannot initialize with 0 bytes as the size!"));
+        VE_ASSERT(MemoryPageHeapSize != 0, VE_TEXT("[Memory Manager]: Memory managers page heap size cannot start with 0 bytes!"));
+
+        MemoryHeapHandle = new TMemoryHeap<uint8>();
+        MemoryHeapHandle->AllocateByBytes(MemoryHeapSize);
+
+        MemoryPageHeapHandle = new TMemoryHeap<FMemoryPage>();
+        MemoryPageHeapHandle->AllocateByBytes(MemoryPageHeapSize);
     }
 
     /**
@@ -215,25 +233,6 @@ private:
         VE_PROFILE_MEMORY_MANAGER();
 
         Shutdown();
-    }
-
-    /**
-    * Pre-Inits the memory manager with default memory until size if know to allocate more memory
-    *	Should be called on launch
-    */
-    void PreInit()
-    {
-        VE_ASSERT(MemoryHeapSize == 0, VE_TEXT("[Memory Manager]: Memory manager cannot initialize with 0 bytes as the size!"));
-        VE_ASSERT(MemoryPageHeapSize == 0, VE_TEXT("[Memory Manager]: Memory managers page heap size cannot start with 0 bytes!"));
-
-        MemoryHeapSize = MEBIBYTES_TO_BYTES(100);
-        MemoryPageHeapSize = MEBIBYTES_TO_BYTES(50);
-
-        MemoryHeapHandle = new TMemoryHeap<uint8>();
-        MemoryHeapHandle->AllocateByBytes(MemoryHeapSize);
-
-        MemoryPageHeapHandle = new TMemoryHeap<FMemoryPage>();
-        MemoryPageHeapHandle->AllocateByBytes(MemoryPageHeapSize);
     }
 
     /**

@@ -8,7 +8,7 @@
 */
 #define VRIXIC_STATIC_MANAGER(ManagerType) inline static ManagerType& Get() { static ManagerType Instance; return Instance; }
 
-class VRIXIC_API IManager : public Interface -> We do not want to delete constructors and destructors 
+class VRIXIC_API IManager : public Interface
 {
 public:
 	/**

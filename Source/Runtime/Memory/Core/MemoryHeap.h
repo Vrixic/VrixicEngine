@@ -98,7 +98,7 @@ public:
 
 		// Align the block, if their isn't alignment, shift it up the full 'align' bytes, so we always 
 		// have room to store the shift 
-		uint8* AlignedPtr = MemoryUtils::AlignPointer<uint8>(inPtrToAlign, inAlignment);
+		uint8* AlignedPtr = FMemoryUtils::AlignPointer<uint8>(inPtrToAlign, inAlignment);
 		if (AlignedPtr == inPtrToAlign)
 		{
 			AlignedPtr += inAlignment;

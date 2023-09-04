@@ -12,7 +12,7 @@
 /**
 * Static class that contains functions for manipulating memory/pointers
 */
-struct MemoryUtils
+struct FMemoryUtils
 {
 public:
 
