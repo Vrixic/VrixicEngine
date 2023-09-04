@@ -52,8 +52,6 @@ public:
     */
     void StartUp()
     {
-        VE_PROFILE_MEMORY_MANAGER();
-
         VE_ASSERT(!bIsActive, VE_TEXT("[MemoryManager]: Memory manager should not be created again.... MemoryManager::StartUp() SHOULD only be called once!"));
         if (bIsActive)
         {
@@ -72,8 +70,6 @@ public:
     */
     void Resize(uint32 inSizeInMebibytes)
     {
-        VE_PROFILE_MEMORY_MANAGER();
-
         uint64 LastAllocationSize = MemoryHeapSize;
         MemoryHeapSize = MEBIBYTES_TO_BYTES(inSizeInMebibytes);
 
@@ -106,8 +102,6 @@ public:
     template<typename T>
     T** MallocAligned(uint32 inSizeInBytes, uint32 inAlignment = sizeof(T))
     {
-        VE_PROFILE_MEMORY_MANAGER();
-
         // Allocate a new memory page, only 1
         FMemoryPage* MemPage = MemoryPageHeapHandle->Malloc(1);
 
@@ -141,8 +135,6 @@ public:
     template<typename T, typename... ArgTypes>
     T** MallocConstructAligned(uint32 inSizeInBytes, uint32 inAlignment = sizeof(T), ArgTypes&&... inArgs)
     {
-        VE_PROFILE_MEMORY_MANAGER();
-
         // Allocate a new memory page, only 1
         FMemoryPage* MemPage = MemoryPageHeapHandle->Malloc(1);
 
@@ -171,8 +163,6 @@ public:
     template<typename T, typename... ArgTypes>
     T** MallocAllocater(uint32 inSizeInBytesForAllocater, uint32 inAllocaterAlignment = sizeof(T), ArgTypes&&... inArgs)
     {
-        VE_PROFILE_MEMORY_MANAGER();
-
         VE_ASSERT((bool)std::is_base_of<MemoryAllocater, T>::value, VE_TEXT("[MemoryManager]: Trying to allocate an Object that is not a child of MemoryAllocater"));
 
         // Extra bytes for alignment (* 2)
@@ -206,8 +196,6 @@ public:
     */
     void Free(void** inPtrToMemory)
     {
-        VE_PROFILE_MEMORY_MANAGER();
-
         MemoryPageHeapHandle->Free(sizeof(FMemoryPage));
     }
 
@@ -216,8 +204,6 @@ public:
     */
     void FlushNoDelete()
     {
-        VE_PROFILE_MEMORY_MANAGER();
-
         MemoryHeapHandle->FlushNoDelete();
         MemoryPageHeapHandle->FlushNoDelete();
     }
@@ -227,8 +213,6 @@ public:
     */
     void Shutdown()
     {
-        VE_PROFILE_MEMORY_MANAGER();
-
         bIsActive = false;
         Flush();
     }
@@ -240,8 +224,6 @@ private:
     */
     void PreInit()
     {
-        VE_PROFILE_MEMORY_MANAGER();
-
         VE_ASSERT(MemoryHeapSize == 0, VE_TEXT("[Memory Manager]: Memory manager cannot initialize with 0 bytes as the size!"));
         VE_ASSERT(MemoryPageHeapSize == 0, VE_TEXT("[Memory Manager]: Memory managers page heap size cannot start with 0 bytes!"));
 
@@ -264,11 +246,9 @@ private:
     */
     uint8* AlignPointerAndShift(uint8* inPtrToAlign, uint32 inAlignment)
     {
-        VE_PROFILE_MEMORY_MANAGER();
-
         // Align the block, if their isn't alignment, shift it up the full 'align' bytes, so we always 
         // have room to store the shift 
-        uint8* AlignedPtr = MemoryUtils::AlignPointer<uint8>(inPtrToAlign, inAlignment);
+        uint8* AlignedPtr = FMemoryUtils::AlignPointer<uint8>(inPtrToAlign, inAlignment);
         if (AlignedPtr == inPtrToAlign)
         {
             AlignedPtr += inAlignment;
@@ -290,8 +270,6 @@ private:
     */
     void Flush()
     {
-        VE_PROFILE_MEMORY_MANAGER();
-
         if (MemoryHeapHandle != nullptr)
         {
             delete MemoryHeapHandle;

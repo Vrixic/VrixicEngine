@@ -35,7 +35,7 @@ Application::Application()
 #endif
 
 	// Startup the Memory Manager
-	MemoryManager::Get().StartUp();
+	MemoryManager::Get().Init();
 	MemoryManager::Get().Resize(1024);
 
 	// Create the window 
