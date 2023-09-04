@@ -4,6 +4,7 @@
 */
 
 #pragma once
+#include <Core/Misc/IManager.h>
 #include <Runtime/Memory/Core/MemoryHeap.h>
 #include <Runtime/Memory/Core/MemoryUtils.h>
 
@@ -22,27 +23,10 @@
 *			make a new one.
 */
 
-class VRIXIC_API MemoryManager
+class VRIXIC_API MemoryManager : public IManager
 {
 public:
-    MemoryManager() :MemoryHeapHandle(nullptr), MemoryHeapSize(0),
-        MemoryPageHeapHandle(nullptr), MemoryPageHeapSize(0), bIsActive(false) { }
-
-    ~MemoryManager()
-    {
-        VE_PROFILE_MEMORY_MANAGER();
-
-        Shutdown();
-    }
-
-    /**
-    * Returns the one and only Instance to the Manager
-    */
-    static MemoryManager& Get()
-    {
-        static MemoryManager Instance;
-        return Instance;
-    }
+    VRIXIC_STATIC_MANAGER(MemoryManager)
 
 public:
 
@@ -60,6 +44,11 @@ public:
 
         bIsActive = true;
         PreInit();
+    }
+
+    virtual void Init(void* inConfig = nullptr) override
+    {
+        StartUp();
     }
 
     /**
@@ -211,13 +200,23 @@ public:
     /**
     * Shuts down the manager, Releases All allocated memory
     */
-    void Shutdown()
+    virtual void Shutdown() override 
     {
         bIsActive = false;
         Flush();
     }
 
 private:
+    MemoryManager() :MemoryHeapHandle(nullptr), MemoryHeapSize(0),
+        MemoryPageHeapHandle(nullptr), MemoryPageHeapSize(0), bIsActive(false) { }
+
+    ~MemoryManager()
+    {
+        VE_PROFILE_MEMORY_MANAGER();
+
+        Shutdown();
+    }
+
     /**
     * Pre-Inits the memory manager with default memory until size if know to allocate more memory
     *	Should be called on launch

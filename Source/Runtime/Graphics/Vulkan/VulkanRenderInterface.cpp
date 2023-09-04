@@ -56,7 +56,9 @@ VulkanRenderInterface::~VulkanRenderInterface()
 void VulkanRenderInterface::Initialize()
 {
     CommandBufferManager = new VulkanCommandBufferManager(Device);
-    CommandBufferManager::Get().Init(CommandBufferManager, VGameEngine::Get()->GetTaskScheduler().GetNumTaskThreads());
+
+    FCommandBufferManagerConfig CommandBufferManagerConfig = { CommandBufferManager, VGameEngine::Get()->GetTaskScheduler().GetNumTaskThreads() };
+    CommandBufferManager::Get().Init(&CommandBufferManagerConfig);
 
     // Create Resource Managements Resources
     {

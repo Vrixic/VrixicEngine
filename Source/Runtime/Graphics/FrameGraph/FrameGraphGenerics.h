@@ -12,6 +12,8 @@
 #include <Runtime/Graphics/RenderPassGenerics.h>
 #include <Runtime/Graphics/Texture.h>
 
+class ICommandBuffer;
+
 enum class EFrameGraphResourceType
 {
     Invalid = -1,
