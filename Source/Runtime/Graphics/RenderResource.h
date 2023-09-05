@@ -17,4 +17,7 @@ public:
     * @returns EResourceType the type of resource this object is 
     */
     virtual inline EResourceType GetResourceType() const = 0;
+
+public:
+    uint32 ResourcePoolIndex = UINT32_MAX;
 };

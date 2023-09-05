@@ -3,10 +3,10 @@
 * See "LICENSE.txt" for license information.
 */
 
-#include "TextureResourcePool.h"
+#include "ResourcePool.h"
 #include <Runtime/Memory/Core/MemoryManager.h>
 
-void TextureResourcePool::Init(uint32 inPoolSize, uint32 inResourceSize)
+void ResourcePool::Init(uint32 inPoolSize, uint32 inResourceSize)
 {
     PoolSize = inPoolSize;
     ResourceSize = inResourceSize;
@@ -20,17 +20,17 @@ void TextureResourcePool::Init(uint32 inPoolSize, uint32 inResourceSize)
     FreeAll();
 }
 
-void TextureResourcePool::Shutdown()
+void ResourcePool::Shutdown()
 {
     if (FreeIndicesHead != 0)
     {
-        VE_CORE_LOG_INFO(VE_TEXT("[TextureResourcePool]: Has unfreed resources..."));
+        VE_CORE_LOG_INFO(VE_TEXT("[ResourcePool]: Has unfreed resources..."));
     }
 
     MemoryHandle.Free();
 }
 
-uint32 TextureResourcePool::Allocate()
+uint32 ResourcePool::Allocate()
 {
     if (FreeIndicesHead < PoolSize)
     {
@@ -40,17 +40,17 @@ uint32 TextureResourcePool::Allocate()
         return FreeIndex;
     }
 
-    VE_ASSERT(false, VE_TEXT("[TextureResourcePool]: No more resources left to allocate...!"));
+    VE_ASSERT(false, VE_TEXT("[ResourcePool]: No more resources left to allocate...!"));
     return UINT32_MAX;
 }
 
-void TextureResourcePool::Free(uint32 inResourceHandle)
+void ResourcePool::Free(uint32 inResourceHandle)
 {
     FreeIndices[--FreeIndicesHead] = inResourceHandle;
     --UsedIndices;
 }
 
-void TextureResourcePool::FreeAll()
+void ResourcePool::FreeAll()
 {
     FreeIndicesHead = 0;
     UsedIndices = 0;
@@ -61,7 +61,7 @@ void TextureResourcePool::FreeAll()
     }
 }
 
-void* TextureResourcePool::Get(uint32 inResourceHandle)
+void* ResourcePool::Get(uint32 inResourceHandle)
 {
     if (inResourceHandle != UINT32_MAX)
     {
@@ -70,7 +70,7 @@ void* TextureResourcePool::Get(uint32 inResourceHandle)
     return nullptr;
 }
 
-const void* TextureResourcePool::Get(uint32 inResourceHandle) const
+const void* ResourcePool::Get(uint32 inResourceHandle) const
 {
     if (inResourceHandle != UINT32_MAX)
     {
